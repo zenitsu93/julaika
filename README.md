@@ -1,8 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/logo-dark.svg" />
-    <img src="docs/brand/logo.svg" alt="julaïka" width="260" />
-  </picture>
+  <img src="docs/brand/cover.png" alt="julaïka : jouer ensemble, même de loin. 22 jeux entre amis ou en couple, visio intégrée." width="100%" />
 </p>
 
 <p align="center">
@@ -168,8 +165,13 @@ VPS neuf sans autre site : `DOMAIN=jeu.exemple.com docker compose -f docker-comp
 Le nom s'écrit **julaïka**, avec un i tréma. Sans accent, `julaika` reste réservé au code, aux
 paquets, aux clés et au domaine.
 
-Les fichiers de marque sont dans [`docs/brand`](docs/brand) (`logo.svg`, `logo-dark.svg`,
-`mark.svg`). Le picto est aussi un composant React (`apps/client/src/components/Logo.tsx`).
+Le logo « le sourire » : le tréma du ï devient deux yeux d'or et un sourire se dessine dessous,
+clin d'œil au sourire de Julaïka. Signature : *jouer ensemble, même de loin*.
+
+Les fichiers de marque sont dans [`docs/brand`](docs/brand) : `logo.svg` (fond clair),
+`logo-dark.svg` (fond sombre), `mark.svg` (picto carré) et `cover.png`. Le lettrage est en contours
+d'Inter 800, il ne dépend donc d'aucune police installée. Le lettrage et le picto existent aussi en
+composants React (`Wordmark` et `LogoMark` dans `apps/client/src/components/Logo.tsx`), animés à l'arrivée sur l'accueil.
 Favicon, icônes d'appli, manifest et image d'aperçu sont dans `apps/client/public`.
 
 | Rôle | Couleur |

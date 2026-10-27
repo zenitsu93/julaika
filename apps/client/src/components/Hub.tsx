@@ -9,7 +9,7 @@ import { CerveauArt } from './cerveau/CerveauArt';
 import { ConnaitArt } from './connait/ConnaitArt';
 import { FlashArt } from './flash/FlashArt';
 import { AovArt } from './verite/AovArt';
-import { LogoMark } from './Logo';
+import { Wordmark } from './Logo';
 import { StoryArt } from './motamot/StoryArt';
 import './photo/photo.css';
 import './interdits/interdits.css';
@@ -52,10 +52,7 @@ export function Hub({ onPick, onCode }: { onPick: (id: GameId) => void; onCode: 
       </div>
       <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <div className="flex items-center gap-2.5">
-          <LogoMark className="h-9 w-auto" animated={intro} />
-          <span style={after(300)} className={`font-logo text-2xl font-semibold tracking-[-0.04em] ${rise}`}>
-            julaïka
-          </span>
+          <Wordmark className="h-10 w-auto" animated={intro} />
         </div>
         <button type="button" className="btn-ghost" onClick={onCode}>
           J'ai un code de salon

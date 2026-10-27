@@ -225,7 +225,7 @@
   animation-delay: 0.3s;
 }
 
-/* Logo de l'accueil : le crayon se pose, puis trace sa boucle. */
+/* Logo de l'accueil : les yeux (le tréma) tombent, puis le sourire se dessine. */
 .m-logo .m-pencil {
   animation: m-pencil 0.26s var(--ease-out) backwards;
 }

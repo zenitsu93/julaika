@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { serverNow, useGame } from '../lib/store';
 import { animate, Ticker } from '../motion';
-import { LogoMark } from './Logo';
+import { Wordmark } from './Logo';
 import { MeetButton } from './MeetButton';
 import { SoundButton } from './SoundBoard';
 
@@ -84,8 +84,7 @@ export function TopBar() {
         <Ticker value={room.endsAt ? clock(left) : '--:--'} />
       </span>
       <span className="hidden items-center gap-1.5 sm:flex">
-        <LogoMark className="h-6 w-auto" />
-        <b className="font-logo font-semibold tracking-[-0.035em]">julaïka</b>
+        <Wordmark className="h-7 w-auto" />
       </span>
       <span className="text-sm text-muted">
         {room.phase === 'lobby'
