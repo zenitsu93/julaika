@@ -1,12 +1,11 @@
-import { useEffect, useRef, useState, type CSSProperties, type JSX, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type JSX } from 'react';
 import { GAMES, SOON, matchesGame, matchesSoon, type GameId, type GameInfo, type SoonId } from '../lib/games';
-import { reducedMotion } from '../motion';
 import { LogoMark } from './Logo';
 
 // L'entrée animée ne se joue qu'une fois par visite, comme sur l'écran du pseudo.
 let introPlayed = false;
 
-/** Accueil : une carte par jeu, qui s'incline sous la souris, et une recherche. */
+/** Accueil : une carte par jeu, posée dans un écrin chocolat, et une recherche. */
 export function Hub({ onPick, onCode }: { onPick: (id: GameId) => void; onCode: () => void }) {
   const [intro] = useState(() => !introPlayed);
   useEffect(() => void (introPlayed = true), []);
@@ -32,7 +31,11 @@ export function Hub({ onPick, onCode }: { onPick: (id: GameId) => void; onCode: 
   }, []);
 
   return (
-    <main className="min-h-full pb-16">
+    <main className="relative isolate min-h-full overflow-x-clip pb-16">
+      <div className="hub-aurora" aria-hidden>
+        <i />
+        <i />
+      </div>
       <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <div className="flex items-center gap-2.5">
           <LogoMark className="h-9 w-auto" animated={intro} />
@@ -47,7 +50,7 @@ export function Hub({ onPick, onCode }: { onPick: (id: GameId) => void; onCode: 
 
       <section className="px-4 pt-8 text-center sm:pt-12">
         <h1 style={after(340)} className={`text-4xl font-semibold leading-none tracking-[-0.045em] sm:text-6xl ${rise}`}>
-          <span className="accroche text-5xl text-muted sm:text-7xl">entre amis</span>
+          <span className="accroche text-5xl text-accent sm:text-7xl">entre amis</span>
           Salut ! On joue à quoi ?
         </h1>
         <p style={after(400)} className={`mx-auto mt-3 max-w-md text-base text-muted sm:text-lg ${rise}`}>
@@ -55,7 +58,7 @@ export function Hub({ onPick, onCode }: { onPick: (id: GameId) => void; onCode: 
         </p>
         <label
           style={after(460)}
-          className={`mx-auto mt-7 flex min-h-13 max-w-xl items-center gap-2.5 rounded-xl border border-edge bg-surface px-3.5 shadow-[0_10px_30px_-20px_rgb(0_0_0/0.35)] transition focus-within:border-ink focus-within:ring-4 focus-within:ring-ink/10 ${rise}`}
+          className={`mx-auto mt-7 flex min-h-13 max-w-xl items-center gap-2.5 rounded-xl border border-edge bg-surface px-3.5 shadow-[0_10px_30px_-20px_rgb(0_0_0/0.35)] transition focus-within:border-accent focus-within:ring-4 focus-within:ring-accent/20 ${rise}`}
         >
           <svg viewBox="0 0 24 24" className="size-5 shrink-0 text-muted" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
             <circle cx="11" cy="11" r="7" />
@@ -78,7 +81,7 @@ export function Hub({ onPick, onCode }: { onPick: (id: GameId) => void; onCode: 
         </label>
       </section>
 
-      <section className="mx-auto mt-10 grid max-w-6xl grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-5 px-4 [perspective:1000px] sm:mt-12 sm:px-6">
+      <section className="mx-auto mt-10 grid max-w-6xl grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-5 px-4 sm:mt-12 sm:px-6">
         {games.map((g, i) => (
           <GameCard key={g.id} game={g} style={after(520 + i * 60)} className={rise} onPick={() => onPick(g.id)} />
         ))}
@@ -93,56 +96,37 @@ export function Hub({ onPick, onCode }: { onPick: (id: GameId) => void; onCode: 
   );
 }
 
-/** La carte s'incline vers la souris et un reflet suit le pointeur. */
-function tilt(e: PointerEvent<HTMLElement>) {
-  if (e.pointerType !== 'mouse' || reducedMotion()) return;
-  const el = e.currentTarget;
-  const r = el.getBoundingClientRect();
-  const x = (e.clientX - r.left) / r.width;
-  const y = (e.clientY - r.top) / r.height;
-  el.style.transform = `rotateY(${(x - 0.5) * 16}deg) rotateX(${(0.5 - y) * 16}deg) translateY(-4px)`;
-  el.style.setProperty('--gx', `${x * 100}%`);
-  el.style.setProperty('--gy', `${y * 100}%`);
-}
+const Arrow = () => (
+  <span className="hub-go" aria-hidden>
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </svg>
+  </span>
+);
 
-const untilt = (e: PointerEvent<HTMLElement>) => {
-  e.currentTarget.style.transform = '';
-};
-
-const SKINS: Record<GameId, string> = {
-  dessin: 'border-accent bg-accent text-[#18181b]',
-  mime: 'border-primary bg-primary text-on-primary',
-  wavelength: 'border-edge bg-surface text-ink',
-  motdujour: 'border-[#15803d] bg-[#16a34a] text-white',
-  telephone: 'border-[#6d28d9] bg-[#7c3aed] text-white',
-};
-
+/** Carte d'un jeu : le dessin dans un écrin chocolat, le nom dessous. Le premier jeu garde son liseré doré allumé. */
 function GameCard({ game, className, style, onPick }: { game: GameInfo; className: string; style: CSSProperties; onPick: () => void }) {
-  const index = String(GAMES.indexOf(game) + 1).padStart(2, '0');
+  const featured = GAMES.indexOf(game) === 0;
   return (
     <div style={style} className={className}>
       <button
         type="button"
         onClick={onPick}
-        onPointerMove={tilt}
-        onPointerLeave={untilt}
         aria-label={`${game.name} : ${game.pitch}`}
-        className={`hub-card group relative flex h-80 w-full flex-col justify-between overflow-hidden rounded-[1.375rem] border p-5 text-left outline-none focus-visible:ring-2 focus-visible:ring-info focus-visible:ring-offset-2 sm:h-96 ${SKINS[game.id]}`}
+        className={`hub-card ${featured ? 'hub-feat' : ''} relative flex h-80 w-full flex-col gap-3 rounded-[1.375rem] border border-edge bg-surface p-2 pb-5 text-left outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-page sm:h-96`}
       >
-        <span className="hub-glare" aria-hidden />
-        <span className="hub-pop flex items-center justify-between font-mono text-xs">
-          <span className="opacity-80">{index}</span>
-          {game.badge ? (
-            <span className="rounded-full bg-accent px-2 py-0.5 font-sans font-medium text-[#18181b]">{game.badge}</span>
-          ) : (
-            <span>{game.players}</span>
-          )}
+        <span className="hub-panel flex flex-1 flex-col gap-2 rounded-2xl p-3.5 text-butter">
+          <span className="relative flex items-center justify-between gap-2 text-xs">
+            <span className="opacity-75">{game.players}</span>
+            {game.badge && <span className="rounded-full bg-gold px-2 py-0.5 font-semibold text-cacao">{game.badge}</span>}
+          </span>
+          <span className="relative grid flex-1 place-items-center">{ART[game.id]}</span>
         </span>
-        <span className="hub-pop m-float">{ART[game.id]}</span>
-        <span className="hub-pop block">
-          <span className="block text-4xl font-semibold tracking-[-0.04em]">{game.name}</span>
-          <span className="mt-1 block text-[15px] opacity-75">{game.pitch}</span>
+        <span className="block px-2.5 pr-12">
+          <span className="block text-3xl font-bold tracking-[-0.04em]">{game.name}</span>
+          <span className="mt-1 block text-[15px] leading-snug text-muted">{game.pitch}</span>
         </span>
+        <Arrow />
       </button>
     </div>
   );
@@ -158,7 +142,7 @@ const MimeArt = () => (
   <svg viewBox="0 0 60 60" className="mx-auto max-h-36 w-1/2" aria-hidden>
     <circle cx="30" cy="20" r="10" className="fill-current opacity-30" />
     <path d="M12 56c2-14 10-20 18-20s16 6 18 20" className="fill-current opacity-30" />
-    <path className="m-wave" d="M46 34l6-16" stroke="#f5b700" strokeWidth="5" strokeLinecap="round" />
+    <path className="m-wave stroke-gold" d="M46 34l6-16" strokeWidth="5" strokeLinecap="round" />
   </svg>
 );
 
@@ -166,25 +150,25 @@ const MimeArt = () => (
 const WaveArt = () => (
   <svg viewBox="0 0 200 120" className="mx-auto max-h-36 w-full" aria-hidden>
     <path d="M20 106a80 80 0 0 1 160 0" fill="none" stroke="currentColor" strokeOpacity=".15" strokeWidth="26" />
-    <path d="M118.7 28.2A80 80 0 0 1 177.8 87.3" fill="none" stroke="#2563eb" strokeOpacity=".55" strokeWidth="26" />
-    <path d="M135.2 34.2A80 80 0 0 1 171.8 70.8" fill="none" stroke="#d97706" strokeWidth="26" />
-    <path d="M150.0 43.6A80 80 0 0 1 162.4 56.0" fill="none" stroke="#f5b700" strokeWidth="26" />
+    <path d="M118.7 28.2A80 80 0 0 1 177.8 87.3" fill="none" className="stroke-gold" strokeOpacity=".3" strokeWidth="26" />
+    <path d="M135.2 34.2A80 80 0 0 1 171.8 70.8" fill="none" className="stroke-gold" strokeOpacity=".6" strokeWidth="26" />
+    <path d="M150.0 43.6A80 80 0 0 1 162.4 56.0" fill="none" className="stroke-gold" strokeWidth="26" />
     <g className="m-needle" style={{ transformOrigin: '100px 106px' }}>
       <path d="M100 106 149.5 56.5" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
     </g>
     <circle cx="100" cy="106" r="9" className="fill-current" />
-    <circle cx="100" cy="106" r="3.5" fill="#f5b700" />
+    <circle cx="100" cy="106" r="3.5" className="fill-gold" />
   </svg>
 );
 
 /** Le mot qui se dévoile : les cases se retournent une à une, puis tout est vert. */
 const MotArt = () => (
-  <span className="mx-auto flex justify-center gap-1.5" aria-hidden>
+  <span className="mx-auto flex justify-center gap-1" aria-hidden>
     {[...'JOLIE'].map((c, i) => (
       <span
         key={i}
         style={{ animationDelay: `${i * 160}ms` }}
-        className="mot-art grid size-11 place-items-center rounded-md border-2 border-white/70 text-2xl font-bold"
+        className="mot-art grid size-9 place-items-center rounded-md border-2 border-butter/60 text-xl font-bold sm:size-10"
       >
         {c}
       </span>
@@ -200,40 +184,37 @@ const TelArt = () => (
       <path d="M18 56h40M18 68h28" strokeWidth="5" strokeOpacity=".7" />
     </g>
     <g className="tel-art" style={{ animationDelay: '500ms', transformOrigin: '110px 70px' }}>
-      <rect x="80" y="34" width="60" height="72" rx="8" fill="#fff" stroke="none" />
-      <path className="m-draw" pathLength={1} d="M92 86c6-26 16-34 20-14s12 20 16-6" stroke="#18181b" strokeWidth="5" />
-      <circle cx="122" cy="52" r="6" fill="#f5b700" stroke="none" />
+      <rect x="80" y="34" width="60" height="72" rx="8" className="fill-butter" stroke="none" />
+      <path className="m-draw stroke-cacao" pathLength={1} d="M92 86c6-26 16-34 20-14s12 20 16-6" strokeWidth="5" />
+      <circle cx="122" cy="52" r="6" className="fill-gold" stroke="none" />
     </g>
     <g className="tel-art" style={{ animationDelay: '1000ms', transformOrigin: '180px 70px' }}>
       <path d="M154 42h52a8 8 0 0 1 8 8v26a8 8 0 0 1-8 8h-12v10l-12-10h-28a8 8 0 0 1-8-8V50a8 8 0 0 1 8-8z" fill="currentColor" fillOpacity=".18" strokeWidth="4" />
-      <path d="M174 56a7 7 0 1 1 9 7v4M183 75v.5" stroke="#f5b700" strokeWidth="5" />
+      <path d="M174 56a7 7 0 1 1 9 7v4M183 75v.5" className="stroke-gold" strokeWidth="5" />
     </g>
   </svg>
 );
 
 const ART: Record<GameId, JSX.Element> = { dessin: <DrawArt />, mime: <MimeArt />, wavelength: <WaveArt />, motdujour: <MotArt />, telephone: <TelArt /> };
 
-/** Carte d'un jeu en préparation : même mise en scène, en pointillés et sans clic. */
+/** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */
 function SoonCard({ game, className, style }: { game: (typeof SOON)[number]; className: string; style: CSSProperties }) {
-  const index = String(GAMES.length + SOON.indexOf(game) + 1).padStart(2, '0');
   return (
     <div style={style} className={className}>
       <div
-        onPointerMove={tilt}
-        onPointerLeave={untilt}
         aria-label={`${game.name}, bientôt : ${game.pitch}`}
         role="group"
-        className="hub-card soon-card group relative flex h-80 w-full flex-col justify-between overflow-hidden rounded-[1.375rem] border border-dashed border-edge bg-surface/60 p-5 text-muted sm:h-96"
+        className="hub-card soon-card relative flex h-80 w-full flex-col gap-3 rounded-[1.375rem] border border-dashed border-edge p-2 pb-5 text-muted sm:h-96"
       >
-        <span className="hub-glare" aria-hidden />
-        <span className="hub-pop flex items-center justify-between font-mono text-xs">
-          <span className="opacity-80">{index}</span>
-          <span className="rounded-full border border-dashed border-edge px-2 py-0.5 font-sans font-medium">Bientôt</span>
+        <span className="hub-panel flex flex-1 flex-col gap-2 rounded-2xl p-3.5">
+          <span className="flex justify-end text-xs">
+            <span className="rounded-full border border-gold/50 px-2 py-0.5 font-medium text-accent">Bientôt</span>
+          </span>
+          <span className="grid flex-1 place-items-center text-ink/60">{SOON_ART[game.id]}</span>
         </span>
-        <span className="hub-pop m-float text-ink/70">{SOON_ART[game.id]}</span>
-        <span className="hub-pop block">
-          <span className="block text-3xl font-semibold tracking-[-0.04em] text-ink/80">{game.name}</span>
-          <span className="mt-1 block text-[15px]">{game.pitch}</span>
+        <span className="block px-2.5">
+          <span className="block text-3xl font-bold tracking-[-0.04em] text-ink/75">{game.name}</span>
+          <span className="mt-1 block text-[15px] leading-snug">{game.pitch}</span>
         </span>
       </div>
     </div>
@@ -257,9 +238,9 @@ const SOON_ART: Record<SoonId, JSX.Element> = {
         </g>
       ))}
       <g className="soon-bob" style={{ transformOrigin: '160px 90px' }}>
-        <circle cx="160" cy="58" r="15" stroke="#f5b700" strokeWidth="5" />
-        <path d="M138 112c2-20 12-28 22-28s20 8 22 28" stroke="#f5b700" strokeWidth="5" />
-        <path d="M154 54a6 6 0 1 1 8 6v4M158 70v.5" stroke="#f5b700" strokeWidth="4" />
+        <circle cx="160" cy="58" r="15" className="stroke-gold" strokeWidth="5" />
+        <path d="M138 112c2-20 12-28 22-28s20 8 22 28" className="stroke-gold" strokeWidth="5" />
+        <path d="M154 54a6 6 0 1 1 8 6v4M158 70v.5" className="stroke-gold" strokeWidth="4" />
       </g>
     </>,
   ),
@@ -268,15 +249,15 @@ const SOON_ART: Record<SoonId, JSX.Element> = {
     <>
       <rect x="36" y="30" width="128" height="80" rx="14" strokeWidth="5" />
       <path d="M58 58h84M58 82h56" strokeWidth="7" strokeOpacity=".35" />
-      <path className="m-draw" pathLength={1} d="M50 96 150 44" stroke="#dc2626" strokeWidth="7" />
+      <path className="m-draw stroke-gold" pathLength={1} d="M50 96 150 44" strokeWidth="7" />
     </>,
   ),
   // La lettre tourne, les lignes se remplissent.
   petitbac: svg(
     <>
       <g className="soon-spin" style={{ transformOrigin: '52px 70px' }}>
-        <rect x="26" y="44" width="52" height="52" rx="10" fill="#f5b700" stroke="none" />
-        <text x="52" y="83" textAnchor="middle" fontSize="34" fontWeight="700" fill="#18181b" stroke="none">
+        <rect x="26" y="44" width="52" height="52" rx="10" className="fill-gold" stroke="none" />
+        <text x="52" y="83" textAnchor="middle" fontSize="34" fontWeight="700" className="fill-cacao" stroke="none">
           B
         </text>
       </g>
@@ -292,17 +273,16 @@ const SOON_ART: Record<SoonId, JSX.Element> = {
       <ellipse cx="60" cy="104" rx="12" ry="9" fill="currentColor" stroke="none" />
       <ellipse cx="110" cy="92" rx="12" ry="9" fill="currentColor" stroke="none" />
       {[0, 1, 2].map((i) => (
-        <path key={i} className="soon-note" style={{ animationDelay: `${i * 600}ms` }} d="M150 100v-18l12-4" stroke="#f5b700" strokeWidth="5" />
+        <path key={i} className="soon-note stroke-gold" style={{ animationDelay: `${i * 600}ms` }} d="M150 100v-18l12-4" strokeWidth="5" />
       ))}
     </>,
   ),
   // Un cœur qui bat.
   connait: svg(
     <path
-      className="soon-beat"
+      className="soon-beat fill-gold"
       style={{ transformOrigin: '100px 72px' }}
       d="M100 112S48 82 48 52a24 24 0 0 1 52-6 24 24 0 0 1 52 6c0 30-52 60-52 60z"
-      fill="#f5b700"
       stroke="none"
     />,
   ),
