@@ -350,6 +350,120 @@
   animation: pm-fan 4.5s ease-in-out infinite;
 }
 
+/* ---- Annonce de la notation, validation, pause, téléchargement -------------------- */
+
+/* Le bandeau d'annonce tombe doucement, puis glisse vers le haut et s'efface à l'ouverture. */
+@keyframes pm-intro-in {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+}
+.pm-intro {
+  animation: pm-intro-in 0.45s ease-out both;
+}
+.pm-intro > * {
+  animation: pm-intro-card 0.6s cubic-bezier(0.2, 0.9, 0.25, 1.2) both;
+}
+@keyframes pm-intro-card {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94) rotate(-1.5deg);
+  }
+}
+@keyframes pm-intro-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+.pm-intro.pm-intro-out {
+  animation: pm-intro-out 0.5s ease-in 0.25s forwards;
+  pointer-events: none;
+}
+.pm-intro.pm-intro-out > * {
+  animation: pm-intro-card-out 0.55s cubic-bezier(0.5, 0, 0.75, 0) forwards;
+}
+@keyframes pm-intro-card-out {
+  to {
+    opacity: 0;
+    transform: translateY(-28px) scale(0.96);
+  }
+}
+
+/* Valider : la barre se remplit à chaque note, puis le bouton luit quand tout est noté. */
+.pm-validate-fill {
+  transition: width 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes pm-validate-glow {
+  0%,
+  100% {
+    box-shadow: 0 10px 24px -12px rgb(40 20 10 / 0.6), 0 0 0 0 color-mix(in oklab, var(--color-accent) 55%, transparent);
+  }
+  50% {
+    box-shadow: 0 10px 24px -12px rgb(40 20 10 / 0.6), 0 0 0 7px color-mix(in oklab, var(--color-accent) 0%, transparent);
+  }
+}
+.pm-validate-ready {
+  animation: pm-validate-glow 1.6s ease-in-out infinite;
+}
+
+/* Pause : l'icône se retourne en changeant ; les deux barres du voile respirent l'une après l'autre. */
+@keyframes pm-pauseicon {
+  from {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.4);
+  }
+}
+.pm-pauseicon {
+  animation: pm-pauseicon 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+@keyframes pm-pausebar {
+  0%,
+  100% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scaleY(0.72);
+    opacity: 0.7;
+  }
+}
+.pm-pausemark > span {
+  animation: pm-pausebar 1.4s ease-in-out infinite;
+  transform-origin: 50% 50%;
+}
+
+/* Télécharger : la flèche plonge au survol, sautille pendant la préparation, la coche se trace. */
+@keyframes pola-save-dip {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  45% {
+    transform: translateY(3px);
+  }
+}
+.pola-save:hover .pola-save-arrow,
+.pola-save:focus-visible .pola-save-arrow {
+  animation: pola-save-dip 0.6s ease-in-out infinite;
+}
+.pola-save-busy {
+  animation: pola-save-dip 0.45s ease-in-out infinite;
+}
+@keyframes pola-save-ok {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.pola-save-ok path {
+  stroke-dasharray: 1;
+  animation: pola-save-ok 0.4s ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pola,
   .pola-toss,
@@ -366,13 +480,22 @@
   .pm-crown,
   .pm-halo,
   .pm-fan,
-  .pm-rec {
+  .pm-rec,
+  .pm-intro,
+  .pm-intro > *,
+  .pm-validate-ready,
+  .pm-pauseicon,
+  .pm-pausemark > span,
+  .pola-save-arrow,
+  .pola-save-busy,
+  .pola-save-ok path {
     animation: none !important;
     transition: none !important;
   }
   .pm-flash,
   .pm-shutter,
-  .pm-spark {
+  .pm-spark,
+  .pm-intro.pm-intro-out {
     display: none;
   }
 }
@@ -432,6 +555,101 @@
   .pm-art-flash,
   .pm-art-print,
   .pm-art-develop {
+    animation: none !important;
+  }
+}
+
+/* ---- Feuille « Ton image est prête » (téléphone) ------------------------------- */
+.save-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  background: rgb(20 12 8 / 0.55);
+  backdrop-filter: blur(3px);
+  animation: save-sheet-fade 0.25s ease-out both;
+  padding: 0 0.75rem env(safe-area-inset-bottom);
+}
+.save-sheet-card {
+  width: min(100%, 26rem);
+  max-height: 92dvh;
+  overflow-y: auto;
+  margin-bottom: 0.75rem;
+  border-radius: 1.25rem;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-edge);
+  padding: 0.75rem 1rem 1rem;
+  text-align: center;
+  box-shadow: 0 -20px 50px -20px rgb(40 20 10 / 0.6);
+  animation: save-sheet-up 0.42s cubic-bezier(0.2, 0.9, 0.25, 1.1) both;
+}
+.save-sheet-grip {
+  display: block;
+  width: 2.5rem;
+  height: 0.3rem;
+  margin: 0 auto 0.6rem;
+  border-radius: 99px;
+  background: var(--color-edge);
+}
+.save-sheet-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+}
+.save-sheet-img {
+  display: block;
+  margin: 0.75rem auto;
+  max-height: 55dvh;
+  max-width: 100%;
+  border-radius: 0.5rem;
+  box-shadow: 0 16px 30px -18px rgb(40 20 10 / 0.7);
+  -webkit-touch-callout: default;
+  user-select: auto;
+  animation: save-sheet-pop 0.5s 0.1s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+}
+.save-sheet-hint {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+.save-sheet-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.9rem;
+}
+.save-sheet-actions > * {
+  flex: 1;
+  padding-block: 0.7rem;
+}
+.save-sheet-out {
+  animation: save-sheet-fade 0.25s ease-in reverse forwards;
+}
+.save-sheet-out .save-sheet-card {
+  animation: save-sheet-up 0.25s ease-in reverse forwards;
+}
+@keyframes save-sheet-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes save-sheet-up {
+  from {
+    transform: translateY(110%);
+  }
+}
+@keyframes save-sheet-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.9) rotate(-2deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .save-sheet,
+  .save-sheet-card,
+  .save-sheet-img {
     animation: none !important;
   }
 }

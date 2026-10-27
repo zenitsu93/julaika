@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { PHOTO_MAX_STARS, PHOTO_STAR_POINTS, type PhotoState } from '@julaika/shared';
+import { PHOTO_COUNTDOWN, PHOTO_MAX_STARS, PHOTO_STAR_POINTS, type PhotoState } from '@julaika/shared';
 import { avatarOf } from '../../lib/avatars';
 import { call, useCall } from '../../lib/call';
 import { net } from '../../lib/net';
@@ -8,7 +8,7 @@ import { serverNow, useGame } from '../../lib/store';
 import { bump, confetti, Presence, reducedMotion, useCountUp, useFlip } from '../../motion';
 import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
-import { Polaroid } from '../Polaroid';
+import { Polaroid, SaveButton } from '../Polaroid';
 import './photo.css';
 
 /** Inclinaison d'un tirage posé sur la table : stable pour un joueur, variée d'un joueur à l'autre. */
@@ -21,6 +21,7 @@ const tiltOf = (id: string, round = 0) => {
 /** Plateau du Photomaton : qui a posé ou noté, la cabine photo, puis la table des polaroids. */
 export function PhotoBoard() {
   const phase = useGame((s) => s.room!.phase);
+  const paused = useGame((s) => !!s.room!.photo?.paused) && (phase === 'pose' || phase === 'vote' || phase === 'reveal');
   return (
     <section className="flex min-w-0 flex-col gap-3">
       <PhotoBar />
@@ -35,6 +36,8 @@ export function PhotoBoard() {
             <Veil key="end">
               <Finale />
             </Veil>
+          ) : paused ? (
+            <PauseVeil key="pause" />
           ) : null}
         </Presence>
       </div>
@@ -120,6 +123,58 @@ function PhotoBar() {
         })}
       </ol>
       {photo && <Rounds photo={photo} />}
+      {photo && (phase === 'pose' || phase === 'vote' || phase === 'reveal') && <PauseButton paused={photo.paused} />}
+    </div>
+  );
+}
+
+/** Chez l'hôte : mettre la partie en pause, ou la relancer. L'icône passe de ⏸ à ▶ en se tordant. */
+function PauseButton({ paused }: { paused: boolean }) {
+  const isHost = useGame((s) => s.room!.players.find((p) => p.id === s.selfId)?.isHost ?? false);
+  const btn = useRef<HTMLButtonElement>(null);
+  if (!isHost) return null;
+  return (
+    <button
+      ref={btn}
+      type="button"
+      onClick={() => {
+        bump(btn.current, 0.92);
+        net.send({ t: 'photo', pause: !paused });
+      }}
+      aria-pressed={paused}
+      className={`pm-pausebtn flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium transition-colors duration-300 outline-none focus-visible:ring-2 focus-visible:ring-info ${
+        paused ? 'border-accent bg-accent text-[#2a1a12]' : 'border-edge bg-surface hover:bg-edge/40'
+      }`}
+    >
+      <svg key={paused ? 'play' : 'pause'} viewBox="0 0 24 24" className="pm-pauseicon size-4" fill="currentColor" aria-hidden>
+        {paused ? <path d="M8 5.5v13l10.5-6.5z" /> : <path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" />}
+      </svg>
+      {paused ? 'Reprendre' : 'Pause'}
+    </button>
+  );
+}
+
+/** La partie est figée : un voile, deux barres qui respirent, et le temps qui restait. */
+function PauseVeil() {
+  const photo = useGame((s) => s.room!.photo);
+  const isHost = useGame((s) => s.room!.players.find((p) => p.id === s.selfId)?.isHost ?? false);
+  const left = photo?.pausedLeft ? Math.ceil(photo.pausedLeft / 1000) : null;
+  return (
+    <div className="m-veil absolute inset-0 z-30 grid place-items-center bg-page/80 p-4 backdrop-blur-[6px]">
+      <div className="m-card text-center">
+        <div className="pm-pausemark mx-auto flex h-16 items-center justify-center gap-2.5" aria-hidden>
+          <span className="h-full w-4 rounded-md bg-accent" />
+          <span className="h-full w-4 rounded-md bg-accent" style={{ animationDelay: '180ms' }} />
+        </div>
+        <p className="mt-4 text-2xl font-semibold tracking-[-0.03em]">Pause</p>
+        <p className="mt-1 text-muted">{isHost ? 'Tout est figé. Relance quand vous êtes prêts.' : 'L’hôte a mis la partie en pause.'}</p>
+        {left !== null && <p className="mt-2 font-mono text-xs text-muted tabular-nums">Il restera {left} s à la reprise</p>}
+        {isHost && (
+          <button type="button" className="btn btn-primary mt-4" onClick={() => net.send({ t: 'photo', pause: false })}>
+            ▶ Reprendre
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -187,8 +242,10 @@ function Shoot({ photo }: { photo: PhotoState }) {
   const video = useRef<HTMLVideoElement>(null);
   const [shot, setShot] = useState<{ image: string | null } | null>(null);
   const [flash, setFlash] = useState(false);
+  const sent = useRef(false);
   const left = useLeft(endsAt);
-  const counting = !shot && left > 0 && left <= 3000;
+  const COUNT = PHOTO_COUNTDOWN * 1000;
+  const counting = !shot && !!endsAt && left > 0 && left <= COUNT;
   const n = Math.ceil(left / 1000);
 
   useEffect(() => {
@@ -197,8 +254,10 @@ function Shoot({ photo }: { photo: PhotoState }) {
 
   // Le flash tombe à l'heure du serveur : même instant pour tout le monde.
   useEffect(() => {
-    if (!endsAt) return;
+    // En pause, endsAt disparaît : le flash attend la reprise. Il ne part qu'une fois par manche.
+    if (!endsAt || sent.current) return;
     const t = setTimeout(() => {
+      sent.current = true;
       const image = snapshot(video.current);
       net.send({ t: 'photo', image });
       setShot({ image });
@@ -228,6 +287,11 @@ function Shoot({ photo }: { photo: PhotoState }) {
         {shot ? (
           <div className="mx-auto w-[86%]">
             <Polaroid image={shot.image} caption={photo.prompt} name="Toi" avatar={self?.avatar} tilt={-2} enter="eject" develop download />
+            {shot.image && (
+              <div className="m-rise mt-4 flex justify-center" style={{ animationDelay: '1400ms' }}>
+                <SaveButton image={shot.image} caption={photo.prompt} name={self?.name} />
+              </div>
+            )}
           </div>
         ) : (
           <div className={`relative aspect-square overflow-hidden rounded-2xl bg-[#1c110c] shadow-[0_30px_60px_-30px_rgb(40_20_10/0.7)] ring-1 ring-black/10 ${counting ? 'pm-focus' : ''}`}>
@@ -256,7 +320,7 @@ function Shoot({ photo }: { photo: PhotoState }) {
                     strokeLinecap="round"
                     pathLength={1}
                     strokeDasharray="1"
-                    style={{ animationDelay: `${left - 3000}ms` }}
+                    style={{ animationDuration: `${COUNT}ms`, animationDelay: `${left - COUNT}ms` }}
                   />
                 </svg>
                 <span key={n} className="pm-count text-8xl font-extrabold tabular-nums text-white sm:text-9xl" aria-live="assertive">
@@ -264,7 +328,7 @@ function Shoot({ photo }: { photo: PhotoState }) {
                 </span>
               </div>
             )}
-            {!counting && left > 3000 && (
+            {!counting && endsAt && left > COUNT && (
               <span className="absolute inset-x-0 bottom-4 text-center">
                 <span className="m-rise inline-block rounded-full bg-black/45 px-3 py-1 font-mono text-xs text-white backdrop-blur-md">
                   Flash dans {Math.ceil(left / 1000)} s
@@ -357,10 +421,13 @@ function Table() {
   const toRate = shots.filter((s) => s.by !== selfId && s.image);
   const rated = toRate.filter((s) => votes[s.by]).length;
   const playing = photo.players.includes(selfId ?? '');
+  const validated = photo.done.includes(selfId ?? '');
+  const canRate = !reveal && playing && !validated && !!photo.opensAt && !photo.paused;
 
   return (
     <div className="relative flex min-h-[30rem] flex-col items-center gap-4 p-4 sm:p-6">
       <canvas ref={confettiRef} className="pointer-events-none absolute inset-0 z-10 size-full" aria-hidden />
+      {!reveal && photo.opensAt && <VoteIntro key={photo.round} opensAt={photo.opensAt} prompt={photo.prompt} paused={photo.paused} />}
       <header className="text-center">
         <p className="m-rise text-xs font-medium uppercase tracking-[0.18em] text-muted">
           Manche {photo.round}/{photo.rounds} · {reveal ? 'Les résultats' : playing && toRate.length ? `Note les photos (${rated}/${toRate.length})` : 'Les autres notent…'}
@@ -395,10 +462,15 @@ function Table() {
                 {reveal ? (
                   <Result score={score} index={i} />
                 ) : s.by === selfId ? (
-                  <span className="rounded-full border border-dashed border-edge px-2.5 py-1 text-xs text-muted">Ta photo</span>
+                  s.image ? (
+                    <SaveButton image={s.image} caption={photo.prompt} name={s.name} small />
+                  ) : (
+                    <span className="rounded-full border border-dashed border-edge px-2.5 py-1 text-xs text-muted">Ta photo</span>
+                  )
                 ) : s.image && playing ? (
                   <Stars
                     value={votes[s.by] ?? 0}
+                    disabled={!canRate}
                     onRate={(n) => {
                       setVotes((v) => ({ ...v, [s.by]: n }));
                       net.send({ t: 'photo', vote: s.by, stars: n });
@@ -412,6 +484,100 @@ function Table() {
           );
         })}
       </div>
+      {!reveal && playing && toRate.length > 0 && <Validate rated={rated} total={toRate.length} validated={validated} disabled={!canRate && !validated} />}
+    </div>
+  );
+}
+
+/**
+ * Avant les étoiles : un bandeau qui annonce la notation, rappelle la consigne et compte
+ * jusqu'à l'ouverture. Il glisse ensuite hors de la table.
+ */
+function VoteIntro({ opensAt, prompt, paused }: { opensAt: number; prompt: string; paused: boolean }) {
+  const left = useLeft(paused ? null : opensAt);
+  const [gone, setGone] = useState(false);
+  const open = !paused && left <= 0;
+  if (gone) return null;
+  const n = Math.max(1, Math.ceil(left / 1000));
+  return (
+    <div
+      className={`pm-intro absolute inset-0 z-20 grid place-items-center bg-page/70 p-4 backdrop-blur-[3px] ${open ? 'pm-intro-out' : ''}`}
+      onAnimationEnd={(e) => e.animationName === 'pm-intro-out' && setGone(true)}
+      aria-live="polite"
+    >
+      <div className="m-card max-w-md text-center">
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted">Place à la notation</p>
+        <p className="mt-2 font-[Caveat,'Segoe_Print',cursive] text-3xl font-bold leading-tight text-balance sm:text-4xl">« {prompt} »</p>
+        <p className="mt-2 text-sm text-muted">Regardez bien les tirages : qui a le mieux joué la consigne ?</p>
+        <div className="relative mx-auto mt-4 grid size-16 place-items-center">
+          <svg viewBox="0 0 100 100" className="absolute inset-0 -rotate-90" aria-hidden>
+            <circle cx="50" cy="50" r="44" fill="none" stroke="var(--color-edge)" strokeWidth="6" />
+            <circle
+              className="pm-ring"
+              cx="50"
+              cy="50"
+              r="44"
+              fill="none"
+              stroke="var(--color-accent)"
+              strokeWidth="6"
+              strokeLinecap="round"
+              pathLength={1}
+              strokeDasharray="1"
+              style={{ animationDuration: '5000ms', animationDelay: `${left - 5000}ms`, animationPlayState: paused ? 'paused' : 'running' }}
+            />
+          </svg>
+          <span key={n} className="pm-count text-3xl font-extrabold tabular-nums">
+            {open ? '★' : n}
+          </span>
+        </div>
+        <p className="mt-2 text-xs text-muted">{paused ? 'En pause' : open ? 'À vos étoiles !' : 'Les étoiles s’ouvrent dans un instant'}</p>
+      </div>
+    </div>
+  );
+}
+
+/** En bas de la table : où on en est, puis « J'ai fini de noter ». Une fois validé, on attend les autres. */
+function Validate({ rated, total, validated, disabled }: { rated: number; total: number; validated: boolean; disabled: boolean }) {
+  const photo = useGame((s) => s.room!.photo);
+  const players = useGame((s) => s.room!.players);
+  const selfId = useGame((s) => s.selfId);
+  const btn = useRef<HTMLButtonElement>(null);
+  const complete = rated === total;
+  useEffect(() => {
+    if (complete && !validated) bump(btn.current, 1.08);
+  }, [complete, validated]);
+  const waiting = players.filter((p) => p.id !== selfId && photo?.players.includes(p.id) && !photo.done.includes(p.id));
+  return (
+    <div className="sticky bottom-3 z-10 mt-2 flex w-full max-w-md flex-col items-center gap-2">
+      {validated ? (
+        <div key="done" className="m-pop flex items-center gap-2 rounded-full border border-good/40 bg-surface px-4 py-2 text-sm shadow-lg">
+          <span className="text-good">✓ Notes envoyées</span>
+          {waiting.length > 0 && (
+            <>
+              <span className="text-muted">· on attend</span>
+              <span className="flex gap-1">
+                {waiting.map((p) => (
+                  <span key={p.id} className="m-breathe" title={p.name}>
+                    {avatarOf(p.avatar)}
+                  </span>
+                ))}
+              </span>
+            </>
+          )}
+        </div>
+      ) : (
+        <button
+          ref={btn}
+          key="go"
+          type="button"
+          disabled={disabled || rated === 0}
+          onClick={() => net.send({ t: 'photo', ready: true })}
+          className={`pm-validate btn btn-primary relative overflow-hidden px-5 py-2.5 shadow-lg disabled:opacity-60 ${complete ? 'pm-validate-ready' : ''}`}
+        >
+          <span className="relative z-10">{complete ? 'J’ai fini de noter ✓' : `Valider mes notes (${rated}/${total})`}</span>
+          <span className="pm-validate-fill absolute inset-y-0 left-0 bg-accent/35" style={{ width: `${(rated / total) * 100}%` }} aria-hidden />
+        </button>
+      )}
     </div>
   );
 }
@@ -429,12 +595,12 @@ function Developing() {
 }
 
 /** Cinq étoiles : survol qui prévisualise, clic qui claque et lance des étincelles. */
-export function Stars({ value, onRate }: { value: number; onRate: (n: number) => void }) {
+export function Stars({ value, onRate, disabled = false }: { value: number; onRate: (n: number) => void; disabled?: boolean }) {
   const [hover, setHover] = useState(0);
   const [burst, setBurst] = useState<{ n: number; key: number } | null>(null);
-  const shown = hover || value;
+  const shown = (!disabled && hover) || value;
   return (
-    <div className="pm-stars flex items-center gap-0.5" role="radiogroup" aria-label="Note" onPointerLeave={() => setHover(0)}>
+    <div className={`pm-stars flex items-center gap-0.5 transition-opacity duration-300 ${disabled ? 'opacity-55' : ''}`} role="radiogroup" aria-label="Note" aria-disabled={disabled} onPointerLeave={() => setHover(0)}>
       {Array.from({ length: PHOTO_MAX_STARS }, (_, i) => {
         const n = i + 1;
         const on = n <= shown;
@@ -445,6 +611,7 @@ export function Stars({ value, onRate }: { value: number; onRate: (n: number) =>
             role="radio"
             aria-checked={value === n}
             aria-label={`${n} étoile${n > 1 ? 's' : ''}`}
+            disabled={disabled}
             onPointerEnter={() => setHover(n)}
             onClick={() => {
               onRate(n);

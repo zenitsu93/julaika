@@ -2,7 +2,7 @@
 // de la partie s'assemblent en une planche qu'on peut enregistrer.
 
 import type { MimeShot } from '@julaika/shared';
-import { polaroidCanvas, snapshot } from './polaroid';
+import { polaroidCanvas, saveImageFile, snapshot } from './polaroid';
 
 /** Vidéo de sa propre caméra pendant qu'on mime (posée par la scène du mime). */
 let stage: HTMLVideoElement | null = null;
@@ -86,8 +86,6 @@ export async function downloadPlanche(turns: MimeTurn[]) {
     ctx.restore();
   });
 
-  const a = document.createElement('a');
-  a.href = canvas.toDataURL('image/png');
-  a.download = 'planche-mime-julaika.png';
-  a.click();
+  const blob = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, 'image/png'));
+  if (blob) await saveImageFile(new File([blob], 'planche-mime-julaika.png', { type: 'image/png' }));
 }

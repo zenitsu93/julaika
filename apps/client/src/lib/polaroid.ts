@@ -113,11 +113,116 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, x: number, y: number,
   shown.forEach((l, i) => ctx.fillText(l, x, y + i * line));
 }
 
+/** Polaroids déjà rendus en PNG : sur iPhone, le partage doit partir tout de suite après le toucher. */
+const ready = new Map<string, File>();
+const pending = new Map<string, Promise<File>>();
+const keyOf = (image: string, caption: string, by: string) => `${by}|${caption}|${image.length}|${image.slice(-48)}`;
+
+/** Prépare le fichier PNG du polaroid (une seule fois par tirage). */
+export function preparePolaroid(image: string, caption: string, by = '', filename = 'polaroid-julaika.png'): Promise<File> {
+  const key = keyOf(image, caption, by);
+  const done = ready.get(key);
+  if (done) return Promise.resolve(done);
+  let p = pending.get(key);
+  if (!p) {
+    p = polaroidCanvas(image, caption, by)
+      .then((canvas) => new Promise<Blob>((ok, ko) => canvas.toBlob((b) => (b ? ok(b) : ko(new Error('PNG'))), 'image/png')))
+      .then((blob) => {
+        const file = new File([blob], filename, { type: 'image/png' });
+        ready.set(key, file);
+        // On garde les derniers tirages seulement.
+        if (ready.size > 24) ready.delete(ready.keys().next().value!);
+        return file;
+      })
+      .finally(() => pending.delete(key));
+    pending.set(key, p);
+  }
+  return p;
+}
+
+/** Enregistre le polaroid (voir saveImageFile). */
+export async function savePolaroid(image: string, caption: string, by = '', filename = 'polaroid-julaika.png'): Promise<SaveResult> {
+  const file = ready.get(keyOf(image, caption, by)) ?? (await preparePolaroid(image, caption, by, filename));
+  return saveImageFile(file);
+}
+
+export type SaveResult = 'shared' | 'saved' | 'sheet' | 'cancelled';
+
+const touchDevice = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+const isIOS = () => /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+/**
+ * Enregistre une image. Au doigt, la feuille de partage s'ouvre avec le fichier (sur iPhone :
+ * « Enregistrer l'image » la range dans Photos). Si le navigateur la refuse (le toucher est trop
+ * loin, le temps de fabriquer l'image) ou ne sait pas partager de fichier, une feuille s'ouvre
+ * avec l'image en grand : un bouton pour la partager, et l'appui long qui marche partout.
+ * Sur ordinateur, le PNG se télécharge.
+ */
+export async function saveImageFile(file: File): Promise<SaveResult> {
+  if (touchDevice()) {
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file] });
+        return 'shared';
+      } catch (e) {
+        if ((e as DOMException)?.name === 'AbortError') return 'cancelled';
+      }
+    }
+    // Sur iPhone, un lien de téléchargement range le fichier dans « Fichiers », où personne ne le trouve.
+    if (isIOS() || !('download' in HTMLAnchorElement.prototype)) {
+      showSaveSheet(file);
+      return 'sheet';
+    }
+  }
+  const url = URL.createObjectURL(file);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = file.name;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  return 'saved';
+}
+
+/** Feuille « ton image est prête » : l'image en grand, Enregistrer (nouveau toucher, donc partage permis), Fermer. */
+function showSaveSheet(file: File) {
+  document.querySelector('.save-sheet')?.remove();
+  const url = URL.createObjectURL(file);
+  const sheet = document.createElement('div');
+  sheet.className = 'save-sheet';
+  sheet.setAttribute('role', 'dialog');
+  sheet.setAttribute('aria-modal', 'true');
+  sheet.setAttribute('aria-label', 'Enregistrer l’image');
+  const canShare = !!navigator.canShare?.({ files: [file] });
+  sheet.innerHTML = `
+    <div class="save-sheet-card">
+      <span class="save-sheet-grip" aria-hidden="true"></span>
+      <p class="save-sheet-title">Ton image est prête</p>
+      <img class="save-sheet-img" alt="Image à enregistrer" />
+      <p class="save-sheet-hint">${canShare ? 'Touche « Enregistrer », puis « Enregistrer l’image ».' : 'Appuie longuement sur l’image, puis « Enregistrer dans Photos ».'}</p>
+      <div class="save-sheet-actions">
+        ${canShare ? '<button type="button" class="btn-primary save-sheet-go">Enregistrer</button>' : ''}
+        <button type="button" class="btn-ghost save-sheet-close">Fermer</button>
+      </div>
+    </div>`;
+  sheet.querySelector('img')!.src = url;
+  const close = () => {
+    sheet.classList.add('save-sheet-out');
+    setTimeout(() => {
+      sheet.remove();
+      URL.revokeObjectURL(url);
+    }, 260);
+  };
+  sheet.addEventListener('click', (e) => e.target === sheet && close());
+  sheet.querySelector('.save-sheet-close')!.addEventListener('click', close);
+  sheet.querySelector('.save-sheet-go')?.addEventListener('click', () => {
+    navigator.share({ files: [file] }).then(close, (e: DOMException) => e?.name === 'AbortError' || close());
+  });
+  document.body.append(sheet);
+}
+
 /** Enregistre le polaroid en PNG. */
 export async function downloadPolaroid(image: string, caption: string, by = '', filename = 'polaroid-julaika.png') {
-  const canvas = await polaroidCanvas(image, caption, by);
-  const a = document.createElement('a');
-  a.href = canvas.toDataURL('image/png');
-  a.download = filename;
-  a.click();
+  await savePolaroid(image, caption, by, filename);
 }
