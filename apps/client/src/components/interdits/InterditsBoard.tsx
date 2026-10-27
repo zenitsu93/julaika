@@ -8,6 +8,7 @@ import { serverNow, useGame } from '../../lib/store';
 import { bump, confetti, Presence, shake, Ticker, useCountUp } from '../../motion';
 import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
+import { GuessBox } from '../GuessBox';
 import { SoundBoard } from '../SoundBoard';
 import { ecouteSupported, useEcoute } from './ecoute';
 import './interdits.css';
@@ -453,12 +454,16 @@ function Guesser({ s }: { s: InterditsState }) {
       <div className="relative overflow-hidden rounded-2xl bg-cacao p-4 text-butter">
         <p className="pr-12 text-[11px] uppercase tracking-[0.18em] text-butter/60">Carte n° {s.cardNo}</p>
         <p className="mt-1 pr-12 text-lg font-semibold leading-snug tracking-[-0.02em]">
-          Écoute {explainer?.name ?? '…'} et crie tes idées, ou tape-les dans le chat.
+          Écoute {explainer?.name ?? '…'} et crie tes idées, ou tape-les.
         </p>
         <p className="mt-2 text-sm text-butter/70">Une réponse tapée juste rapporte 100 points ; dite à voix haute, 50 à chaque devineur.</p>
         <span className="ti-card-back pointer-events-none absolute -right-7 -top-7 grid size-20 rotate-12 place-items-center rounded-2xl border-2 border-dashed border-gold/50 text-4xl" aria-hidden>
           🤐
         </span>
+      </div>
+      {/* Téléphone : la réponse se tape ici, sous la carte, plutôt que tout en bas dans le chat. */}
+      <div className="lg:hidden">
+        <GuessBox variant="bar" />
       </div>
       <div className="panel p-3">
         <p className="mb-2 text-xs font-medium text-muted">Bruitages</p>

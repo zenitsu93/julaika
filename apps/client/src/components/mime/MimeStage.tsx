@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { MIME_TWIST_EVERY, type SoundId } from '@julaika/shared';
 import { avatarOf } from '../../lib/avatars';
 import { call, useCall } from '../../lib/call';
 import { setMimeVideo, shotTilt } from '../../lib/mime';
 import { onSound, play, SOUND_INFO } from '../../lib/sounds';
 import { useGame } from '../../lib/store';
-import { reducedMotion } from '../../motion';
+import { animate, reducedMotion } from '../../motion';
+import { GuessBox } from '../GuessBox';
 import { Polaroid } from '../Polaroid';
 import { SoundBoard } from '../SoundBoard';
 import './mime.css';
@@ -29,6 +30,8 @@ export function MimeStage() {
   const live = Boolean(mimer?.inCall && mimer.cam && stream);
   const miming = room.phase === 'drawing';
   const video = useRef<HTMLVideoElement>(null);
+  const root = useRef<HTMLDivElement>(null);
+  const stage = useTheater(root, miming && !self);
 
   useEffect(() => {
     if (video.current && video.current.srcObject !== stream) video.current.srcObject = stream;
@@ -43,7 +46,11 @@ export function MimeStage() {
   if (!mimer) return null;
 
   return (
-    <div className="absolute inset-0 overflow-hidden bg-cacao text-white">
+    <div
+      ref={root}
+      className={`overflow-hidden bg-cacao text-white ${stage.on ? 'fixed inset-x-0 z-50' : 'absolute inset-0'}`}
+      style={stage.on ? { top: stage.box.top, height: stage.box.height } : undefined}
+    >
       {live ? (
         <video ref={video} autoPlay playsInline muted className={`m-fade size-full object-cover ${self ? '-scale-x-100' : ''}`} />
       ) : (
@@ -95,12 +102,53 @@ export function MimeStage() {
         </p>
       )}
       {!self && miming && (
-        <div className="mime-cheer m-rise absolute inset-x-2 bottom-2 z-10 mx-auto max-w-md rounded-xl bg-black/45 p-1.5 backdrop-blur-md sm:inset-x-3 sm:bottom-3">
-          <p className="mb-1 px-1 text-left font-mono text-[10px] font-semibold tracking-[0.18em] text-white/70 uppercase max-sm:hidden">
-            Bruitages pour {mimer.name}
-          </p>
-          <SoundBoard compact only={CHEERS} />
-        </div>
+        <>
+          {/* Grand écran : le chat est à côté, les bruitages gardent leur rangée. */}
+          <div className="mime-cheer m-rise absolute inset-x-3 bottom-3 z-10 mx-auto max-w-md rounded-xl bg-black/45 p-1.5 backdrop-blur-md max-lg:hidden">
+            <p className="mb-1 px-1 text-left font-mono text-[10px] font-semibold tracking-[0.18em] text-white/70 uppercase">Bruitages pour {mimer.name}</p>
+            <SoundBoard compact only={CHEERS} />
+          </div>
+          {/* Téléphone, tablette : la réponse se tape sur la vidéo, les bruitages se replient derrière 👏. */}
+          <div className="absolute inset-x-2 bottom-2 z-20 mx-auto max-w-md lg:hidden" style={stage.on ? { bottom: 'max(0.5rem, env(safe-area-inset-bottom))' } : undefined}>
+            <GuessBox
+              variant="stage"
+              inputRef={stage.input}
+              onFocusChange={stage.focus}
+              above={
+                stage.tray && (
+                  <div className="mime-cheer gb-tray mb-2 rounded-xl bg-black/50 p-1.5 backdrop-blur-md">
+                    <SoundBoard compact only={CHEERS} />
+                  </div>
+                )
+              }
+              lead={
+                <button
+                  type="button"
+                  className="gb-lead"
+                  aria-expanded={stage.tray}
+                  aria-label={`Bruitages pour ${mimer.name}`}
+                  onPointerDown={(e) => e.preventDefault()}
+                  onClick={stage.toggleTray}
+                >
+                  👏
+                </button>
+              }
+            />
+          </div>
+          {stage.on && (
+            <button
+              type="button"
+              className="m-pop absolute top-3 right-3 z-30 grid size-10 place-items-center rounded-full bg-black/55 text-white backdrop-blur-md"
+              aria-label="Fermer le clavier"
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => stage.input.current?.blur()}
+            >
+              <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+          )}
+        </>
       )}
     </div>
   );
@@ -200,4 +248,73 @@ function Bursts() {
       ))}
     </div>
   );
+}
+
+/** Le chat n'est pas à côté de la scène (téléphone, tablette) : sous la largeur lg de Tailwind. */
+const narrow = () => typeof matchMedia === 'function' && matchMedia('(max-width: 1023.98px)').matches;
+
+/**
+ * Mode « salle obscure » du devineur au téléphone : quand il tape sa réponse, la scène quitte
+ * sa place et remplit tout l'écran au-dessus du clavier (visualViewport), pour ne jamais perdre
+ * le mimeur de vue. Elle s'ouvre en dévoilant son cadre d'origine (clip-path), et y retourne au blur.
+ */
+function useTheater(root: React.RefObject<HTMLDivElement | null>, active: boolean) {
+  const [focused, setFocused] = useState(false);
+  const [tray, setTray] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  const from = useRef<DOMRect | null>(null);
+  const on = active && focused;
+  const box = useViewportBox(on);
+
+  useEffect(() => {
+    // Fin du tour : la boîte disparaît sans blur, on repart à zéro.
+    if (active) return;
+    setTray(false);
+    setFocused(false);
+  }, [active]);
+
+  const focus = (f: boolean) => {
+    if (f && !narrow()) return;
+    from.current = root.current?.getBoundingClientRect() ?? null;
+    setFocused(f);
+  };
+
+  useLayoutEffect(() => {
+    const el = root.current;
+    const r = from.current;
+    from.current = null;
+    if (!el || !r) return;
+    if (on) {
+      // Le cadre d'origine s'agrandit jusqu'aux bords de l'écran.
+      const top = r.top - box.top;
+      const inset = `inset(${Math.max(0, top)}px ${Math.max(0, innerWidth - r.right)}px ${Math.max(0, box.height - top - r.height)}px ${Math.max(0, r.left)}px round 8px)`;
+      animate(el, [{ clipPath: inset }, { clipPath: 'inset(0 0 0 0 round 0)' }], { duration: 380, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    } else animate(el, [{ opacity: 0.4, transform: 'scale(1.04)' }, { opacity: 1, transform: 'none' }], { duration: 260 });
+  }, [on]);
+
+  return { on, box, tray, input, focus, toggleTray: () => setTray((t) => !t) };
+}
+
+/** Partie visible de la page, clavier déduit : suivie seulement pendant le mode salle obscure. */
+function useViewportBox(active: boolean) {
+  const read = () => {
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    return vv ? { top: vv.offsetTop, height: vv.height } : { top: 0, height: typeof window !== 'undefined' ? innerHeight : 0 };
+  };
+  const [box, setBox] = useState(read);
+  useEffect(() => {
+    if (!active) return;
+    const vv = window.visualViewport;
+    const update = () => setBox(read());
+    update();
+    vv?.addEventListener('resize', update);
+    vv?.addEventListener('scroll', update);
+    window.addEventListener('resize', update);
+    return () => {
+      vv?.removeEventListener('resize', update);
+      vv?.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [active]);
+  return box;
 }

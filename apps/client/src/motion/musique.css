@@ -1041,3 +1041,62 @@ button.mp-ib.mp-sound {
     flex: none;
   }
 }
+
+/* ---- Téléphone, tablette, en partie : la capsule se range dans la barre du haut ---------- */
+.mp-dockbtn {
+  --mp-bg: #1c120d;
+  --mp-line: rgb(242 230 179 / 0.18);
+  --mp-gold: #d9a441;
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  background: var(--mp-bg);
+  color: var(--color-butter);
+  transition: transform 0.25s var(--ease-spring);
+}
+.mp-dockbtn:active {
+  transform: scale(0.9);
+}
+.mp-dockbtn .mp-discw {
+  width: 34px;
+  height: 34px;
+}
+.mp-dock-note {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  line-height: 1;
+}
+@media (max-width: 1023.98px) {
+  /* Fermée, la capsule disparaît du coin (le cadre YouTube, lui, reste chargé). */
+  .mp-salon.mp-mini {
+    width: 0;
+    height: 0;
+    background: none;
+    box-shadow: none;
+    pointer-events: none;
+  }
+  .mp-salon.mp-mini::before,
+  .mp-salon.mp-mini .mp-pill {
+    display: none;
+  }
+  .mp-salon.mp-mini .mp-notice {
+    pointer-events: auto;
+  }
+  /* Ouverte depuis la barre du haut : elle se déplie à nouveau depuis le coin. */
+  .mp-salon.mp-open {
+    animation: mp-unfold 0.5s var(--ease-spring) both;
+  }
+}
+@keyframes mp-unfold {
+  from {
+    transform: translateY(24px) scale(0.6);
+    opacity: 0;
+  }
+}

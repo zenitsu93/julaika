@@ -6,6 +6,7 @@ import { call, useCall } from '../lib/call';
 import { useGame } from '../lib/store';
 import { animate, attachWipe, Presence } from '../motion';
 import { CallBar } from './CallBar';
+import { GuessBox } from './GuessBox';
 import { MimeStage } from './mime/MimeStage';
 import { Overlay } from './Overlay';
 import { Reaction } from './Reaction';
@@ -24,6 +25,7 @@ export function Board() {
   const lobby = useGame((s) => s.room!.phase === 'lobby');
   const canDraw = useGame((s) => s.room!.phase === 'drawing' && s.room!.turnKind === 'draw' && s.room!.drawerId === s.selfId);
   const mime = useGame((s) => s.room!.turnKind === 'mime' && (s.room!.phase === 'choosing' || s.room!.phase === 'drawing' || s.room!.phase === 'turnEnd'));
+  const guessing = useGame((s) => s.room!.phase === 'drawing' && s.room!.turnKind === 'draw' && s.room!.drawerId !== s.selfId);
   const miming = useGame((s) => s.room!.phase === 'drawing' && s.room!.turnKind === 'mime' && s.room!.drawerId === s.selfId);
   const trapKind = useGame((s) => s.room!.trap?.kind ?? null);
   const trapColor = useGame((s) => s.room!.trap?.color ?? 0);
@@ -113,6 +115,12 @@ export function Board() {
         <Reaction />
       </div>
       <Presence>{canDraw ? <Toolbar pen={pen} trap={trapKind ? { kind: trapKind, color: trapColor } : null} /> : null}</Presence>
+      {/* Téléphone : la réponse se tape juste sous le dessin, sans descendre jusqu'au chat. */}
+      {guessing && (
+        <div className="mx-auto w-full max-w-md lg:hidden">
+          <GuessBox variant="bar" />
+        </div>
+      )}
       <CallBar />
     </section>
   );
