@@ -5,8 +5,9 @@ import { YT_STATE, createYoutubePlayer, type YtPlayer } from './youtube';
 
 /**
  * Lecteur de musique : une playlist à soi, jouée en boucle par un lecteur YouTube qui reste monté
- * d'une page à l'autre. Dans un salon, on peut la partager : le salon suit alors le même morceau,
- * à la même seconde (le serveur ne relaie que le morceau, l'état et la position).
+ * d'une page à l'autre. Dans un salon, on peut la partager : tout le salon bascule alors sur le
+ * même morceau, à la même seconde (le serveur ne relaie que le morceau, l'état et la position), et
+ * reste dessus tant que le partage dure.
  */
 export type MusicView = 'now' | 'search' | 'queue';
 
@@ -26,8 +27,10 @@ export interface MusicState {
   notice: { text: string; seq: number } | null;
   /** Je partage ma musique avec le salon. */
   sharing: boolean;
-  /** J'écoute la musique que partage quelqu'un d'autre. */
+  /** J'écoute la musique que partage quelqu'un d'autre (automatique tant qu'il partage). */
   listening: boolean;
+  /** Le navigateur a coupé le son ou refusé la lecture : un toucher n'importe où le libère. */
+  blocked: boolean;
   room: RoomMusic | null;
 }
 
@@ -65,6 +68,7 @@ let state: MusicState = {
   notice: null,
   sharing: false,
   listening: false,
+  blocked: false,
   room: null,
   ...restore(),
 };
@@ -110,6 +114,8 @@ let player: YtPlayer | null = null;
 let creating: Promise<YtPlayer | null> | null = null;
 let loadedId: string | null = null;
 let noticeSeq = 0;
+/** En écoutant le salon, j'ai mis en pause chez moi : les changements du DJ ne relancent pas le son. */
+let held = false;
 let sendToRoom: (msg: ClientMsg) => void = () => {};
 
 /** Le net branche ici l'envoi au salon (évite une dépendance circulaire). */
@@ -150,11 +156,15 @@ export function warm() {
 function onState(s: number) {
   const p = player;
   if (!p) return;
-  if (s === YT_STATE.playing) set({ playing: true, loading: false, dur: p.getDuration() || state.dur });
-  else if (s === YT_STATE.paused) {
-    // Quand on suit le salon, c'est le DJ qui décide : une pause locale arrête juste l'écoute.
-    if (state.listening && state.room?.playing) stopListening(false);
+  if (s === YT_STATE.playing) {
+    set({ playing: true, loading: false, dur: p.getDuration() || state.dur });
+    // Lancée sans geste (message du salon), la vidéo part souvent… en muet.
+    if (p.isMuted()) block();
+    else if (state.blocked) set({ blocked: false });
+  } else if (s === YT_STATE.paused) {
     set({ playing: false, loading: false });
+    // Pause qu'on n'a pas demandée alors que le DJ joue : le navigateur a refusé la lecture.
+    if (state.listening && state.room?.playing && !held) block();
   } else if (s === YT_STATE.buffering) set({ loading: true });
   else if (s === YT_STATE.ended) {
     if (state.listening) return set({ playing: false });
@@ -181,10 +191,54 @@ setInterval(() => {
   if (Number.isFinite(pos) && Math.abs(pos - state.pos) > 0.2) set({ pos });
 }, 500);
 
+// ---- Son bloqué par le navigateur -----------------------------------------------------------------
+// Sans geste de l'utilisateur, les navigateurs (Safari surtout) refusent de lancer le son : YouTube
+// joue alors en muet, ou ne démarre pas. On le repère, et le premier toucher sur la page le libère.
+
+let startCheck: ReturnType<typeof setTimeout> | null = null;
+
+/** Vérifie que la lecture a vraiment démarré quelques secondes après l'avoir demandée. */
+function checkStarted() {
+  if (startCheck) clearTimeout(startCheck);
+  startCheck = setTimeout(() => {
+    startCheck = null;
+    const st = player?.getPlayerState();
+    if (state.playing && st !== YT_STATE.playing && st !== YT_STATE.buffering) block();
+  }, 3000);
+}
+
+function block() {
+  if (state.blocked) return;
+  set({ blocked: true });
+  document.addEventListener('pointerdown', unlock, true);
+  document.addEventListener('keydown', unlock, true);
+}
+
+/** Appelé pendant un geste : rend le son et relance la lecture là où elle doit être. */
+export function unlock() {
+  document.removeEventListener('pointerdown', unlock, true);
+  document.removeEventListener('keydown', unlock, true);
+  if (!state.blocked) return;
+  set({ blocked: false });
+  const p = player;
+  if (!p) return;
+  unmute(p);
+  if (state.listening && state.room) {
+    held = false;
+    follow(state.room, true);
+  } else if (state.playing) p.playVideo();
+}
+
+function unmute(p: YtPlayer) {
+  p.unMute();
+  p.setVolume(100);
+}
+
 async function load(track: MusicTrack, start: number, play: boolean) {
   set({ playing: play, pos: start, dur: track.dur, loading: play });
   const p = await ensurePlayer();
   if (!p) return;
+  if (play) checkStarted();
   if (loadedId !== track.id) {
     loadedId = track.id;
     if (play) p.loadVideoById({ videoId: track.id, startSeconds: start });
@@ -208,12 +262,17 @@ export const music = {
   },
 
   play() {
-    if (state.listening && state.room) return follow(state.room, true);
+    if (player) unmute(player);
+    if (state.listening && state.room) {
+      held = false;
+      return follow(state.room, true);
+    }
     const t = heard();
     if (t) void load(t, state.pos, true);
   },
   pause() {
-    if (state.listening) return stopListening(true);
+    // En écoutant le salon, on coupe chez soi seulement ; « lecture » recale sur le DJ.
+    if (state.listening) held = true;
     player?.pauseVideo();
     set({ playing: false, loading: false });
     if (state.sharing) shareSoon();
@@ -238,7 +297,7 @@ export const music = {
     if (state.sharing) shareSoon();
   },
   playAt(i: number) {
-    if (state.listening) stopListening(false);
+    if (state.listening && state.room) return notify(`${nameOf(state.room.dj)} a la main sur la musique du salon.`);
     if (state.queue[i]) goTo(i, true);
   },
   toggleShuffle() {
@@ -285,7 +344,7 @@ export const music = {
   // ---- Avec le salon ----
   share(on: boolean) {
     if (on) {
-      if (!heard()) return;
+      if (!heard() || state.listening) return;
       set({ sharing: true, listening: false });
       shareNow();
     } else {
@@ -293,12 +352,6 @@ export const music = {
       sendToRoom({ t: 'music', stop: true });
     }
   },
-  listen() {
-    if (!state.room) return;
-    set({ listening: true, sharing: false, view: 'now' });
-    follow(state.room, true);
-  },
-  stopListening: () => stopListening(true),
 };
 
 function next(auto: boolean) {
@@ -334,13 +387,14 @@ function shareSoon() {
   if (!shareTimer) shareTimer = setTimeout(shareNow, 250);
 }
 
-function follow(m: RoomMusic, play = m.playing) {
+function follow(m: RoomMusic, play = !held) {
   const elapsed = m.playing ? Math.max(0, (serverNow() - m.at) / 1000) : 0;
   void load(m.track, m.pos + elapsed, play && m.playing);
 }
 
 function stopListening(pause: boolean) {
-  set({ listening: false });
+  held = false;
+  set({ listening: false, blocked: false });
   if (pause) {
     player?.pauseVideo();
     set({ playing: false, loading: false });
@@ -363,13 +417,16 @@ export function receiveRoomMusic(m: RoomMusic | null) {
     return;
   }
   if (m.dj === self) return;
-  // Quelqu'un d'autre a pris la main : on arrête de partager, et on lui propose de l'écouter.
+  // Quelqu'un partage : tout le salon bascule sur sa musique, au même endroit, jusqu'à la fin du
+  // partage. Sa propre playlist attend (elle reprend quand le partage s'arrête).
+  const fresh = before?.dj !== m.dj || !state.listening;
+  if (fresh) held = false;
   if (state.sharing) {
     set({ sharing: false });
     notify(`${nameOf(m.dj)} partage sa musique à son tour.`);
-  }
-  if (state.listening) follow(m);
-  else if (before?.dj !== m.dj) notify(`${nameOf(m.dj)} partage sa musique avec le salon.`);
+  } else if (fresh) notify(`${nameOf(m.dj)} partage sa musique : tu l'écoutes avec le salon.`);
+  if (!state.listening) set({ listening: true, view: 'now' });
+  follow(m);
 }
 
 export function nameOf(id: string): string {
