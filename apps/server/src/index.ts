@@ -4,6 +4,7 @@ import { extname, join, normalize as normalizePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { isGameMode, isRoomGame, type ClientMsg, type GameMode, type RoomGame } from '@julaika/shared';
+import { aiBudget, allowedOrigin, bucket, clientIp, connectionCounter, keyedBuckets, roomCode, securityHeaders } from './guard';
 import { deepseekDares, deepseekPairs, deepseekQuiz, deepseekWords } from './deepseek';
 import { warmDictionary } from './dico';
 import { iceServersFor } from './ice';
@@ -18,7 +19,24 @@ const generatePairs = deepseekPairs();
 const generateDares = deepseekDares();
 const generateQuiz = deepseekQuiz();
 const mot = new MotDuJour(process.env.MOT_DATA_DIR ?? 'data/mot', Date.now, process.env.MOT_TZ || 'Europe/Paris');
-const motBuckets = new Map<string, () => boolean>();
+const motBuckets = keyedBuckets(30, 2);
+
+/** Garde-fous d'un serveur ouvert à tous : connexions par IP, salons en tout, essais de code. */
+const MAX_CONNECTIONS_PER_IP = 20;
+const MAX_ROOMS = 500;
+/** Codes faux tolérés sur une connexion avant de la couper (le client n'en tente qu'un). */
+const MAX_BAD_CODES = 3;
+/** Appels d'IA par salon et par heure : de quoi tenir une longue soirée, pas de quoi vider le quota. */
+const AI_CALLS_PER_ROOM = 20;
+/** Un client qui ne lit plus ce qu'on lui envoie est coupé avant de remplir la mémoire. */
+const MAX_BUFFERED = 8 * 1024 * 1024;
+const connections = connectionCounter(MAX_CONNECTIONS_PER_IP);
+/** Messages propres à chaque jeu, qui partagent le seau de l'aiguille de Wavelength. */
+const GAME_MESSAGES = new Set<string>([
+  'wave', 'tel', 'intrus', 'bac', 'connait', 'bomb', 'photo', 'sourire', 'bras', 'flash', 'cadavre', 'interdits',
+  'motamot', 'agents', 'fred', 'alibi', 'pitch', 'cerveau', 'aov', 'quiz', 'mimeShot',
+]);
+const joinBuckets = keyedBuckets(20, 1 / 3); // 20 salons rejoints d'un coup par IP, puis un toutes les 3 s
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -34,9 +52,10 @@ const MIME: Record<string, string> = {
 // Sert le build du client : un seul process, un seul port à déployer.
 const http = createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://x');
+  for (const [name, value] of Object.entries(securityHeaders(req.headers.host))) res.setHeader(name, value);
   if (url.pathname === '/health') {
     res.writeHead(200, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ ok: true, rooms: rooms.size }));
+    res.end(JSON.stringify({ ok: true }));
     return;
   }
   if (url.pathname.startsWith('/api/mot')) return motApi(req, res, url);
@@ -66,10 +85,7 @@ async function motApi(req: IncomingMessage, res: ServerResponse, url: URL) {
     res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
     res.end(JSON.stringify(body));
   };
-  const ip = String(req.headers['x-forwarded-for'] ?? req.socket.remoteAddress ?? '').split(',')[0]!.trim();
-  let allow = motBuckets.get(ip);
-  if (!allow) motBuckets.set(ip, (allow = bucket(30, 2)));
-  if (!allow()) return send(429, { error: 'trop' });
+  if (!motBuckets.take(clientIp(req))) return send(429, { error: 'trop' });
 
   if (req.method === 'GET' && url.pathname === '/api/mot') {
     const token = url.searchParams.get('token');
@@ -106,18 +122,57 @@ function readBody(req: IncomingMessage, limit: number): Promise<string> {
   });
 }
 
-// Les seaux des visiteurs partis se vident de temps en temps.
-setInterval(() => motBuckets.clear(), 10 * 60_000).unref();
+// Les seaux des visiteurs partis depuis 10 minutes sont oubliés.
+setInterval(() => {
+  motBuckets.prune();
+  joinBuckets.prune();
+}, 60_000).unref();
 
-const wss = new WebSocketServer({ server: http, path: '/ws', maxPayload: 64 * 1024, perMessageDeflate: false });
+const wss = new WebSocketServer({
+  server: http,
+  path: '/ws',
+  maxPayload: 64 * 1024,
+  perMessageDeflate: false,
+  // Seules les pages du jeu ouvrent une connexion : un autre site ne peut pas s'en servir.
+  verifyClient: ({ req }: { req: IncomingMessage }) => allowedOrigin(req.headers.origin, req.headers.host),
+});
 
-wss.on('connection', (ws: WebSocket & { alive?: boolean }) => {
+wss.on('connection', (ws: WebSocket & { alive?: boolean }, req: IncomingMessage) => {
+  const ip = clientIp(req);
+  if (!connections.add(ip)) {
+    ws.close(1013, 'trop de connexions');
+    return;
+  }
   let room: Room | null = null;
   let playerId: string | null = null;
+  let badCodes = 0;
+  // Les envois passent par ici : un client qui n'avale plus rien est coupé.
+  const conn = {
+    send(data: string | ArrayBuffer | Uint8Array) {
+      if (ws.readyState !== ws.OPEN) return;
+      if (ws.bufferedAmount > MAX_BUFFERED) return void ws.terminate();
+      ws.send(data);
+    },
+  };
+  const anyBucket = bucket(80, 40); // tout message JSON : large pour le jeu, court pour un script
   const chatBucket = bucket(5, 1); // 5 messages en rafale, 1/s ensuite
   const drawBucket = bucket(120, 60);
   const dialBucket = bucket(40, 30); // aiguille de Wavelength : ~30 positions/s
   const soundBucket = bucket(4, 1.5); // boîte à sons : 4 en rafale, puis ~1 toutes les 700 ms
+  const callBucket = bucket(10, 2); // entrée et sortie de visio, caméra et micro
+  const rtcBucket = bucket(300, 60); // signalisation WebRTC : rafale de candidats en arrivant dans la visio
+  const settingsBucket = bucket(20, 8); // réglages de l'hôte (curseurs glissés)
+  // Réglages arrivés trop vite : le dernier état est gardé et appliqué un peu plus tard, jamais perdu.
+  let pendingSettings: ClientMsg | null = null;
+  let settingsTimer: ReturnType<typeof setTimeout> | null = null;
+  const flushSettings = () => {
+    settingsTimer = null;
+    if (!pendingSettings || !room || !playerId) return;
+    if (!settingsBucket()) return void (settingsTimer = setTimeout(flushSettings, 250));
+    const msg = pendingSettings;
+    pendingSettings = null;
+    room.handle(playerId, msg);
+  };
 
   ws.alive = true;
   ws.on('pong', () => (ws.alive = true));
@@ -133,29 +188,53 @@ wss.on('connection', (ws: WebSocket & { alive?: boolean }) => {
     } catch {
       return;
     }
+    if (!msg || typeof msg !== 'object') return;
     if (msg.t === 'join') {
       if (room) return;
-      const code = msg.room?.toUpperCase();
+      // Deviner un code demande des millions d'essais : quelques-uns par connexion et par IP suffisent.
+      if (!joinBuckets.take(ip)) {
+        conn.send(JSON.stringify({ t: 'error', message: 'Trop de tentatives, réessaie dans un instant.' }));
+        return;
+      }
+      const code = typeof msg.room === 'string' ? msg.room.toUpperCase() : '';
       if (code && !rooms.has(code)) {
-        ws.send(JSON.stringify({ t: 'error', message: 'Salon introuvable.' }));
+        conn.send(JSON.stringify({ t: 'error', message: 'Salon introuvable.' }));
+        if (++badCodes >= MAX_BAD_CODES) ws.close(1008, 'trop de codes faux');
+        return;
+      }
+      if (!code && rooms.size >= MAX_ROOMS) {
+        conn.send(JSON.stringify({ t: 'error', message: 'Le serveur est plein, réessaie dans un instant.' }));
         return;
       }
       room = code ? rooms.get(code)! : createRoom(isRoomGame(msg.game) ? msg.game : 'dessin', isGameMode(msg.mode) ? msg.mode : 'dessin');
-      playerId = room.join(ws, msg.name, msg.avatar);
+      playerId = room.join(conn, String(msg.name ?? ''), Number(msg.avatar) || 0);
       if (!playerId) {
         room = null;
-        ws.send(JSON.stringify({ t: 'error', message: 'Salon complet.' }));
+        conn.send(JSON.stringify({ t: 'error', message: 'Salon complet.' }));
       }
       return;
     }
     if (!room || !playerId) return;
+    if (msg.t === 'rtc') {
+      if (rtcBucket()) room.handle(playerId, msg);
+      return;
+    }
+    if (!anyBucket()) return;
+    if (msg.t === 'settings') {
+      pendingSettings = msg;
+      if (!settingsTimer) flushSettings();
+      return;
+    }
+    if (msg.t === 'call' && !callBucket()) return;
     if (msg.t === 'chat' && !chatBucket()) return;
-    if ((msg.t === 'wave' || msg.t === 'tel' || msg.t === 'intrus' || msg.t === 'bac' || msg.t === 'connait' || msg.t === 'bomb' || msg.t === 'sourire' || msg.t === 'bras' || msg.t === 'flash' || msg.t === 'interdits' || msg.t === 'agents' || msg.t === 'pitch' || msg.t === 'cerveau' || msg.t === 'aov' || msg.t === 'quiz') && !dialBucket()) return;
+    if (GAME_MESSAGES.has(msg.t) && !dialBucket()) return;
     if (msg.t === 'sound' && !soundBucket()) return;
     room.handle(playerId, msg);
   });
 
   ws.on('close', () => {
+    connections.remove(ip);
+    if (settingsTimer) clearTimeout(settingsTimer);
     if (room && playerId) room.leave(playerId);
   });
 });
@@ -173,8 +252,9 @@ setInterval(() => {
 
 function createRoom(game: RoomGame, mode: GameMode): Room {
   let code: string;
-  do code = randomCode();
+  do code = roomCode();
   while (rooms.has(code));
+  const ai = aiBudget(AI_CALLS_PER_ROOM);
   const room = new Room(
     code,
     (r) => {
@@ -183,10 +263,10 @@ function createRoom(game: RoomGame, mode: GameMode): Room {
     },
     Math.random,
     (playerId) => iceServersFor(playerId),
-    generateWords,
-    generatePairs,
-    generateDares,
-    generateQuiz,
+    ai(generateWords),
+    ai(generatePairs),
+    ai(generateDares),
+    ai(generateQuiz),
   );
   room.game = game;
   // La carte « Mime » de l'accueil ouvre un salon de dessin réglé en mime.
@@ -194,24 +274,6 @@ function createRoom(game: RoomGame, mode: GameMode): Room {
   rooms.set(code, room);
   if (game === 'bombe') setImmediate(warmDictionary);
   return room;
-}
-
-function randomCode(): string {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  return Array.from({ length: 5 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
-}
-
-function bucket(capacity: number, perSecond: number): () => boolean {
-  let tokens = capacity;
-  let last = Date.now();
-  return () => {
-    const now = Date.now();
-    tokens = Math.min(capacity, tokens + ((now - last) / 1000) * perSecond);
-    last = now;
-    if (tokens < 1) return false;
-    tokens--;
-    return true;
-  };
 }
 
 function toBytes(data: unknown): Uint8Array {

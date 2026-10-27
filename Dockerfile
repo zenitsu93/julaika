@@ -14,7 +14,8 @@ RUN pnpm build
 FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production PORT=3001 STATIC_DIR=/app/public MOT_DATA_DIR=/app/data/mot
-RUN npm init -y >/dev/null && npm install --omit=dev ws@8 && npm cache clean --force
+# Version exacte, la même que dans pnpm-lock.yaml : pas de surprise d'un build à l'autre.
+RUN npm init -y >/dev/null && npm install --omit=dev --save-exact ws@8.22.0 && npm cache clean --force
 COPY --from=build /app/apps/server/dist/index.js ./server.mjs
 COPY --from=build /app/apps/client/dist ./public
 # Classements du mot du jour : un volume monté ici les garde d'un déploiement à l'autre.

@@ -119,9 +119,29 @@ describe('MotDuJour', () => {
     expect(ok(game(() => AT, dir).state(null)).board).toHaveLength(1);
   });
 
+  it("n'écrit rien pour une simple visite, mais garde le chrono lancé à l'ouverture", () => {
+    const dir = mkdtempSync(join(tmpdir(), 'mot-'));
+    let now = AT;
+    const g = game(() => now, dir);
+    for (let i = 0; i < 50; i++) ok(g.state(`visiteur-${String(i).padStart(12, '0')}`));
+    ok(g.state(TOKEN));
+    g.flush();
+    expect(() => readFileSync(join(dir, `${FIRST_DAY}.json`), 'utf8')).toThrow();
+    now += 30_000;
+    const won = ok(g.guess(TOKEN, 'Ju', 0, g.answer(FIRST_DAY)));
+    expect(won.board[0]!.ms).toBe(30_000);
+  });
+
   it('partage un résultat sans les lettres', () => {
     expect(shareMot(3, [{ word: 'ARBRE', marks: ['ok', 'near', 'no', 'no', 'ok'] }], true)).toBe(
       'julaïka · Mot du jour n° 3 · 1/6\n🟩🟨⬛⬛🟩',
     );
+  });
+
+  it('ferme le classement du jour au-delà du plafond', () => {
+    const g = new MotDuJour(null, () => AT, 'Europe/Paris', 3);
+    const answer = g.answer(FIRST_DAY);
+    for (let i = 0; i < 3; i++) g.guess(`joueur-${String(i).padStart(12, '0')}`, 'Ju', 0, wrong(answer));
+    expect(g.guess(TOKEN, 'Ju', 0, answer)).toBe('complet');
   });
 });

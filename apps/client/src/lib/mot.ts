@@ -39,6 +39,7 @@ export const MOT_ERRORS: Record<MotError | 'reseau', string> = {
   fini: 'Tu as déjà joué aujourd’hui. Reviens demain !',
   pseudo: 'Choisis un pseudo pour le classement.',
   jour: 'Ce jour n’existe pas encore.',
+  complet: 'Le classement du jour est complet. Reviens demain !',
   reseau: 'Connexion perdue. Réessaie.',
 };
 

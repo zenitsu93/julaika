@@ -17,6 +17,17 @@ services:
     # Classements du mot du jour (un fichier JSON par jour).
     volumes:
       - data:/app/data
+    # Bornes et durcissement : un emballement du jeu ne gêne pas les autres sites du VPS, et le
+    # conteneur ne peut écrire que dans ses classements.
+    mem_limit: 768m
+    cpus: 1.5
+    pids_limit: 256
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
 
   # Relais TURN de la visio, pour les joueurs derrière un NAT strict (4G, réseaux d'entreprise).
   # Désactivé par défaut : `COMPOSE_PROFILES=turn` dans .env l'active, une fois les ports ouverts.
