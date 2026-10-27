@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DrawOp, encodeDraw, type ServerMsg } from '@julaika/shared';
 import { CHOOSE_TIME, Room, TURN_END_TIME, type Conn } from '../apps/server/src/room';
+import { MIME_FR } from '../apps/server/src/words';
 
 class FakeConn implements Conn {
   json: ServerMsg[] = [];
@@ -152,5 +153,26 @@ describe('visio intégrée', () => {
     expect(conns[1]!.json.filter((m) => m.t === 'rtc')).toHaveLength(1);
     const me = conns[2]!.last('state')!.state.players.find((p) => p.id === ids[1]);
     expect(me).toMatchObject({ inCall: true, cam: false, mic: true });
+  });
+  it('mode mime : mots à mimer, dessin refusé, même boucle de devinette', () => {
+    const { room, conns, ids } = setup();
+    room.handle(ids[0]!, { t: 'settings', settings: { mode: 'mime' } });
+    room.handle(ids[0]!, { t: 'start' });
+    expect(room.turnKind).toBe('mime');
+    expect(MIME_FR.moyen).toContain(conns[0]!.last('choices')!.words[0]);
+    room.handle(ids[0]!, { t: 'choose', index: 0 });
+    expect(conns[1]!.last('state')!.state.turnKind).toBe('mime');
+    room.handleDraw(ids[0]!, new Uint8Array(encodeDraw({ op: DrawOp.Begin, color: 1, size: 1, points: [1, 1] })));
+    expect(conns[1]!.binary).toHaveLength(0);
+    room.handle(ids[1]!, { t: 'chat', text: room.word! });
+    expect(room.players.get(ids[1]!)!.guessed).toBe(true);
+  });
+
+  it('le mode de jeu inconnu est ignoré et ne change qu\'au salon', () => {
+    const { room, ids } = setup();
+    room.handle(ids[0]!, { t: 'settings', settings: { mode: 'karaoke' as never } });
+    expect(room.settings.mode).toBe('dessin');
+    room.handle(ids[0]!, { t: 'settings', settings: { mode: 'mixte' } });
+    expect(room.settings.mode).toBe('mixte');
   });
 });

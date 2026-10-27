@@ -22,7 +22,19 @@ export function isDifficulty(v: unknown): v is Difficulty {
   return (DIFFICULTIES as readonly unknown[]).includes(v);
 }
 
+/** Mode de jeu du salon : dessin, mime, ou les deux au hasard d'un tour à l'autre. */
+export const GAME_MODES = ['dessin', 'mime', 'mixte'] as const;
+export type GameMode = (typeof GAME_MODES)[number];
+
+export function isGameMode(v: unknown): v is GameMode {
+  return (GAME_MODES as readonly unknown[]).includes(v);
+}
+
+/** Nature du tour en cours : on dessine sur le tableau, ou on mime devant la caméra. */
+export type TurnKind = 'draw' | 'mime';
+
 export interface RoomSettings {
+  mode: GameMode;
   rounds: number;
   drawTime: number; // secondes
   maxPlayers: number;
@@ -34,6 +46,7 @@ export interface RoomSettings {
 }
 
 export const DEFAULT_SETTINGS: RoomSettings = {
+  mode: 'dessin',
   rounds: 3,
   drawTime: 80,
   maxPlayers: 10,
@@ -86,10 +99,12 @@ export interface RoomState {
   settings: RoomSettings;
   players: PlayerPublic[];
   drawerId: string | null;
+  /** Dessin ou mime pour le tour en cours (dessin hors partie). */
+  turnKind: TurnKind;
   round: number;
   /** Timestamp serveur (ms) de fin de phase ; le client calcule le compte à rebours. */
   endsAt: number | null;
-  /** Mot masqué ("_ _ a _"), ou mot complet pour le dessinateur. */
+  /** Mot masqué ("_ _ a _"), ou mot complet pour le dessinateur ou le mimeur. */
   hint: string | null;
   /** Lien Google Meet du salon, partagé par l'hôte (vide si aucun). */
   meetUrl: string;

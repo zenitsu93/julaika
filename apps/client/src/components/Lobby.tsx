@@ -1,4 +1,4 @@
-import { SETTINGS_LIMITS, type Difficulty, type RoomSettings } from '@julaika/shared';
+import { SETTINGS_LIMITS, type Difficulty, type GameMode, type RoomSettings } from '@julaika/shared';
 import { useEffect, useRef } from 'react';
 import { net } from '../lib/net';
 import { useGame } from '../lib/store';
@@ -10,6 +10,12 @@ const FIELDS: { key: keyof typeof SETTINGS_LIMITS; label: string; step?: number 
   { key: 'maxPlayers', label: 'Joueurs max' },
   { key: 'wordChoices', label: 'Mots proposés' },
   { key: 'hints', label: 'Indices' },
+];
+
+const MODES: { value: GameMode; label: string; hint: string }[] = [
+  { value: 'dessin', label: '✏️ Dessin', hint: 'On dessine le mot, les autres devinent.' },
+  { value: 'mime', label: '🎭 Mime', hint: 'On mime le mot devant la caméra (ou en vrai), sans parler.' },
+  { value: 'mixte', label: '🎲 Mixte', hint: 'Chaque tour, dessin ou mime au hasard.' },
 ];
 
 const LEVELS: { value: Difficulty; label: string }[] = [
@@ -24,6 +30,8 @@ export function Lobby() {
   const error = useGame((s) => s.error);
   const set = (settings: Partial<RoomSettings>) => net.send({ t: 'settings', settings });
   const level = useIndicator(LEVELS.findIndex((l) => l.value === room.settings.difficulty));
+  const modeIndex = Math.max(0, MODES.findIndex((m) => m.value === room.settings.mode));
+  const mode = useIndicator(modeIndex);
   const canStart = room.players.length >= 2;
   const start = useRef<HTMLButtonElement>(null);
 
@@ -35,8 +43,34 @@ export function Lobby() {
   return (
     <div className="panel p-5 text-left shadow-sm">
       <h2 className="mb-4 text-lg font-semibold">Réglages du salon <span className="font-mono text-muted">#{room.code}</span></h2>
+      <div className="mb-3 text-sm">
+        <span className="mb-1 block text-muted">Mode de jeu</span>
+        <div ref={mode.container} role="group" aria-label="Mode de jeu" className="relative grid grid-cols-3 gap-1 rounded-md border border-edge p-1">
+          <span ref={mode.indicator} className="m-indicator rounded bg-primary" />
+          {MODES.map(({ value, label }) => {
+            const active = room.settings.mode === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                data-slot
+                aria-pressed={active}
+                disabled={!isHost}
+                onClick={() => set({ mode: value })}
+                className={`relative rounded px-2 py-1.5 font-medium transition outline-none focus-visible:ring-2 focus-visible:ring-info disabled:cursor-not-allowed ${
+                  active ? 'text-on-primary' : 'text-muted enabled:hover:bg-edge/50'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+        <p key={modeIndex} className="m-fade mt-1 text-xs text-muted">{MODES[modeIndex]!.hint}</p>
+      </div>
       <div className="grid grid-cols-2 gap-3">
-        {FIELDS.map(({ key, label, step }) => {
+        {FIELDS.map(({ key, label: base, step }) => {
+          const label = key === 'drawTime' && room.settings.mode !== 'dessin' ? 'Temps par tour (s)' : base;
           const [min, max] = SETTINGS_LIMITS[key];
           return (
             <label key={key} className="text-sm">

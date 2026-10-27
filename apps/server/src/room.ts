@@ -6,6 +6,7 @@ import {
   checkGuess,
   decodeDraw,
   isDifficulty,
+  isGameMode,
   maskWord,
   parseMeetUrl,
   type ChatLine,
@@ -17,9 +18,10 @@ import {
   type RoomSettings,
   type RoomState,
   type ServerMsg,
+  type TurnKind,
 } from '@julaika/shared';
 import type { WordGenerator } from './deepseek';
-import { WORDS_FR } from './words';
+import { MIME_FR, WORDS_FR } from './words';
 
 export interface Conn {
   send(data: string | ArrayBuffer | Uint8Array): void;
@@ -60,6 +62,7 @@ export class Room {
   hostId: string | null = null;
   round = 0;
   drawerId: string | null = null;
+  turnKind: TurnKind = 'draw';
   word: string | null = null;
   endsAt: number | null = null;
   meetUrl = '';
@@ -72,9 +75,12 @@ export class Room {
   private timers: ReturnType<typeof setTimeout>[] = [];
   private guessCount = 0;
   private usedWords = new Set<string>();
-  // Stock de mots générés par l'IA, par difficulté : chaque mot ne sert qu'une fois.
-  private generated: Record<Difficulty, string[]> = { facile: [], moyen: [], difficile: [] };
-  private generating = new Set<Difficulty>();
+  // Stock de mots générés par l'IA, par type de tour et difficulté : chaque mot ne sert qu'une fois.
+  private generated: Record<TurnKind, Record<Difficulty, string[]>> = {
+    draw: { facile: [], moyen: [], difficile: [] },
+    mime: { facile: [], moyen: [], difficile: [] },
+  };
+  private generating = new Set<string>();
   private offered: string[] = [];
 
   constructor(
@@ -237,7 +243,7 @@ export class Room {
   }
 
   private isDrawing(id: string): boolean {
-    return this.phase === 'drawing' && this.drawerId === id;
+    return this.phase === 'drawing' && this.drawerId === id && this.turnKind === 'draw';
   }
 
   // ---- Boucle de jeu ----------------------------------------------------------
@@ -283,6 +289,8 @@ export class Room {
     }
     this.broadcast({ t: 'clear' });
 
+    const { mode } = this.settings;
+    this.turnKind = mode === 'mime' ? 'mime' : mode === 'mixte' && this.random() < 0.5 ? 'mime' : 'draw';
     this.phase = 'choosing';
     this.choices = this.pickWords(this.settings.wordChoices);
     this.endsAt = Date.now() + CHOOSE_TIME * 1000;
@@ -309,7 +317,7 @@ export class Room {
       this.afterMs(drawMs * at, () => this.revealLetter(letters));
     }
     this.afterMs(drawMs, () => this.endTurn());
-    this.system(`${this.players.get(this.drawerId!)?.name} dessine !`);
+    this.system(`${this.players.get(this.drawerId!)?.name} ${this.turnKind === 'mime' ? 'mime' : 'dessine'} !`);
     this.broadcastState();
   }
 
@@ -388,6 +396,7 @@ export class Room {
     this.clearTimers();
     this.phase = 'gameEnd';
     this.drawerId = null;
+    this.turnKind = 'draw';
     this.word = null;
     this.endsAt = Date.now() + GAME_END_TIME * 1000;
     const ranking = this.publicPlayers().sort((a, b) => b.score - a.score);
@@ -401,6 +410,7 @@ export class Room {
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
+    this.turnKind = 'draw';
     this.word = null;
     this.endsAt = null;
     this.strokes = [];
@@ -412,9 +422,10 @@ export class Room {
 
   private pickWords(n: number): string[] {
     const { customWords: custom, customOnly, difficulty } = this.settings;
+    const kind = this.turnKind;
     // Mots de l'IA s'il en reste assez, sinon la liste intégrée de la même difficulté.
-    const generated = this.generated[difficulty].filter((w) => !this.usedWords.has(w));
-    const base = generated.length >= n ? generated : WORDS_FR[difficulty];
+    const generated = this.generated[kind][difficulty].filter((w) => !this.usedWords.has(w));
+    const base = generated.length >= n ? generated : (kind === 'mime' ? MIME_FR : WORDS_FR)[difficulty];
     const pool = customOnly && custom.length >= n ? custom : [...base, ...custom];
     const fresh = pool.filter((w) => !this.usedWords.has(w));
     const source = fresh.length >= n ? fresh : pool;
@@ -426,26 +437,36 @@ export class Room {
       [bag[i], bag[j]] = [bag[j]!, bag[i]!];
     }
     const picked = bag.slice(0, count);
-    this.generated[difficulty] = generated.filter((w) => !picked.includes(w));
+    this.generated[kind][difficulty] = generated.filter((w) => !picked.includes(w));
     this.offered = [...this.offered, ...picked].slice(-AVOID_MAX);
     this.refillWords();
     return picked;
   }
 
+  /** Types de tour que le mode de jeu peut tirer. */
+  private turnKinds(): TurnKind[] {
+    const { mode } = this.settings;
+    return mode === 'mixte' ? ['draw', 'mime'] : mode === 'mime' ? ['mime'] : ['draw'];
+  }
+
   /** Recommande des mots à l'IA quand le stock de la difficulté choisie descend sous trois tours. */
   private refillWords(): void {
     const { difficulty, customOnly, customWords, wordChoices } = this.settings;
-    if (!this.generateWords || this.generating.has(difficulty)) return;
+    if (!this.generateWords) return;
     if (customOnly && customWords.length >= wordChoices) return;
-    if (this.generated[difficulty].length >= wordChoices * 3) return;
-    this.generating.add(difficulty);
-    const avoid = [...new Set([...this.generated[difficulty], ...this.offered])];
-    this.generateWords(difficulty, WORD_BATCH, avoid)
-      .then((words) => {
-        this.generated[difficulty] = [...new Set([...this.generated[difficulty], ...words])];
-      })
-      .catch(() => {}) // déjà signalé par le générateur ; les listes intégrées prennent le relais
-      .finally(() => this.generating.delete(difficulty));
+    for (const kind of this.turnKinds()) {
+      const key = `${kind}:${difficulty}`;
+      const stock = this.generated[kind];
+      if (this.generating.has(key) || stock[difficulty].length >= wordChoices * 3) continue;
+      this.generating.add(key);
+      const avoid = [...new Set([...stock[difficulty], ...this.offered])];
+      this.generateWords(difficulty, WORD_BATCH, avoid, kind)
+        .then((words) => {
+          stock[difficulty] = [...new Set([...stock[difficulty], ...words])];
+        })
+        .catch(() => {}) // déjà signalé par le générateur ; les listes intégrées prennent le relais
+        .finally(() => this.generating.delete(key));
+    }
   }
 
   // ---- Diffusion --------------------------------------------------------------
@@ -477,6 +498,7 @@ export class Room {
       settings: this.settings,
       players: this.publicPlayers(),
       drawerId: this.drawerId,
+      turnKind: this.turnKind,
       round: this.round,
       endsAt: this.endsAt,
       hint,
@@ -538,5 +560,6 @@ function mergeSettings(cur: RoomSettings, patch: Partial<RoomSettings>): RoomSet
   }
   if (typeof patch.customOnly === 'boolean') next.customOnly = patch.customOnly;
   if (isDifficulty(patch.difficulty)) next.difficulty = patch.difficulty;
+  if (isGameMode(patch.mode)) next.mode = patch.mode;
   return next;
 }

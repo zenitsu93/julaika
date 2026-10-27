@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { CANVAS_H, CANVAS_W } from '@julaika/shared';
 import { Pen, board } from '../lib/board';
 import { net } from '../lib/net';
-import { useCall } from '../lib/call';
+import { call, useCall } from '../lib/call';
 import { useGame } from '../lib/store';
 import { attachWipe, Presence } from '../motion';
 import { CallBar } from './CallBar';
+import { MimeStage } from './MimeStage';
 import { Overlay } from './Overlay';
 import { Reaction } from './Reaction';
 import { PlayerStrip } from './PlayerStrip';
@@ -17,7 +18,13 @@ export function Board() {
   const [pen] = useState(() => new Pen((buf) => net.sendBinary(buf)));
   const inCall = useCall().joined;
   const lobby = useGame((s) => s.room!.phase === 'lobby');
-  const canDraw = useGame((s) => s.room!.phase === 'drawing' && s.room!.drawerId === s.selfId);
+  const canDraw = useGame((s) => s.room!.phase === 'drawing' && s.room!.turnKind === 'draw' && s.room!.drawerId === s.selfId);
+  const mime = useGame((s) => s.room!.turnKind === 'mime' && (s.room!.phase === 'choosing' || s.room!.phase === 'drawing' || s.room!.phase === 'turnEnd'));
+  const miming = useGame((s) => s.room!.phase === 'drawing' && s.room!.turnKind === 'mime' && s.room!.drawerId === s.selfId);
+
+  // Pendant son mime : pas le droit de parler, et la caméra passe en haute qualité.
+  useEffect(() => call.setMiming(miming), [miming]);
+  useEffect(() => () => call.setMiming(false), []);
 
   useEffect(() => {
     board.attach(canvas.current);
@@ -66,6 +73,7 @@ export function Board() {
         />
         {/* Calque de « Tout effacer » : le dessin copié s'y gomme de gauche à droite. */}
         <canvas ref={wipe} className="pointer-events-none absolute inset-0 size-full" aria-hidden />
+        {mime && <MimeStage />}
         <Overlay />
         <Reaction />
       </div>

@@ -117,7 +117,7 @@ export function Overlay() {
           <Panel key="choosing">
             {choosing ? (
               <>
-                <h2 className="mb-1 text-xl font-semibold">Choisis un mot</h2>
+                <h2 className="mb-1 text-xl font-semibold">{room.turnKind === 'mime' ? 'Choisis un mot à mimer 🎭' : 'Choisis un mot'}</h2>
                 <p className="mb-4 text-sm text-muted">Touches 1 à {choices.length}</p>
                 <div className="flex flex-wrap justify-center gap-3">
                   {choices.map((w, i) => (
@@ -140,7 +140,7 @@ export function Overlay() {
               <p className="text-lg">
                 <span className="m-breathe text-3xl">{drawer && avatarOf(drawer.avatar)}</span>
                 <br />
-                <b>{drawer?.name}</b> choisit un mot
+                <b>{drawer?.name}</b> choisit un mot{room.turnKind === 'mime' ? ' à mimer' : ''}
                 <span className="m-dots" aria-hidden>
                   <span>.</span>
                   <span>.</span>

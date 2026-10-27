@@ -16,7 +16,7 @@ function Level({ on }: { on: boolean }) {
   );
 }
 
-function Tile({ player, stream, self, drawing }: { player: PlayerPublic; stream: MediaStream | null; self: boolean; drawing: boolean }) {
+function Tile({ player, stream, self, drawing, mime }: { player: PlayerPublic; stream: MediaStream | null; self: boolean; drawing: boolean; mime: boolean }) {
   const video = useRef<HTMLVideoElement>(null);
   const speaking = useSpeaking(stream, player.mic);
   useEffect(() => {
@@ -40,7 +40,7 @@ function Tile({ player, stream, self, drawing }: { player: PlayerPublic; stream:
       />
       {!player.cam && <span className="absolute inset-0 grid place-items-center text-3xl">{avatarOf(player.avatar)}</span>}
       <span className="absolute left-1.5 top-1.5 flex gap-1 font-mono text-[10px] font-semibold">
-        {drawing && <span className="m-pop rounded-full bg-accent px-1.5 text-[#18181b]">✏️ dessine</span>}
+        {drawing && <span className="m-pop rounded-full bg-accent px-1.5 text-[#18181b]">{mime ? '🎭 mime' : '✏️ dessine'}</span>}
         {player.guessed && <span className="m-pop rounded-full bg-good px-1.5 text-white">✓ trouvé</span>}
       </span>
       <figcaption className="absolute inset-x-1.5 bottom-1.5 flex">
@@ -60,6 +60,7 @@ export function CallBar() {
   const view = useCall();
   const players = useGame((s) => s.room!.players);
   const drawerId = useGame((s) => s.room!.drawerId);
+  const mime = useGame((s) => s.room!.turnKind === 'mime');
   const selfId = useGame((s) => s.selfId);
   const inCall = players.filter((p) => p.inCall);
   const full = inCall.length >= MAX_CALL && !view.joined;
@@ -99,6 +100,7 @@ export function CallBar() {
             player={p}
             self={p.id === selfId}
             drawing={p.id === drawerId}
+            mime={mime}
             stream={p.id === selfId ? view.local : (view.remotes[p.id] ?? null)}
           />
         ))}
@@ -117,8 +119,9 @@ export function CallBar() {
           📷
         </button>
         <button
-          className={`${dockBtn} ${view.mic ? 'hover:bg-on-primary/15' : 'bg-bad text-white'}`}
-          title={view.mic ? 'Couper le micro' : 'Activer le micro'}
+          className={`${dockBtn} ${view.mic ? 'hover:bg-on-primary/15' : 'bg-bad text-white'} disabled:cursor-not-allowed`}
+          title={view.hushed ? 'Micro coupé pendant ton mime' : view.mic ? 'Couper le micro' : 'Activer le micro'}
+          disabled={view.hushed}
           aria-pressed={view.mic}
           onClick={(e) => {
             bump(e.currentTarget);
