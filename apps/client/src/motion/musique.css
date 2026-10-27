@@ -344,8 +344,11 @@ button.mp-pp:hover:not(:disabled) {
 }
 .mp-meta {
   display: grid;
+  /* Sans cette piste bornée, un long titre élargit la grille et déborde sur les boutons. */
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   flex: 1;
+  overflow: hidden;
 }
 .mp-meta b {
   font-size: 14px;
@@ -502,6 +505,28 @@ button.mp-pp:hover:not(:disabled) {
 }
 .mp-av:first-child {
   margin-left: 0;
+}
+/* Son coupé par le navigateur : la ligne et le bouton d'or qui appellent un toucher. */
+.mp-pulse.gold {
+  background: var(--mp-gold);
+}
+.mp-unlock {
+  background: color-mix(in srgb, var(--mp-gold) 16%, transparent);
+  font-weight: 600;
+}
+button.mp-ib.mp-sound {
+  position: relative;
+  background: var(--color-butter);
+  color: #1c120d;
+  animation: mp-sound 1.6s var(--ease-out) infinite;
+}
+@keyframes mp-sound {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--mp-gold) 60%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 10px transparent;
+  }
 }
 .mp-chipbtn {
   flex: none;

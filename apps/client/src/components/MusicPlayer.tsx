@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { parseYoutubeLink, type MusicTrack } from '@julaika/shared';
-import { attachHost, heard, music, nameOf, useMusic, warm } from '../lib/music';
+import { attachHost, heard, music, nameOf, unlock, useMusic, warm } from '../lib/music';
 import { useGame } from '../lib/store';
 import { thumbOf } from '../lib/youtube';
 import { avatarOf } from '../lib/avatars';
@@ -43,20 +43,22 @@ function Pill() {
   const track = useMusic((s) => heard(s));
   const playing = useMusic((s) => s.playing);
   const listening = useMusic((s) => s.listening);
-  const invite = useMusic((s) => s.room !== null && !s.listening && !s.sharing);
+  const blocked = useMusic((s) => s.blocked);
   return (
     <div className="mp-pill">
       <button className="mp-pill-open" onClick={() => music.setOpen(true)} aria-label="Ouvrir le lecteur">
         <span className="mp-discw">
           <span className="mp-disc" style={track ? { backgroundImage: `url(${thumbOf(track.id)})` } : undefined} />
           <Ring />
-          {invite && <span className="mp-ping" />}
+          {listening && <span className="mp-ping" />}
         </span>
         <span key={track?.id} className="mp-pill-t mp-blurin">
           {track ? (listening ? `${track.title} · salon` : track.title) : 'Musique'}
         </span>
       </button>
-      {track && !playing ? (
+      {blocked ? (
+        <SoundButton />
+      ) : track && !playing ? (
         <PlayButton />
       ) : (
         <button className="mp-ib" onClick={() => (track ? music.pause() : music.setView('search'))} aria-label={track ? 'Pause' : 'Chercher une musique'}>
@@ -214,35 +216,36 @@ function Progress({ disabled }: { disabled: boolean }) {
   );
 }
 
-/** Quelqu'un du salon partage sa musique : on propose de l'écouter. */
+/** Quelqu'un du salon partage sa musique : on l'écoute avec lui, et on peut libérer le son. */
 function Invite() {
   const room = useMusic((s) => s.room);
   const listening = useMusic((s) => s.listening);
-  const sharing = useMusic((s) => s.sharing);
-  const self = useGame((s) => s.selfId);
-  if (!room || room.dj === self || sharing) return null;
-  if (listening)
+  const blocked = useMusic((s) => s.blocked);
+  if (blocked)
     return (
-      <div className="mp-line on">
-        <span className="mp-pulse" />
-        <span className="mp-line-t">
-          Tu écoutes <b>{nameOf(room.dj)}</b>
-        </span>
-        <button className="mp-chipbtn" onClick={music.stopListening}>
-          Quitter
-        </button>
-      </div>
-    );
-  return (
-    <div className="mp-line">
-      <span className="mp-ping static" />
-      <span className="mp-line-t">
-        <b>{nameOf(room.dj)}</b> partage « {room.track.title} »
-      </span>
-      <button className="mp-chipbtn gold" onClick={music.listen}>
-        Écouter
+      <button className="mp-line mp-unlock" onClick={unlock}>
+        <span className="mp-pulse gold" />
+        <span className="mp-line-t">Ton navigateur a coupé le son</span>
+        <span className="mp-chipbtn gold">Activer</span>
       </button>
+    );
+  if (!room || !listening) return null;
+  return (
+    <div className="mp-line on">
+      <span className="mp-pulse" />
+      <span className="mp-line-t">
+        Tu écoutes <b>{nameOf(room.dj)}</b> avec le salon
+      </span>
     </div>
+  );
+}
+
+/** Le son est bloqué : un bouton d'or qui pulse, le toucher suffit à le libérer. */
+function SoundButton() {
+  return (
+    <button className="mp-ib mp-sound" onClick={unlock} aria-label="Activer le son">
+      <Icon d="M4 9v6h4l5 4V5L8 9H4zM16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" stroke />
+    </button>
   );
 }
 
