@@ -1,10 +1,10 @@
-import { SETTINGS_LIMITS, type Difficulty, type RoomGame, type RoomSettings } from '@julaika/shared';
+import { BOMB_MAX_LIVES, SETTINGS_LIMITS, type Difficulty, type RoomGame, type RoomSettings } from '@julaika/shared';
 import { useEffect, useRef } from 'react';
 import { net } from '../lib/net';
 import { useGame } from '../lib/store';
 import { bump, Ticker, useIndicator } from '../motion';
 
-const FIELDS: { key: keyof typeof SETTINGS_LIMITS; label: string; step?: number }[] = [
+const FIELDS: { key: keyof typeof SETTINGS_LIMITS; label: string; step?: number; max?: number }[] = [
   { key: 'rounds', label: 'Manches' },
   { key: 'drawTime', label: 'Temps de dessin (s)', step: 10 },
   { key: 'maxPlayers', label: 'Joueurs max' },
@@ -31,6 +31,12 @@ const TEL_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
+// Bombe à mots : les « manches » deviennent les vies de départ.
+const BOMB_FIELDS: typeof FIELDS = [
+  { key: 'rounds', label: 'Vies', max: BOMB_MAX_LIVES },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
 const RULES: Partial<Record<RoomGame, string[]>> = {
   wavelength: [
     'Le télépathe voit où se cache la cible entre deux extrêmes, et donne un indice.',
@@ -41,6 +47,11 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
     'Chacun écrit une phrase farfelue, en secret.',
     'Ton voisin la dessine, le suivant devine le dessin, et ainsi de suite : tout le monde joue en même temps.',
     "À la fin, l'album rejoue chaque chaîne, dessin après phrase. Plus on est, plus ça déraille !",
+  ],
+  bombe: [
+    'La bombe passe de main en main. Quand tu la tiens, tape un mot qui contient la syllabe affichée.',
+    'Personne ne sait quand elle explose : celui qui la tient perd une vie.',
+    'Place toutes les lettres bonus pour regagner une vie. Le dernier debout gagne !',
   ],
 };
 
@@ -64,15 +75,16 @@ export function Lobby() {
     <div className="panel p-5 text-left shadow-sm">
       <h2 className="mb-4 text-lg font-semibold">Réglages du salon <span className="font-mono text-muted">#{room.code}</span></h2>
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : FIELDS).map(({ key, label, step }) => {
-          const [min, max] = SETTINGS_LIMITS[key];
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : FIELDS).map(({ key, label, step, max: cap }) => {
+          const [min, limit] = SETTINGS_LIMITS[key];
+          const max = cap ?? limit;
           return (
             <label key={key} className="text-sm">
               <span className="mb-1 block text-muted">{label}</span>
               {/* Chez les invités, la valeur roule quand l'hôte la change. */}
               {!isHost ? (
                 <div className="input font-mono opacity-80" aria-label={label}>
-                  <Ticker value={room.settings[key]} />
+                  <Ticker value={Math.min(max, room.settings[key])} />
                 </div>
               ) : (
               <input
@@ -82,7 +94,7 @@ export function Lobby() {
                 max={max}
                 step={step ?? 1}
                 disabled={!isHost}
-                value={room.settings[key]}
+                value={Math.min(max, room.settings[key])}
                 onChange={(e) => set({ [key]: Number(e.target.value) })}
               />
               )}
@@ -90,6 +102,32 @@ export function Lobby() {
           );
         })}
       </div>
+      {(!rules || room.game === 'bombe') && (
+        <div className="mt-3 text-sm">
+          <span className="mb-1 block text-muted">{room.game === 'bombe' ? 'Difficulté des syllabes' : 'Difficulté des mots'}</span>
+          <div ref={level.container} role="group" aria-label="Difficulté" className="relative grid grid-cols-3 gap-1 rounded-md border border-edge p-1">
+            <span ref={level.indicator} className="m-indicator rounded bg-primary" />
+            {LEVELS.map(({ value, label }) => {
+              const active = room.settings.difficulty === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  data-slot
+                  aria-pressed={active}
+                  disabled={!isHost}
+                  onClick={() => set({ difficulty: value })}
+                  className={`relative rounded px-3 py-1.5 font-medium transition outline-none focus-visible:ring-2 focus-visible:ring-info disabled:cursor-not-allowed ${
+                    active ? 'text-on-primary' : 'text-muted enabled:hover:bg-edge/50'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {rules ? (
         <ol className="mt-4 space-y-1.5 text-sm text-muted">
           {rules.map((rule, i) => (
@@ -100,30 +138,6 @@ export function Lobby() {
         </ol>
       ) : (
       <>
-      <div className="mt-3 text-sm">
-        <span className="mb-1 block text-muted">Difficulté des mots</span>
-        <div ref={level.container} role="group" aria-label="Difficulté des mots" className="relative grid grid-cols-3 gap-1 rounded-md border border-edge p-1">
-          <span ref={level.indicator} className="m-indicator rounded bg-primary" />
-          {LEVELS.map(({ value, label }) => {
-            const active = room.settings.difficulty === value;
-            return (
-              <button
-                key={value}
-                type="button"
-                data-slot
-                aria-pressed={active}
-                disabled={!isHost}
-                onClick={() => set({ difficulty: value })}
-                className={`relative rounded px-3 py-1.5 font-medium transition outline-none focus-visible:ring-2 focus-visible:ring-info disabled:cursor-not-allowed ${
-                  active ? 'text-on-primary' : 'text-muted enabled:hover:bg-edge/50'
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
       <label className="mt-3 block text-sm">
         <span className="mb-1 block text-muted">Mots perso (séparés par des virgules)</span>
         <textarea

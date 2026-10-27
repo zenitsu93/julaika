@@ -51,6 +51,9 @@ importers:
 
   apps/server:
     dependencies:
+      an-array-of-french-words:
+        specifier: 2.0.0
+        version: 2.0.0
       ws:
         specifier: ^8.18.3
         version: 8.22.0
@@ -782,6 +785,10 @@ packages:
 
   '@vitest/utils@4.1.12':
     resolution: {integrity: sha512-Q3awXrwOfEV+qc3WmO5ONyE0yO7Q1gQ9/oyHxGLZ/pl7N3NO/ZztqQwKLuwMkV+CA1JYSIeO3gkHnRDIo4AVaA==}
+
+  an-array-of-french-words@2.0.0:
+    resolution: {integrity: sha512-LRPhVZLteE0wrUFimKWcrEtXZcv8XiG9TArm37j7/PdO2G5f6UfgCny+ibH8CascxMXFMzTPlJcP01PgSmei8Q==}
+    hasBin: true
 
   assertion-error@2.0.1:
     resolution: {integrity: sha512-Izi8RQcffqCeNVgFigKli1ssklIbpHnCYc6AknXGYoB6grJqyeby7jv12JUQgmTAnIDnbck1uxksT4dzN3PWBA==}
@@ -1715,6 +1722,8 @@ snapshots:
       '@vitest/pretty-format': 4.1.12
       convert-source-map: 2.0.0
       tinyrainbow: 3.2.0
+
+  an-array-of-french-words@2.0.0: {}
 
   assertion-error@2.0.1: {}
 

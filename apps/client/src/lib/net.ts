@@ -84,6 +84,9 @@ class Net {
           dial: msg.state.wave?.dial ?? null,
           telPrompt: msg.state.tel ? s.telPrompt : null,
           album: phase === 'album' ? s.album : null,
+          // La bombe change de main : ce que tapait l'ancien porteur disparaît.
+          bombTyping: msg.state.bomb && s.bombTyping?.by === msg.state.bomb.holder ? s.bombTyping : null,
+          bombEvent: msg.state.bomb ? s.bombEvent : null,
         }));
         call.sync(msg.state.players);
         break;
@@ -112,6 +115,12 @@ class Net {
         break;
       case 'album':
         store.set({ album: msg.chains });
+        break;
+      case 'bombTyping':
+        store.set({ bombTyping: { by: msg.by, text: msg.text } });
+        break;
+      case 'bombEvent':
+        store.set((s) => ({ bombEvent: { ...msg.event, seq: (s.bombEvent?.seq ?? 0) + 1 } }));
         break;
       case 'dial':
         store.set({ dial: msg.value });

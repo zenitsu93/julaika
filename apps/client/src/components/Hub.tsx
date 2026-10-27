@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type JSX, type PointerEvent } from 'react';
 import { GAMES, SOON, matchesGame, matchesSoon, type GameId, type GameInfo, type SoonId } from '../lib/games';
 import { reducedMotion } from '../motion';
+import { BombGlyph } from './bombe/BombGlyph';
 import { LogoMark } from './Logo';
 
 // L'entrée animée ne se joue qu'une fois par visite, comme sur l'écran du pseudo.
@@ -114,6 +115,7 @@ const SKINS: Record<GameId, string> = {
   wavelength: 'border-edge bg-surface text-ink',
   motdujour: 'border-[#15803d] bg-[#16a34a] text-white',
   telephone: 'border-[#6d28d9] bg-[#7c3aed] text-white',
+  bombe: 'border-[#c2410c] bg-[#ea580c] text-white',
 };
 
 function GameCard({ game, className, style, onPick }: { game: GameInfo; className: string; style: CSSProperties; onPick: () => void }) {
@@ -210,7 +212,15 @@ const TelArt = () => (
   </svg>
 );
 
-const ART: Record<GameId, JSX.Element> = { dessin: <DrawArt />, mime: <MimeArt />, wavelength: <WaveArt />, motdujour: <MotArt />, telephone: <TelArt /> };
+/** La bombe qui bat, l'étincelle qui crépite, et une syllabe posée dessus. */
+const BombArt = () => (
+  <span className="bomb-art relative mx-auto block w-36" aria-hidden>
+    <BombGlyph lit beat={0.9} className="w-full" />
+    <span className="absolute left-[47%] top-[60%] -translate-x-1/2 -translate-y-1/2 rounded-md bg-white px-2 font-mono text-xl font-bold text-[#18181b]">TION</span>
+  </span>
+);
+
+const ART: Record<GameId, JSX.Element> = { dessin: <DrawArt />, mime: <MimeArt />, wavelength: <WaveArt />, motdujour: <MotArt />, telephone: <TelArt />, bombe: <BombArt /> };
 
 /** Carte d'un jeu en préparation : même mise en scène, en pointillés et sans clic. */
 function SoonCard({ game, className, style }: { game: (typeof SOON)[number]; className: string; style: CSSProperties }) {

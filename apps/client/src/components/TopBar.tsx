@@ -89,7 +89,9 @@ export function TopBar() {
       <span className="text-sm text-muted">
         {room.phase === 'lobby'
           ? 'Salon'
-          : room.tel
+          : room.bomb
+            ? `${Object.values(room.bomb.lives).filter(Boolean).length} en lice`
+            : room.tel
             ? room.phase === 'album'
               ? 'Album'
               : `Étape ${room.tel.step + 1}/${room.tel.steps}`

@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'bombe';
 
 export interface GameInfo {
   id: GameId;
@@ -52,6 +52,14 @@ export const GAMES: GameInfo[] = [
     players: '3 joueurs ou plus',
     badge: 'Nouveau',
     keywords: ['telephone', 'dessin', 'dessiner', 'chaine', 'phrase', 'album', 'gartic', 'deviner'],
+  },
+  {
+    id: 'bombe',
+    name: 'Bombe à mots',
+    pitch: 'Un mot avec la syllabe, vite, avant que ça saute !',
+    players: '2 à 16 joueurs',
+    badge: 'Nouveau',
+    keywords: ['bombe', 'bombparty', 'syllabe', 'mot', 'mots', 'rapidite', 'vies', 'clavier', 'explosion'],
   },
 ];
 
