@@ -1,6 +1,7 @@
 // Contrat client <-> serveur.
 // Messages de contrôle : JSON (frames texte). Dessin : binaire (voir draw.ts).
 
+import type { AgentsState } from './agents';
 import type { BombEvent, BombState } from './bombe';
 import type { BrasState } from './brasdefer';
 import type { CadavreState, Creature } from './cadavre';
@@ -29,7 +30,7 @@ export const PALETTE = [
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 /** Jeux proposés : chaque salon en porte un, choisi à sa création. */
-export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre', 'interdits', 'motamot'] as const;
+export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre', 'interdits', 'motamot', 'agents'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
@@ -46,6 +47,7 @@ export function isRoomGame(v: unknown): v is RoomGame {
  * Pas un sourire ! : faceoff (3, 2, 1) → duel → verdict. Bras de fer : pareil. Flash : memorize (l'image 3 s) → draw → vote → reveal.
  * Cadavre exquis : draw (tête, corps, jambes, tous en même temps) → reveal.
  * Mots interdits : faceoff (qui fait deviner) → explain (les cartes défilent) → verdict. Mot à mot : write (un mot chacun) → album (lecture).
+ * Agents secrets : clue (l'espion donne son indice) → guess (on retourne les cartes) → reveal.
  */
 export type Phase =
   | 'lobby'
@@ -227,6 +229,8 @@ export interface RoomState {
   interdits: InterditsState | null;
   /** État de Mot à mot, null pour les autres jeux. */
   motamot: StoryState | null;
+  /** État d'Agents secrets, null pour les autres jeux. */
+  agents: AgentsState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -314,6 +318,10 @@ export type ClientMsg =
   | { t: 'motamot'; veto: number }
   | { t: 'motamot'; star: number }
   | { t: 'motamot'; ready: true }
+  | { t: 'agents'; clue: string; count: number }
+  | { t: 'agents'; point: number }
+  | { t: 'agents'; guess: number }
+  | { t: 'agents'; pass: true }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =

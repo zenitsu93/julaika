@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash' | 'cadavre' | 'interdits' | 'motamot';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash' | 'cadavre' | 'interdits' | 'motamot' | 'agents';
 
 export interface GameInfo {
   id: GameId;
@@ -141,14 +141,21 @@ export const GAMES: GameInfo[] = [
     badge: 'Nouveau',
     keywords: ['mot', 'mots', 'histoire', 'speed story', 'conte', 'ecrire', 'contrainte', 'voix', 'duo', 'deux', 'rapidite'],
   },
+  {
+    id: 'agents',
+    name: 'Agents secrets',
+    pitch: 'Un seul mot pour démasquer tous tes agents.',
+    players: 'Duo coop · ou 2 équipes',
+    badge: 'Nouveau',
+    keywords: ['agents', 'secret', 'espion', 'equipes', 'grille', 'codenames', 'indice', 'mots', 'duo', 'deux', 'coop'],
+  },
 ];
 
-export type SoonId = 'fredonne' | 'agents';
+export type SoonId = 'fredonne';
 
 /** Jeux en préparation, affichés en « Bientôt » après les jeux disponibles (ordre de la liste des jeux à faire). */
 export const SOON: { id: SoonId; name: string; pitch: string; keywords: string[] }[] = [
   { id: 'fredonne', name: 'Fredonne !', pitch: 'Fredonne une chanson, les autres trouvent le titre.', keywords: ['fredonne', 'chanson', 'musique', 'micro', 'blind test'] },
-  { id: 'agents', name: 'Agents secrets', pitch: 'Un indice pour relier plusieurs mots de ton équipe.', keywords: ['agents', 'secret', 'equipes', 'grille', 'codenames'] },
 ];
 
 const fold = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();

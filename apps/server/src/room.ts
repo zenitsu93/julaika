@@ -35,6 +35,7 @@ import {
   type Trap,
   type TurnKind,
 } from '@julaika/shared';
+import { Agents } from './agents';
 import { Bombe } from './bombe';
 import { Cadavre } from './cadavre';
 import { Connait } from './connait';
@@ -116,6 +117,7 @@ export class Room {
   private bac: PetitBac | null = null;
   private connait: Connait | null = null;
   private bomb: Bombe | null = null;
+  private agents: Agents | null = null;
   private photo: Photomaton | null = null;
   private sourire: Sourire | null = null;
   private bras: BrasDeFer | null = null;
@@ -182,6 +184,7 @@ export class Room {
     this.photo?.onJoin(id);
     this.flash?.onJoin(id);
     this.cadavre?.onJoin(id);
+    this.agents?.onJoin(id);
     this.system(`${player.name} a rejoint la partie.`);
     this.broadcastState(id);
     // Les mots sont commandés dès qu'une partie devient possible, pour être prêts au lancement.
@@ -210,7 +213,7 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.bras || this.flash || this.cadavre || this.interdits || this.mot) {
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.bras || this.flash || this.cadavre || this.interdits || this.mot || this.agents) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
       this.intrus?.onLeave(id);
@@ -224,6 +227,7 @@ export class Room {
       this.cadavre?.onLeave(id);
       this.interdits?.onLeave(id);
       this.mot?.onLeave(id);
+      this.agents?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -298,6 +302,9 @@ export class Room {
         break;
       case 'motamot':
         if (msg && typeof msg === 'object') this.mot?.handle(id, msg);
+        break;
+      case 'agents':
+        if (msg && typeof msg === 'object') this.agents?.handle(id, msg);
         break;
       case 'sound':
         // Boîte à sons, dans tous les jeux : l'émetteur l'a déjà joué chez lui.
@@ -411,6 +418,7 @@ export class Room {
     if (this.game === 'cadavre') return this.startCadavre();
     if (this.game === 'interdits') return this.startInterdits();
     if (this.game === 'motamot') return this.startMot();
+    if (this.game === 'agents') return this.startAgents();
     this.usedWords.clear();
     this.shotCount = 0;
     this.nextRound();
@@ -936,6 +944,30 @@ export class Room {
     this.mot.start();
   }
 
+  private startAgents(): void {
+    this.agents?.dispose();
+    this.agents = new Agents({
+      playerIds: () => [...this.players.keys()],
+      player: (id) => this.players.get(id),
+      rounds: () => this.settings.rounds,
+      turnTime: () => this.settings.drawTime,
+      random: this.random,
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      system: (text) => this.system(text),
+      endGame: () => this.endGame(),
+    });
+    this.agents.start();
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -980,6 +1012,8 @@ export class Room {
     // Gardé jusqu'ici pour le recueil de la fin de partie.
     this.mot?.dispose();
     this.mot = null;
+    this.agents?.dispose();
+    this.agents = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -1104,6 +1138,7 @@ export class Room {
       cadavre: this.cadavre?.state() ?? null,
       interdits: this.interdits?.stateFor(id) ?? null,
       motamot: this.mot?.state() ?? null,
+      agents: this.agents?.stateFor(id) ?? null,
     };
   }
 
@@ -1152,6 +1187,7 @@ export class Room {
     this.cadavre?.dispose();
     this.interdits?.dispose();
     this.mot?.dispose();
+    this.agents?.dispose();
   }
 }
 

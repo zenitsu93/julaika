@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type JSX } from 'react';
 import { GAMES, SOON, matchesGame, matchesSoon, type GameId, type GameInfo, type SoonId } from '../lib/games';
+import { AgentsArt } from './agents/AgentsArt';
 import { BombGlyph } from './bombe/BombGlyph';
 import { BrasGlyph } from './bras/BrasGlyph';
 import { CadArt } from './cadavre/CadArt';
@@ -339,6 +340,7 @@ const ART: Record<GameId, JSX.Element> = {
   cadavre: <CadArt />,
   interdits: <InterditsArt />,
   motamot: <StoryArt />,
+  agents: <AgentsArt />,
 };
 
 /** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */
@@ -380,24 +382,6 @@ const SOON_ART: Record<SoonId, JSX.Element> = {
       <ellipse cx="110" cy="92" rx="12" ry="9" fill="currentColor" stroke="none" />
       {[0, 1, 2].map((i) => (
         <path key={i} className="soon-note stroke-gold" style={{ animationDelay: `${i * 600}ms` }} d="M150 100v-18l12-4" strokeWidth="5" />
-      ))}
-    </>,
-  ),
-  // La grille des agents : les cases changent d'équipe.
-  agents: svg(
-    <>
-      {Array.from({ length: 9 }, (_, i) => (
-        <rect
-          key={i}
-          className="soon-flip"
-          style={{ animationDelay: `${((i * 7) % 9) * 220}ms`, transformOrigin: `${62 + (i % 3) * 30}px ${42 + Math.floor(i / 3) * 30}px` }}
-          x={50 + (i % 3) * 30}
-          y={30 + Math.floor(i / 3) * 30}
-          width="24"
-          height="24"
-          rx="5"
-          strokeWidth="3"
-        />
       ))}
     </>,
   ),

@@ -16,3 +16,4 @@ export * from './flash';
 export * from './cadavre';
 export * from './interdits';
 export * from './motamot';
+export * from './agents';
