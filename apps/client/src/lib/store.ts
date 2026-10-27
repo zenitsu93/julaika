@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { ChatLine, PlayerPublic, RoomState, TelChain, TelEntry } from '@julaika/shared';
+import type { ChatLine, PhotoShot, PlayerPublic, RoomState, TelChain, TelEntry } from '@julaika/shared';
 
 export interface GameState {
   status: 'idle' | 'connecting' | 'online' | 'closed';
@@ -15,6 +15,9 @@ export interface GameState {
   /** Téléphone dessiné : ce qu'on a reçu à dessiner ou décrire, et l'album une fois révélé. */
   telPrompt: { step: number; prompt: TelEntry | null } | null;
   album: TelChain[] | null;
+  /** Photomaton : les polaroids de la manche, et la meilleure photo de chaque manche pour la fin. */
+  photos: { round: number; shots: PhotoShot[] } | null;
+  reel: { round: number; prompt: string; shot: PhotoShot }[];
   /** Décalage horloge serveur - horloge locale (ms). */
   clockOffset: number;
 }
@@ -31,6 +34,8 @@ const initial: GameState = {
   dial: null,
   telPrompt: null,
   album: null,
+  photos: null,
+  reel: [],
   clockOffset: 0,
 };
 

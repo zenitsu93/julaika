@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'photomaton';
 
 export interface GameInfo {
   id: GameId;
@@ -52,6 +52,14 @@ export const GAMES: GameInfo[] = [
     players: '3 joueurs ou plus',
     badge: 'Nouveau',
     keywords: ['telephone', 'dessin', 'dessiner', 'chaine', 'phrase', 'album', 'gartic', 'deviner'],
+  },
+  {
+    id: 'photomaton',
+    name: 'Photomaton',
+    pitch: 'Une grimace sur commande, un flash, un polaroid.',
+    players: 'En visio · à deux ou plus',
+    badge: 'Nouveau',
+    keywords: ['photomaton', 'photo', 'polaroid', 'camera', 'visio', 'grimace', 'expression', 'selfie', 'vote', 'duo', 'deux'],
   },
 ];
 

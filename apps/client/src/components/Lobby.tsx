@@ -31,6 +31,12 @@ const TEL_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
+// Photomaton : une consigne par manche, rien d'autre à régler.
+const PHOTO_FIELDS: typeof FIELDS = [
+  { key: 'rounds', label: 'Manches' },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
 const RULES: Partial<Record<RoomGame, string[]>> = {
   wavelength: [
     'Le télépathe voit où se cache la cible entre deux extrêmes, et donne un indice.',
@@ -41,6 +47,11 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
     'Chacun écrit une phrase farfelue, en secret.',
     'Ton voisin la dessine, le suivant devine le dessin, et ainsi de suite : tout le monde joue en même temps.',
     "À la fin, l'album rejoue chaque chaîne, dessin après phrase. Plus on est, plus ça déraille !",
+  ],
+  photomaton: [
+    'Une consigne absurde s’affiche : prépare ta plus belle tête devant la caméra.',
+    '3, 2, 1… flash ! Ta caméra est figée en polaroid, en même temps que celle des autres.',
+    'Les tirages se posent côte à côte : note ceux des autres de 1 à 5 étoiles.',
   ],
 };
 
@@ -64,7 +75,7 @@ export function Lobby() {
     <div className="panel p-5 text-left shadow-sm">
       <h2 className="mb-4 text-lg font-semibold">Réglages du salon <span className="font-mono text-muted">#{room.code}</span></h2>
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : FIELDS).map(({ key, label, step }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : FIELDS).map(({ key, label, step }) => {
           const [min, max] = SETTINGS_LIMITS[key];
           return (
             <label key={key} className="text-sm">

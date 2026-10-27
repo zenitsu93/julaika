@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type JSX, type Pointer
 import { GAMES, SOON, matchesGame, matchesSoon, type GameId, type GameInfo, type SoonId } from '../lib/games';
 import { reducedMotion } from '../motion';
 import { LogoMark } from './Logo';
+import './photo/photo.css';
 
 // L'entrée animée ne se joue qu'une fois par visite, comme sur l'écran du pseudo.
 let introPlayed = false;
@@ -114,6 +115,7 @@ const SKINS: Record<GameId, string> = {
   wavelength: 'border-edge bg-surface text-ink',
   motdujour: 'border-[#15803d] bg-[#16a34a] text-white',
   telephone: 'border-[#6d28d9] bg-[#7c3aed] text-white',
+  photomaton: 'border-[#3b2418] bg-[#4b2e21] text-[#f2e6b3]',
 };
 
 function GameCard({ game, className, style, onPick }: { game: GameInfo; className: string; style: CSSProperties; onPick: () => void }) {
@@ -210,7 +212,38 @@ const TelArt = () => (
   </svg>
 );
 
-const ART: Record<GameId, JSX.Element> = { dessin: <DrawArt />, mime: <MimeArt />, wavelength: <WaveArt />, motdujour: <MotArt />, telephone: <TelArt /> };
+/** L'appareil instantané : le flash éclate, puis le polaroid sort de la fente et se révèle. */
+const PhotoArt = () => (
+  <svg viewBox="0 0 200 150" className="mx-auto max-h-36 w-full" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <g className="pm-art-print">
+      <rect x="66" y="66" width="68" height="78" rx="3" fill="#fbf8f1" />
+      <rect className="pm-art-develop" x="72" y="72" width="56" height="52" rx="1" fill="#2a1a12" />
+      <path className="pm-art-develop" d="M84 104q16 12 32 0" stroke="#f5b700" strokeWidth="4" />
+      <circle className="pm-art-develop" cx="88" cy="90" r="3.5" fill="#f5b700" />
+      <circle className="pm-art-develop" cx="112" cy="90" r="3.5" fill="#f5b700" />
+    </g>
+    <rect x="44" y="18" width="112" height="56" rx="12" fill="currentColor" />
+    <rect x="58" y="66" width="84" height="5" rx="2.5" fill="#000" fillOpacity=".35" />
+    <circle cx="100" cy="46" r="19" fill="#2a1a12" stroke="#000" strokeOpacity=".2" strokeWidth="3" />
+    <circle cx="100" cy="46" r="10" fill="#4b2e21" />
+    <circle cx="95" cy="41" r="3.5" fill="#fff" fillOpacity=".7" />
+    <rect x="128" y="27" width="18" height="11" rx="3" fill="#f5b700" />
+    <g className="pm-art-flash" style={{ transformOrigin: '137px 32px' }}>
+      {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => (
+        <path key={a} d="M137 18v-8" stroke="#f5b700" strokeWidth="4" transform={`rotate(${a} 137 32)`} />
+      ))}
+    </g>
+  </svg>
+);
+
+const ART: Record<GameId, JSX.Element> = {
+  dessin: <DrawArt />,
+  mime: <MimeArt />,
+  wavelength: <WaveArt />,
+  motdujour: <MotArt />,
+  telephone: <TelArt />,
+  photomaton: <PhotoArt />,
+};
 
 /** Carte d'un jeu en préparation : même mise en scène, en pointillés et sans clic. */
 function SoonCard({ game, className, style }: { game: (typeof SOON)[number]; className: string; style: CSSProperties }) {
