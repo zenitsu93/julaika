@@ -1,0 +1,54 @@
+import { useEffect, useRef, useState } from 'react';
+import { CANVAS_H, CANVAS_W } from '@julaika/shared';
+import { Pen, board } from '../lib/board';
+import { net } from '../lib/net';
+import { useGame } from '../lib/store';
+import { Overlay } from './Overlay';
+import { Toolbar } from './Toolbar';
+
+export function Board() {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const [pen] = useState(() => new Pen((buf) => net.sendBinary(buf)));
+  const canDraw = useGame((s) => s.room!.phase === 'drawing' && s.room!.drawerId === s.selfId);
+
+  useEffect(() => {
+    board.attach(canvas.current);
+    return () => board.attach(null);
+  }, []);
+
+  useEffect(() => {
+    if (!canDraw) pen.end();
+  }, [canDraw, pen]);
+
+  const toCanvas = (e: { clientX: number; clientY: number }) => {
+    const r = canvas.current!.getBoundingClientRect();
+    return [((e.clientX - r.left) / r.width) * CANVAS_W, ((e.clientY - r.top) / r.height) * CANVAS_H] as const;
+  };
+
+  return (
+    <section className="order-1 flex min-w-0 flex-col gap-3 lg:order-none">
+      <div className="relative overflow-hidden rounded-2xl border border-edge shadow-[0_0_60px_-25px_var(--color-neon-cyan)]">
+        <canvas
+          ref={canvas}
+          width={CANVAS_W}
+          height={CANVAS_H}
+          className={`block aspect-[4/3] w-full touch-none bg-white ${canDraw ? 'cursor-crosshair' : ''}`}
+          onPointerDown={(e) => {
+            if (!canDraw || e.button !== 0) return;
+            e.currentTarget.setPointerCapture(e.pointerId);
+            pen.start(...toCanvas(e));
+          }}
+          onPointerMove={(e) => {
+            if (!canDraw) return;
+            const events = e.nativeEvent.getCoalescedEvents?.() ?? [e.nativeEvent];
+            pen.move(events.flatMap((ev) => toCanvas(ev)));
+          }}
+          onPointerUp={() => pen.end()}
+          onPointerCancel={() => pen.end()}
+        />
+        <Overlay />
+      </div>
+      {canDraw && <Toolbar pen={pen} />}
+    </section>
+  );
+}
