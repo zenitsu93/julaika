@@ -3,6 +3,7 @@ import { serverNow, useGame } from '../lib/store';
 import { animate, Ticker } from '../motion';
 import { Wordmark } from './Logo';
 import { MeetButton } from './MeetButton';
+import { QuitButton } from './QuitButton';
 import { SoundButton } from './SoundBoard';
 
 function useCountdown(endsAt: number | null): number {
@@ -56,7 +57,7 @@ function Hint({ text }: { text: string }) {
   );
 }
 
-export function TopBar() {
+export function TopBar({ onQuit }: { onQuit: () => void }) {
   const room = useGame((s) => s.room!);
   const left = useCountdown(room.endsAt);
   const [copied, setCopied] = useState(false);
@@ -156,6 +157,7 @@ export function TopBar() {
             )}
           </span>
         </button>
+        <QuitButton onAsk={onQuit} />
       </div>
     </header>
   );

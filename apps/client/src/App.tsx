@@ -38,7 +38,8 @@ function Page({
   if (online)
     return (
       <>
-        <Game />
+        {/* Départ volontaire : retour à l'accueil des jeux, pas à l'écran du pseudo. */}
+        <Game onQuit={() => setScreen(null)} />
         <SoundToasts />
       </>
     );
