@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash' | 'cadavre' | 'interdits' | 'motamot' | 'agents' | 'fredonne' | 'alibi' | 'pitch' | 'cerveau' | 'verite';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash' | 'cadavre' | 'interdits' | 'motamot' | 'agents' | 'fredonne' | 'alibi' | 'pitch' | 'cerveau' | 'verite' | 'quiz';
 
 export interface GameInfo {
   id: GameId;
@@ -188,6 +188,14 @@ export const GAMES: GameInfo[] = [
     players: 'À deux ou plus · visio',
     badge: 'Nouveau',
     keywords: ['action', 'verite', 'action ou verite', 'bouteille', 'defi', 'couple', 'duo', 'deux', 'spicy', 'complice', 'visio', 'soiree'],
+  },
+  {
+    id: 'quiz',
+    name: 'Quiz culture G',
+    pitch: 'Écris un thème, l’IA pose les questions. Qui sera champion ?',
+    players: 'À deux ou plus',
+    badge: 'Nouveau',
+    keywords: ['quiz', 'culture', 'culture generale', 'culture g', 'question', 'questions', 'theme', 'ia', 'championnat', 'champion', 'qcm', 'trivia', 'duo', 'deux'],
   },
 ];
 

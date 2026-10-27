@@ -23,6 +23,8 @@ import {
   maskWord,
   parseMeetUrl,
   normalize,
+  parseQuizThemes,
+  QUIZ_THEME_MAX,
   type AovHeat,
   type AovKind,
   type ChatLine,
@@ -33,6 +35,7 @@ import {
   type MimeTwist,
   type Phase,
   type PlayerPublic,
+  type QuizQuestion,
   type RoomGame,
   type RoomSettings,
   type RoomState,
@@ -48,13 +51,14 @@ import { Cerveau } from './cerveau';
 import { Connait } from './connait';
 import { Flash } from './flash';
 import { Fredonne } from './fredonne';
-import type { DareGenerator, PairGenerator, WordGenerator } from './deepseek';
+import type { DareGenerator, PairGenerator, QuizGenerator, WordGenerator } from './deepseek';
 import { Interdits } from './interdits';
 import { Intrus } from './intrus';
 import { MotAMot } from './motamot';
 import { INTRUS_PAIRS } from './intrusPairs';
 import { PetitBac } from './petitbac';
 import { Photomaton } from './photomaton';
+import { Quiz } from './quiz';
 import { Pitch } from './pitch';
 import { Sourire } from './sourire';
 import { BrasDeFer } from './brasdefer';
@@ -140,6 +144,9 @@ export class Room {
   private pitch: Pitch | null = null;
   private cerveau: Cerveau | null = null;
   private aov: ActionVerite | null = null;
+  private quiz: Quiz | null = null;
+  // Questions du quiz commandées dès que l'hôte écrit son thème, pour ne pas attendre au lancement.
+  private quizCache = new Map<string, Promise<QuizQuestion[] | null>>();
   // Cartes d'Action ou vérité inventées par l'IA, par niveau ; chacune ne sert qu'une fois.
   private dares: Record<AovHeat, Record<AovKind, string[]>> = {
     lite: { action: [], verite: [] },
@@ -177,6 +184,7 @@ export class Room {
     private readonly generateWords: WordGenerator | null = null,
     private readonly generatePairs: PairGenerator | null = null,
     private readonly generateDares: DareGenerator | null = null,
+    private readonly generateQuiz: QuizGenerator | null = null,
   ) {
     this.code = code;
   }
@@ -216,6 +224,7 @@ export class Room {
     if (this.players.size >= 2) {
       this.refillWords();
       this.refillPairs();
+      this.prefetchQuiz();
       this.refillDares();
     }
     return id;
@@ -239,7 +248,7 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.bras || this.flash || this.cadavre || this.interdits || this.mot || this.agents || this.fred || this.alibi || this.pitch || this.cerveau || this.aov) {
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.bras || this.flash || this.cadavre || this.interdits || this.mot || this.agents || this.fred || this.alibi || this.pitch || this.cerveau || this.aov || this.quiz) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
       this.intrus?.onLeave(id);
@@ -259,6 +268,7 @@ export class Room {
       this.pitch?.onLeave(id);
       this.cerveau?.onLeave(id);
       this.aov?.onLeave(id);
+      this.quiz?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -284,6 +294,7 @@ export class Room {
             this.refillWords();
             this.refillDares();
           }
+          this.prefetchQuiz();
         }
         break;
       case 'start':
@@ -354,6 +365,9 @@ export class Room {
         break;
       case 'cerveau':
         if (msg && typeof msg === 'object') this.cerveau?.handle(id, msg);
+        break;
+      case 'quiz':
+        if (msg && typeof msg === 'object') this.quiz?.handle(id, msg);
         break;
       case 'sound':
         // Boîte à sons, dans tous les jeux : l'émetteur l'a déjà joué chez lui.
@@ -476,6 +490,7 @@ export class Room {
     if (this.game === 'pitch') return this.startPitch();
     if (this.game === 'cerveau') return this.startCerveau();
     if (this.game === 'verite') return this.startAov();
+    if (this.game === 'quiz') return this.startQuiz();
     this.usedWords.clear();
     this.shotCount = 0;
     this.nextRound();
@@ -783,6 +798,58 @@ export class Room {
       endGame: () => this.endGame(),
     });
     this.bac.start();
+  }
+
+  private startQuiz(): void {
+    this.quiz?.dispose();
+    const key = this.quizKey();
+    const cached = this.quizCache.get(key);
+    // Une partie consomme ses questions : la revanche sur le même thème en commandera d'autres.
+    this.quizCache.delete(key);
+    this.quiz = new Quiz({
+      playerIds: () => [...this.players.keys()],
+      player: (id) => this.players.get(id),
+      themes: () => parseQuizThemes(this.settings.quizTheme),
+      count: () => this.settings.questions,
+      random: this.random,
+      generate: () => cached ?? this.orderQuiz(),
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      system: (text) => this.system(text),
+      endGame: () => this.endGame(),
+    });
+    void this.quiz.start();
+  }
+
+  private quizKey(): string {
+    const { quizTheme, difficulty } = this.settings;
+    return `${parseQuizThemes(quizTheme).map(normalize).join(',')}|${difficulty}`;
+  }
+
+  private orderQuiz(count = this.settings.questions): Promise<QuizQuestion[] | null> {
+    if (!this.generateQuiz) return Promise.resolve(null);
+    const { quizTheme, difficulty } = this.settings;
+    return this.generateQuiz(parseQuizThemes(quizTheme), difficulty, count).catch(() => null);
+  }
+
+  /**
+   * Commande les questions du thème et du niveau en cours, une fois par réglage (les trois derniers
+   * restent en stock). Toujours le maximum : changer le nombre de questions ne relance rien.
+   */
+  private prefetchQuiz(): void {
+    if (this.game !== 'quiz' || this.phase !== 'lobby' || this.players.size < 2 || !this.generateQuiz) return;
+    const key = this.quizKey();
+    if (this.quizCache.has(key)) return;
+    this.quizCache.set(key, this.orderQuiz(SETTINGS_LIMITS.questions[1]));
+    while (this.quizCache.size > 3) this.quizCache.delete(this.quizCache.keys().next().value!);
   }
 
   private startConnait(): void {
@@ -1244,6 +1311,8 @@ export class Room {
     this.cerveau = null;
     this.aov?.dispose();
     this.aov = null;
+    this.quiz?.dispose();
+    this.quiz = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -1374,6 +1443,7 @@ export class Room {
       pitch: this.pitch?.stateFor() ?? null,
       cerveau: this.cerveau?.stateFor(id) ?? null,
       aov: this.aov?.state() ?? null,
+      quiz: this.quiz?.stateFor(id) ?? null,
     };
   }
 
@@ -1428,6 +1498,7 @@ export class Room {
     this.pitch?.dispose();
     this.cerveau?.dispose();
     this.aov?.dispose();
+    this.quiz?.dispose();
   }
 }
 
@@ -1452,6 +1523,7 @@ function mergeSettings(cur: RoomSettings, patch: Partial<RoomSettings>): RoomSet
   if (isDifficulty(patch.difficulty)) next.difficulty = patch.difficulty;
   if (isGameMode(patch.mode)) next.mode = patch.mode;
   if (isTrapMode(patch.traps)) next.traps = patch.traps;
+  if (typeof patch.quizTheme === 'string') next.quizTheme = patch.quizTheme.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, QUIZ_THEME_MAX);
   if (typeof patch.twists === 'boolean') next.twists = patch.twists;
   if (isCerveauMode(patch.cerveau)) next.cerveau = patch.cerveau;
   if (isAovLevel(patch.aovLevel)) next.aovLevel = patch.aovLevel;

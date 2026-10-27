@@ -92,6 +92,10 @@ export function TopBar() {
           ? 'Salon'
           : room.connait
             ? `Question ${room.connait.turn}/${room.connait.turns}`
+          : room.quiz
+            ? room.phase === 'prep'
+              ? 'Préparation'
+              : `Question ${room.quiz.index}/${room.quiz.total}`
           : room.bomb
             ? `${Object.values(room.bomb.lives).filter(Boolean).length} en lice`
           : room.motamot

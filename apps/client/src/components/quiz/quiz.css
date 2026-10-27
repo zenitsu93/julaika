@@ -1,0 +1,301 @@
+/* Quiz de culture générale : machine à questions, compte à rebours en anneau, réponses qui
+   s'ouvrent après la lecture, barres de votes et podium. Préfixe « q- » pour ne rien croiser. */
+
+@property --q-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes q-spin {
+  to {
+    --q-angle: 360deg;
+  }
+}
+
+/* ---- Machine à questions (préparation) ----------------------------------------- */
+
+/* Halo doré qui tourne autour du disque central. */
+.q-core {
+  background: conic-gradient(from var(--q-angle), transparent 0 40%, var(--color-gold) 70%, var(--color-butter) 80%, transparent 100%);
+  animation: q-spin 2.4s linear infinite;
+}
+
+/* Les quatre lettres gravitent autour du disque, chacune avec son retard. */
+@keyframes q-orbit {
+  from {
+    transform: rotate(0deg) translateX(var(--q-r, 7.5rem)) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(var(--q-r, 7.5rem)) rotate(-360deg);
+  }
+}
+.q-orbit {
+  animation: q-orbit 9s linear infinite;
+}
+
+/* Anneaux qui s'élargissent depuis le centre, comme un signal. */
+@keyframes q-ping {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+.q-ping {
+  animation: q-ping 2.4s var(--ease-out) infinite;
+}
+
+/* Texte balayé par un reflet (titres de la machine et du podium). */
+@keyframes q-shine {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+.q-shine {
+  background: linear-gradient(100deg, var(--color-ink) 35%, var(--color-gold) 50%, var(--color-ink) 65%) 0 0 / 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: q-shine 2.6s linear infinite;
+}
+
+/* Le point d'interrogation du disque bascule, comme quelqu'un qui réfléchit. */
+@keyframes q-think {
+  0%,
+  100% {
+    transform: rotate(-10deg);
+  }
+  50% {
+    transform: rotate(10deg) scale(1.06);
+  }
+}
+.q-think {
+  animation: q-think 1.6s ease-in-out infinite;
+}
+
+/* ---- Question ------------------------------------------------------------------ */
+
+/* Anneau du compte à rebours : il se vide sur la durée de la question. */
+@keyframes q-ring {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 100;
+  }
+}
+.q-ring {
+  animation: q-ring linear forwards;
+}
+
+/* Barre de lecture : elle se remplit, puis les réponses s'ouvrent. */
+@keyframes q-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.q-fill {
+  transform-origin: left;
+  animation: q-fill linear forwards;
+}
+.q-deplete {
+  transform-origin: left;
+  animation: q-fill linear reverse forwards;
+}
+
+/* Réponse verrouillée : un faisceau court sur son bord. */
+.q-beam::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  padding: 2px;
+  border-radius: inherit;
+  background: conic-gradient(from var(--q-angle), transparent 0 60%, var(--color-gold) 82%, transparent 96%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: q-spin 2.2s linear infinite;
+  pointer-events: none;
+}
+
+/* Lumière qui suit le pointeur sur les réponses. */
+.q-option:enabled:hover {
+  background-image: radial-gradient(16rem circle at var(--qx, 50%) var(--qy, 50%), color-mix(in srgb, var(--color-gold) 14%, transparent), transparent 60%);
+}
+
+/* Les réponses s'ouvrent : elles se déplient vers le haut, une à une. */
+@keyframes q-unfold {
+  0% {
+    transform: perspective(600px) rotateX(-70deg) translateY(10px);
+    opacity: 0;
+  }
+  70% {
+    transform: perspective(600px) rotateX(8deg);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+.q-unfold {
+  transform-origin: top center;
+  animation: q-unfold 0.55s var(--ease-out) backwards;
+}
+
+/* Révélation : la bonne réponse pulse en or. */
+@keyframes q-win {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-gold) 75%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 16px transparent;
+  }
+}
+.q-win {
+  animation: q-win 0.9s ease-out 2 backwards;
+}
+
+/* Barres de votes sous chaque réponse. */
+@keyframes q-bar {
+  from {
+    transform: scaleX(0);
+  }
+}
+.q-bar {
+  transform-origin: left;
+  animation: q-bar 0.8s var(--ease-out) backwards;
+}
+
+/* Flamme de série : elle danse un peu. */
+@keyframes q-flame {
+  0%,
+  100% {
+    transform: rotate(-6deg) scale(1);
+  }
+  50% {
+    transform: rotate(6deg) scale(1.12);
+  }
+}
+.q-flame {
+  display: inline-block;
+  transform-origin: 50% 90%;
+  animation: q-flame 0.9s ease-in-out infinite;
+}
+
+/* Points gagnés qui s'envolent depuis la puce d'un joueur. */
+@keyframes q-gain {
+  0% {
+    transform: translate(-50%, 4px) scale(0.6);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(-50%, -6px) scale(1.1);
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -26px) scale(1);
+    opacity: 0;
+  }
+}
+.q-gain {
+  animation: q-gain 1.8s var(--ease-out) forwards;
+}
+
+/* ---- Podium -------------------------------------------------------------------- */
+
+@keyframes q-rise {
+  from {
+    transform: scaleY(0);
+  }
+}
+.q-step {
+  transform-origin: bottom;
+  animation: q-rise 0.8s cubic-bezier(0.2, 0.9, 0.25, 1.15) backwards;
+}
+@keyframes q-crown {
+  0% {
+    transform: translateY(-40px) rotate(-20deg);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(4px) rotate(8deg);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+.q-crown {
+  display: inline-block;
+  animation: q-crown 0.7s var(--ease-out) backwards;
+}
+
+/* ---- Carte de l'accueil -------------------------------------------------------- */
+
+@keyframes q-art-pick {
+  0%,
+  18% {
+    fill-opacity: 0.16;
+  }
+  24%,
+  44% {
+    fill-opacity: 1;
+  }
+  50%,
+  100% {
+    fill-opacity: 0.16;
+  }
+}
+.q-art-bar {
+  fill-opacity: 0.16;
+  animation: q-art-pick 4.8s infinite;
+}
+@keyframes q-art-tick {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.q-art-timer {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: q-art-tick 4.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .q-core,
+  .q-orbit,
+  .q-ping,
+  .q-shine,
+  .q-think,
+  .q-beam::before,
+  .q-flame,
+  .q-art-bar,
+  .q-art-timer {
+    animation: none;
+  }
+  .q-shine {
+    color: var(--color-ink);
+    background: none;
+  }
+  .q-unfold,
+  .q-step,
+  .q-crown,
+  .q-bar,
+  .q-win {
+    animation-duration: 1ms;
+  }
+}
