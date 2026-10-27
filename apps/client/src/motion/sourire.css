@@ -1,0 +1,254 @@
+/* Pas un sourire ! : le visage qui se retient, le face-à-face, le compte à rebours et le verdict. */
+
+/* La bouche hésite : neutre, sourire qui pointe, puis elle se retient. */
+@keyframes s-mouth {
+  0%,
+  30%,
+  100% {
+    d: path('M74 90c8 0 44 0 52 0');
+  }
+  50%,
+  70% {
+    d: path('M74 90c8 14 44 14 52 0');
+  }
+}
+.s-mouth {
+  animation: s-mouth 3.2s var(--ease-out) infinite;
+}
+/* Dans le plateau, le petit visage a d'autres coordonnées. */
+svg[viewBox='0 0 120 120'] .s-mouth {
+  animation-name: s-mouth-sm;
+}
+@keyframes s-mouth-sm {
+  0%,
+  30%,
+  100% {
+    d: path('M36 76c8 0 40 0 48 0');
+  }
+  50%,
+  70% {
+    d: path('M36 74c8 14 40 14 48 0');
+  }
+}
+/* La fossette dorée n'apparaît qu'au moment où le sourire pointe. */
+@keyframes s-dimple {
+  0%,
+  35%,
+  80%,
+  100% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  50%,
+  70% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.s-dimple {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: s-dimple 3.2s var(--ease-out) infinite;
+}
+@keyframes s-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+.s-blink {
+  animation: s-blink 4s infinite;
+}
+@keyframes s-note {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+}
+.s-note {
+  animation: s-note 1.6s ease-in-out infinite;
+}
+.s-teaser {
+  animation: m-float 5s ease-in-out infinite;
+}
+
+/* Face-à-face : les deux visages glissent de chaque côté, le chiffre claque au centre. */
+@keyframes s-in-left {
+  from {
+    transform: translateX(-40px) rotate(-4deg) scale(0.92);
+    opacity: 0;
+  }
+}
+@keyframes s-in-right {
+  from {
+    transform: translateX(40px) rotate(4deg) scale(0.92);
+    opacity: 0;
+  }
+}
+.s-in-left {
+  animation: s-in-left 0.55s var(--ease-spring) backwards;
+}
+.s-in-right {
+  animation: s-in-right 0.55s 0.08s var(--ease-spring) backwards;
+}
+@keyframes s-count {
+  0% {
+    transform: scale(2.2);
+    opacity: 0;
+    filter: blur(6px);
+  }
+  35% {
+    transform: scale(0.95);
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.s-count {
+  display: inline-block;
+  animation: s-count 0.5s var(--ease-out) backwards;
+}
+
+/* Le visage surveillé respire d'un halo doré ; l'anneau tremble sur les dernières secondes. */
+.s-face {
+  box-shadow: 0 20px 50px -30px rgb(0 0 0 / 0.55);
+}
+@keyframes s-urgent {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+.s-urgent {
+  animation: s-urgent 0.5s ease-in-out infinite;
+}
+
+/* Le gros bouton : un reflet le traverse en boucle, comme un appel à appuyer. */
+.s-smiled {
+  position: relative;
+  overflow: hidden;
+}
+.s-smiled::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / 0.28) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: s-sheen 2.6s 0.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes s-sheen {
+  60%,
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* La consigne : la carte arrive en basculant, le texte se dévoile en fondu flou. */
+.s-dare {
+  animation: m-pop 0.4s var(--ease-spring) backwards;
+}
+.s-dare::before {
+  content: '';
+  position: absolute;
+  inset: -40% -10% auto auto;
+  width: 9rem;
+  height: 9rem;
+  border-radius: 9999px;
+  background: radial-gradient(circle, var(--color-accent), transparent 70%);
+  opacity: 0.35;
+  animation: m-float 6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes s-dare-text {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(6px);
+  }
+}
+.s-dare-text {
+  position: relative;
+  animation: s-dare-text 0.45s var(--ease-out) backwards;
+}
+
+/* Verdict : le tampon « Craqué ! » s'abat, le visage éclate de rire. */
+@keyframes s-stamp {
+  0% {
+    transform: scale(3) rotate(-14deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.94) rotate(-7deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(-6deg);
+  }
+}
+.s-stamp {
+  animation: s-stamp 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards;
+}
+@keyframes s-crack {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(-8deg) scale(1.05);
+  }
+  75% {
+    transform: rotate(8deg) scale(1.05);
+  }
+}
+.s-crack {
+  animation: s-crack 0.45s 0.4s ease-in-out 3 backwards;
+}
+svg.s-crack .s-mouth {
+  animation: none;
+  d: path('M32 70c8 22 48 22 56 0z');
+  fill: currentColor;
+}
+.s-crack .s-dimple {
+  animation: none;
+  opacity: 1;
+}
+@keyframes s-stoic {
+  from {
+    transform: scale(0.6) rotate(-10deg);
+    opacity: 0;
+  }
+}
+.s-stoic {
+  animation: s-stoic 0.6s var(--ease-spring) backwards;
+}
+.s-stoic .s-dimple {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .s-mouth,
+  .s-dimple,
+  .s-blink,
+  .s-note,
+  .s-urgent,
+  .s-smiled::after,
+  .s-dare::before {
+    animation: none;
+  }
+}

@@ -218,6 +218,23 @@ const IntrusArt = () => (
   </svg>
 );
 
+/** Un visage qui se retient : la bouche frémit, une fossette dorée trahit le sourire. */
+const SourireArt = () => (
+  <svg viewBox="0 0 200 140" className="mx-auto max-h-36 w-full" fill="none" stroke="currentColor" strokeLinecap="round" aria-hidden>
+    <circle cx="100" cy="70" r="54" strokeWidth="5" strokeOpacity=".3" />
+    <g className="s-blink" style={{ transformOrigin: '100px 56px' }}>
+      <circle cx="80" cy="56" r="7" fill="currentColor" stroke="none" />
+      <circle cx="120" cy="56" r="7" fill="currentColor" stroke="none" />
+    </g>
+    <path className="s-mouth" d="M74 90c8 14 44 14 52 0" strokeWidth="7" />
+    <circle className="s-dimple fill-gold" cx="132" cy="86" r="4.5" stroke="none" />
+    <g className="s-note stroke-gold" strokeWidth="4">
+      <path d="M164 34v-14l10-3" />
+      <path d="M30 46c4-6 10-6 14 0" />
+    </g>
+  </svg>
+);
+
 /** L'appareil instantané : le flash éclate, puis le polaroid sort de la fente et se révèle. */
 const PhotoArt = () => (
   <svg viewBox="0 0 200 150" className="mx-auto max-h-36 w-full" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -285,6 +302,7 @@ const ART: Record<GameId, JSX.Element> = {
   connait: <ConnaitArt />,
   bombe: <BombArt />,
   photomaton: <PhotoArt />,
+  sourire: <SourireArt />,
 };
 
 /** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */

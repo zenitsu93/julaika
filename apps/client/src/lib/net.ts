@@ -1,7 +1,8 @@
-import { decodeDraw, type ClientMsg, type RoomGame, type RoomState, type ServerMsg } from '@julaika/shared';
+import { decodeDraw, isSoundId, type ClientMsg, type RoomGame, type RoomState, type ServerMsg } from '@julaika/shared';
 import { wipeBoard } from '../motion';
 import { board } from './board';
 import { call } from './call';
+import { configureSounds, receive as receiveSound } from './sounds';
 import { store, type GameState } from './store';
 
 const MAX_CHAT = 120;
@@ -130,6 +131,10 @@ class Net {
       case 'dial':
         store.set({ dial: msg.value });
         break;
+      case 'sound':
+        // Joué sauf en muet, mais la bulle s'affiche toujours.
+        if (isSoundId(msg.id)) receiveSound(msg.id, msg.by);
+        break;
       case 'rtc':
         void call.onSignal(msg.from, msg.data);
         break;
@@ -151,6 +156,7 @@ class Net {
 }
 
 export const net = new Net();
+configureSounds((id) => net.send({ t: 'sound', id }));
 
 /** À la révélation d'une manche du Photomaton, garde sa meilleure photo pour le final. */
 function keepBest(reel: GameState['reel'], photos: GameState['photos'], state: RoomState): GameState['reel'] {

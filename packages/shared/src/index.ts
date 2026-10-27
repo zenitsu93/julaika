@@ -9,3 +9,4 @@ export * from './connait';
 export * from './intrus';
 export * from './petitbac';
 export * from './photomaton';
+export * from './sourire';

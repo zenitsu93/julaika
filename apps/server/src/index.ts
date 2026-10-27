@@ -115,6 +115,7 @@ wss.on('connection', (ws: WebSocket & { alive?: boolean }) => {
   const chatBucket = bucket(5, 1); // 5 messages en rafale, 1/s ensuite
   const drawBucket = bucket(120, 60);
   const dialBucket = bucket(40, 30); // aiguille de Wavelength : ~30 positions/s
+  const soundBucket = bucket(4, 1.5); // boîte à sons : 4 en rafale, puis ~1 toutes les 700 ms
 
   ws.alive = true;
   ws.on('pong', () => (ws.alive = true));
@@ -147,7 +148,8 @@ wss.on('connection', (ws: WebSocket & { alive?: boolean }) => {
     }
     if (!room || !playerId) return;
     if (msg.t === 'chat' && !chatBucket()) return;
-    if ((msg.t === 'wave' || msg.t === 'tel' || msg.t === 'intrus' || msg.t === 'bac' || msg.t === 'connait' || msg.t === 'bomb') && !dialBucket()) return;
+    if ((msg.t === 'wave' || msg.t === 'tel' || msg.t === 'intrus' || msg.t === 'bac' || msg.t === 'connait' || msg.t === 'bomb' || msg.t === 'sourire') && !dialBucket()) return;
+    if (msg.t === 'sound' && !soundBucket()) return;
     room.handle(playerId, msg);
   });
 

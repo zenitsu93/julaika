@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire';
 
 export interface GameInfo {
   id: GameId;
@@ -92,6 +92,14 @@ export const GAMES: GameInfo[] = [
     players: 'En visio · à deux ou plus',
     badge: 'Nouveau',
     keywords: ['photomaton', 'photo', 'polaroid', 'camera', 'visio', 'grimace', 'expression', 'selfie', 'vote', 'duo', 'deux'],
+  },
+  {
+    id: 'sourire',
+    name: 'Pas un sourire\u00a0!',
+    pitch: 'Garde ton sérieux pendant que l’autre fait le pitre.',
+    players: 'À deux ou plus · visio',
+    badge: 'À deux',
+    keywords: ['sourire', 'rire', 'tu ris tu perds', 'serieux', 'grimace', 'visio', 'camera', 'duo', 'deux', 'sons', 'bruitages'],
   },
 ];
 

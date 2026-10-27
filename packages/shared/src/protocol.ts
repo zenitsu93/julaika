@@ -7,6 +7,7 @@ import type { IntrusState } from './intrus';
 import type { BacState } from './petitbac';
 import type { PhotoShot, PhotoState } from './photomaton';
 import type { TelChain, TelEntry, TelState } from './telephone';
+import type { SoundId, SourireState, WarpId } from './sourire';
 import type { WaveState } from './wavelength';
 
 export const CANVAS_W = 800;
@@ -21,7 +22,7 @@ export const PALETTE = [
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 /** Jeux proposés : chaque salon en porte un, choisi à sa création. */
-export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton'] as const;
+export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
@@ -35,6 +36,7 @@ export function isRoomGame(v: unknown): v is RoomGame {
  * → steal (l'intrus démasqué tente le mot) → reveal. Petit Bac : fill (la grille) → vote → reveal.
  * Qui me connaît le mieux : answer (la vedette répond, les autres parient) → reveal.
  * Bombe à mots : bomb, jusqu'au dernier survivant. Photomaton : pose (consigne puis flash) → vote → reveal.
+ * Pas un sourire ! : faceoff (3, 2, 1) → duel → verdict.
  */
 export type Phase =
   | 'lobby'
@@ -54,6 +56,9 @@ export type Phase =
   | 'answer'
   | 'bomb'
   | 'pose'
+  | 'faceoff'
+  | 'duel'
+  | 'verdict'
   | 'gameEnd';
 
 /** Difficulté des mots proposés : sert au tirage dans les listes intégrées et à la génération par IA. */
@@ -179,6 +184,8 @@ export interface RoomState {
   bomb: BombState | null;
   /** État du Photomaton, null pour les autres jeux. */
   photo: PhotoState | null;
+  /** État de Pas un sourire !, null pour les autres jeux. */
+  sourire: SourireState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -239,6 +246,11 @@ export type ClientMsg =
   | { t: 'bomb'; typing: string }
   | { t: 'photo'; image: string | null }
   | { t: 'photo'; vote: string; stars: number }
+  /** Boîte à sons : un bruitage joué chez tout le salon (dans tous les jeux). */
+  | { t: 'sound'; id: SoundId }
+  | { t: 'sourire'; smiled: true }
+  | { t: 'sourire'; dare: true }
+  | { t: 'sourire'; warp: WarpId | null }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =
@@ -263,5 +275,7 @@ export type ServerMsg =
   | { t: 'bombEvent'; event: BombEvent }
   /** Photomaton : les polaroids de la manche, envoyés une fois toutes les photos reçues. */
   | { t: 'photos'; round: number; shots: PhotoShot[] }
+  /** Bruitage envoyé par un joueur : chacun le synthétise chez lui (sauf s'il a coupé le son). */
+  | { t: 'sound'; id: SoundId; by: string }
   | { t: 'pong'; at: number; now: number }
   | { t: 'error'; message: string };
