@@ -3,9 +3,12 @@ import {
   DrawOp,
   MAX_CALL,
   SETTINGS_LIMITS,
+  TRAPS,
+  TRAP_COLORS,
   checkGuess,
   decodeDraw,
   isDifficulty,
+  isTrapMode,
   maskWord,
   parseMeetUrl,
   type ChatLine,
@@ -18,6 +21,7 @@ import {
   type RoomSettings,
   type RoomState,
   type ServerMsg,
+  type Trap,
 } from '@julaika/shared';
 import type { WordGenerator } from './deepseek';
 import { Telephone } from './telephone';
@@ -42,7 +46,10 @@ interface Player {
 }
 
 export const CHOOSE_TIME = 15;
-export const TURN_END_TIME = 6;
+/** Fin de tour : le temps du mot révélé, du ralenti du dessin et des gains. */
+export const TURN_END_TIME = 8;
+/** Mode « parfois » : environ un tour sur trois est piégé. */
+export const TRAP_CHANCE = 0.35;
 export const GAME_END_TIME = 12;
 const MAX_STROKE_BYTES = 2_000_000;
 /** Mots demandés à l'IA par appel, et nombre de mots déjà proposés qu'on lui demande d'éviter. */
@@ -69,6 +76,9 @@ export class Room {
   /** Jeu du salon, fixé à sa création. */
   game: RoomGame = 'dessin';
 
+  /** Piège du tour en cours (manches piégées du Dessin). */
+  trap: Trap | null = null;
+
   private wave: Wavelength | null = null;
   private tel: Telephone | null = null;
   private choices: string[] = [];
@@ -83,6 +93,7 @@ export class Room {
   private generated: Record<Difficulty, string[]> = { facile: [], moyen: [], difficile: [] };
   private generating = new Set<Difficulty>();
   private offered: string[] = [];
+  private lastTrap: Trap['kind'] | null = null;
 
   constructor(
     code: string,
@@ -248,6 +259,8 @@ export class Room {
     if (!packet) return;
     if (this.strokeBytes + data.byteLength > MAX_STROKE_BYTES) return;
     const copy = new Uint8Array(data);
+    // Une seule couleur : tout ce qui n'est pas la gomme prend la couleur imposée.
+    if (this.trap?.kind === 'mono' && packet.color !== 0) copy[1] = this.trap.color;
     if (packet.op === DrawOp.Extend) {
       const last = this.strokes.at(-1);
       if (!last) return;
@@ -307,6 +320,7 @@ export class Room {
       p.turnGain = 0;
     }
     this.broadcast({ t: 'clear' });
+    this.trap = this.pickTrap();
 
     this.phase = 'choosing';
     this.choices = this.pickWords(this.settings.wordChoices);
@@ -455,6 +469,7 @@ export class Room {
     this.clearTimers();
     this.phase = 'gameEnd';
     this.drawerId = null;
+    this.trap = null;
     this.word = null;
     this.endsAt = Date.now() + GAME_END_TIME * 1000;
     const ranking = this.publicPlayers().sort((a, b) => b.score - a.score);
@@ -473,12 +488,23 @@ export class Room {
     this.round = 0;
     this.drawerId = null;
     this.word = null;
+    this.trap = null;
     this.endsAt = null;
     this.strokes = [];
     this.strokeBytes = 0;
     for (const p of this.players.values()) p.guessed = false;
     this.broadcast({ t: 'clear' });
     this.broadcastState();
+  }
+
+  /** Tire le piège du tour selon le réglage, sans retomber deux fois de suite sur le même. */
+  private pickTrap(): Trap | null {
+    const mode = this.settings.traps;
+    if (mode === 'jamais' || (mode === 'parfois' && this.random() >= TRAP_CHANCE)) return null;
+    const kinds = TRAPS.filter((k) => k !== this.lastTrap);
+    const kind = kinds[Math.floor(this.random() * kinds.length)] ?? TRAPS[0];
+    this.lastTrap = kind;
+    return { kind, color: TRAP_COLORS[Math.floor(this.random() * TRAP_COLORS.length)] ?? 12 };
   }
 
   private pickWords(n: number): string[] {
@@ -552,6 +578,7 @@ export class Room {
       round: this.round,
       endsAt: this.endsAt,
       hint,
+      trap: this.trap,
       meetUrl: this.meetUrl,
       wave: this.wave?.stateFor(id) ?? null,
       tel: this.tel?.state() ?? null,
@@ -614,5 +641,6 @@ function mergeSettings(cur: RoomSettings, patch: Partial<RoomSettings>): RoomSet
   }
   if (typeof patch.customOnly === 'boolean') next.customOnly = patch.customOnly;
   if (isDifficulty(patch.difficulty)) next.difficulty = patch.difficulty;
+  if (isTrapMode(patch.traps)) next.traps = patch.traps;
   return next;
 }

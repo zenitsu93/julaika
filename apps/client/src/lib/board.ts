@@ -4,10 +4,12 @@ import {
   CANVAS_W,
   DrawOp,
   PALETTE,
+  TRAP_COLORS,
   encodeDraw,
   floodFill,
   hexToRgb,
   type DrawPacket,
+  type Trap,
 } from '@julaika/shared';
 
 interface Stroke {
@@ -24,10 +26,26 @@ interface Stroke {
 export class BoardCanvas {
   private strokes: Stroke[] = [];
   private ctx: CanvasRenderingContext2D | null = null;
+  /** Encre invisible : le modèle suit les traits mais rien n'est peint tant que c'est vrai. */
+  private hidden = false;
+
+  /** `transparent` : calque sans fond blanc (aperçu des lignes droites, trait fantôme). */
+  constructor(private readonly transparent = false) {}
 
   attach(canvas: HTMLCanvasElement | null) {
     this.ctx = canvas?.getContext('2d', { willReadFrequently: true }) ?? null;
     this.redraw();
+  }
+
+  setHidden(hidden: boolean) {
+    if (hidden === this.hidden) return;
+    this.hidden = hidden;
+    this.redraw();
+  }
+
+  /** Les traits du dessin actuel, tels qu'on les rejoue (ralenti de fin de tour). */
+  packets(): DrawPacket[] {
+    return this.strokes.map((s) => ({ op: s.op, color: s.color, size: s.size, points: [...s.points] }));
   }
 
   reset() {
@@ -46,19 +64,23 @@ export class BoardCanvas {
       if (!s || s.op !== DrawOp.Begin) return;
       const from = s.points.length - 2;
       s.points.push(...p.points);
-      this.paintLine(s, Math.max(0, from));
+      if (!this.hidden) this.paintLine(s, Math.max(0, from));
       return;
     }
     const s: Stroke = { op: p.op, color: p.color, size: p.size, points: [...p.points] };
     this.strokes.push(s);
-    this.paint(s);
+    if (!this.hidden) this.paint(s);
   }
 
   private redraw() {
     const ctx = this.ctx;
     if (!ctx) return;
-    ctx.fillStyle = PALETTE[0];
-    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    if (this.transparent) ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+    else {
+      ctx.fillStyle = PALETTE[0];
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    }
+    if (this.hidden) return;
     for (const s of this.strokes) this.paint(s);
   }
 
@@ -140,45 +162,105 @@ export type Tool = 'pen' | 'eraser' | 'fill';
 /**
  * Saisie du dessinateur : les points (y compris les événements « coalescés » du navigateur)
  * sont regroupés et envoyés une fois par frame, soit ~60 paquets/s au maximum.
+ * Les manches piégées changent la saisie : couleur imposée ou tirée à chaque trait, lignes
+ * droites tracées à l'élastique sur le calque `ghost`, ou encre invisible (seul le trait en
+ * cours y apparaît, puis s'efface).
  */
 export class Pen {
   tool: Tool = 'pen';
   color = 12;
   sizeIndex = 1;
+  trap: Trap | null = null;
+  /** Couleur du trait en cours avec le pinceau farceur. */
+  luckyColor = 12;
+  /** Calque d'aperçu local, jamais envoyé ; `onLift` sert à l'effacer en fondu. */
+  ghost: BoardCanvas | null = null;
+  onLift: (() => void) | null = null;
   private pending: number[] = [];
   private raf = 0;
   private down = false;
+  private origin: [number, number] | null = null;
+  private tip: [number, number] | null = null;
 
   constructor(
     private readonly send: (buf: ArrayBuffer) => void,
     readonly target: BoardCanvas = board,
+    private readonly random: () => number = Math.random,
   ) {}
 
+  /** Couleur réellement posée, une fois les pièges appliqués. */
+  get inkColor(): number {
+    if (this.tool === 'eraser') return 0;
+    if (this.trap?.kind === 'mono') return this.trap.color;
+    if (this.trap?.kind === 'shifty') return this.luckyColor;
+    return this.color;
+  }
+
+  private draft(op: DrawOp, points: number[]): DrawPacket {
+    return { op, color: this.inkColor, size: BRUSH_SIZES[this.sizeIndex] ?? 10, points };
+  }
+
   private packet(op: DrawOp, points: number[]): void {
-    const color = this.tool === 'eraser' ? 0 : this.color;
-    const p: DrawPacket = { op, color, size: BRUSH_SIZES[this.sizeIndex] ?? 10, points };
+    const p = this.draft(op, points);
     this.target.apply(p);
+    if (this.trap?.kind === 'invisible') this.ghost?.apply(p);
     this.send(encodeDraw(p));
   }
 
   start(x: number, y: number) {
+    if (this.trap?.kind === 'shifty') {
+      const others = TRAP_COLORS.filter((c) => c !== this.luckyColor);
+      this.luckyColor = others[Math.floor(this.random() * others.length)] ?? 12;
+    }
+    const at: [number, number] = [Math.round(x), Math.round(y)];
     if (this.tool === 'fill') {
-      this.packet(DrawOp.Fill, [Math.round(x), Math.round(y)]);
+      this.packet(DrawOp.Fill, at);
       return;
     }
     this.down = true;
-    this.packet(DrawOp.Begin, [Math.round(x), Math.round(y)]);
+    if (this.trap?.kind === 'straight') {
+      // Rien ne part tant que le trait n'est pas lâché : on tire un élastique depuis l'origine.
+      this.origin = this.tip = at;
+      this.stretch();
+      return;
+    }
+    this.ghost?.reset();
+    this.packet(DrawOp.Begin, at);
   }
 
   move(points: number[]) {
     if (!this.down) return;
+    if (this.origin) {
+      this.tip = [Math.round(points.at(-2)!), Math.round(points.at(-1)!)];
+      if (!this.raf) this.raf = requestAnimationFrame(() => ((this.raf = 0), this.stretch()));
+      return;
+    }
     for (let i = 0; i < points.length; i++) this.pending.push(Math.round(points[i]!));
     if (!this.raf) this.raf = requestAnimationFrame(() => this.flush());
   }
 
   end() {
+    if (this.origin) {
+      cancelAnimationFrame(this.raf);
+      this.raf = 0;
+      const [x0, y0] = this.origin;
+      const [x1, y1] = this.tip ?? this.origin;
+      this.origin = this.tip = null;
+      this.ghost?.reset();
+      this.packet(DrawOp.Begin, [x0, y0]);
+      if (x1 !== x0 || y1 !== y0) this.packet(DrawOp.Extend, [x1, y1]);
+      this.down = false;
+      return;
+    }
     this.flush();
+    if (this.down) this.onLift?.();
     this.down = false;
+  }
+
+  private stretch() {
+    if (!this.origin || !this.ghost) return;
+    this.ghost.reset();
+    this.ghost.apply(this.draft(DrawOp.Begin, [...this.origin, ...(this.tip ?? this.origin)]));
   }
 
   private flush() {

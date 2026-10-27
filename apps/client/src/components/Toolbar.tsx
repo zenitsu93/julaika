@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
-import { BRUSH_SIZES, PALETTE } from '@julaika/shared';
+import { BRUSH_SIZES, PALETTE, type Trap } from '@julaika/shared';
 import type { Pen, Tool } from '../lib/board';
 import { net } from '../lib/net';
+import { TRAP_INFO } from '../lib/traps';
 import { animate, reducedMotion, useIndicator, wipeBoard } from '../motion';
 
 const TOOLS: { id: Tool; label: string; icon: string; key: string }[] = [
@@ -11,7 +12,7 @@ const TOOLS: { id: Tool; label: string; icon: string; key: string }[] = [
 ];
 
 /** Dock flottant (pattern « Dock » de 21st.dev), qui monte quand vient ton tour. Raccourcis : B, E, F, Ctrl+Z. */
-export function Toolbar({ pen }: { pen: Pen }) {
+export function Toolbar({ pen, trap = null }: { pen: Pen; trap?: Trap | null }) {
   const [, force] = useState(0);
   const update = (fn: () => void) => {
     fn();
@@ -26,8 +27,12 @@ export function Toolbar({ pen }: { pen: Pen }) {
   const spin = (el: Element | null) =>
     animate(el, [{ transform: 'rotate(0)' }, { transform: 'rotate(-25deg)' }, { transform: 'rotate(0)' }], { duration: 260, fill: 'none' });
 
+  // Pièges : couleur imposée (une seule pastille active) ou tirée au sort (palette en sommeil).
+  const lockedPalette = trap?.kind === 'mono' || trap?.kind === 'shifty';
+  const activeColor = pen.tool === 'eraser' || trap?.kind === 'shifty' ? -1 : trap?.kind === 'mono' ? trap.color : pen.color;
+
   // Les anneaux de la couleur, de la taille et de l'outil actifs glissent d'un élément à l'autre.
-  const colorRing = useIndicator(pen.tool === 'eraser' ? -1 : pen.color);
+  const colorRing = useIndicator(activeColor);
   const sizeRing = useIndicator(pen.sizeIndex);
   const toolRing = useIndicator(TOOLS.findIndex((t) => t.id === pen.tool));
 
@@ -64,18 +69,31 @@ export function Toolbar({ pen }: { pen: Pen }) {
   return (
     <div className="flex justify-center">
       <div className="m-dock flex flex-wrap items-center justify-center gap-3 rounded-2xl bg-primary px-3 py-2 text-on-primary shadow-lg sm:rounded-full">
+        {trap && (
+          <span
+            className="m-pop flex items-center gap-1.5 rounded-full bg-accent py-1 pr-3 pl-2 text-xs font-semibold whitespace-nowrap text-black"
+            title={TRAP_INFO[trap.kind].drawer}
+          >
+            {trap.kind === 'shifty' ? <span className="t-dice size-3.5 rounded-full" aria-hidden /> : <span>{TRAP_INFO[trap.kind].icon}</span>}
+            {TRAP_INFO[trap.kind].name}
+          </span>
+        )}
         <div ref={colorRing.container} className="relative grid grid-cols-12 gap-1">
           <span ref={colorRing.indicator} className="m-indicator rounded-full ring-2 ring-on-primary ring-offset-2 ring-offset-primary" />
-          {PALETTE.map((c, i) => (
-            <button
-              key={c}
-              data-slot
-              aria-label={`Couleur ${c}`}
-              onClick={() => update(() => ((pen.color = i), pen.tool === 'eraser' && (pen.tool = 'pen')))}
-              className="size-5 rounded-full transition hover:scale-110"
-              style={{ background: c }}
-            />
-          ))}
+          {PALETTE.map((c, i) => {
+            const locked = lockedPalette && !(trap?.kind === 'mono' && trap.color === i);
+            return (
+              <button
+                key={c}
+                data-slot
+                aria-label={`Couleur ${c}`}
+                disabled={locked}
+                onClick={() => update(() => ((pen.color = i), pen.tool === 'eraser' && (pen.tool = 'pen')))}
+                className={`size-5 rounded-full transition duration-300 ${locked ? 'scale-75 opacity-20 grayscale' : 'hover:scale-110'}`}
+                style={{ background: c, transitionDelay: locked ? `${(i % 12) * 15}ms` : undefined }}
+              />
+            );
+          })}
         </div>
         <span className="hidden h-6 w-px bg-on-primary/20 sm:block" />
         <div ref={sizeRing.container} className="relative flex gap-1">

@@ -50,6 +50,31 @@ export function isDifficulty(v: unknown): v is Difficulty {
   return (DIFFICULTIES as readonly unknown[]).includes(v);
 }
 
+/**
+ * Manches piégées du Dessin : une contrainte tirée au sort pour le dessinateur.
+ * invisible : il ne voit pas ce qu'il trace ; shifty : la couleur change à chaque levé de crayon ;
+ * straight : que des lignes droites ; mono : une seule couleur imposée.
+ */
+export const TRAPS = ['invisible', 'shifty', 'straight', 'mono'] as const;
+export type TrapKind = (typeof TRAPS)[number];
+
+export interface Trap {
+  kind: TrapKind;
+  /** Couleur imposée (index de PALETTE), utile au piège « mono » seulement. */
+  color: number;
+}
+
+/** Fréquence des manches piégées, réglée par l'hôte. */
+export const TRAP_MODES = ['jamais', 'parfois', 'toujours'] as const;
+export type TrapMode = (typeof TRAP_MODES)[number];
+
+export function isTrapMode(v: unknown): v is TrapMode {
+  return (TRAP_MODES as readonly unknown[]).includes(v);
+}
+
+/** Couleurs franches tirées pour le piège « une seule couleur » et le pinceau farceur. */
+export const TRAP_COLORS = [2, 3, 5, 6, 7, 8, 9, 10, 12, 15, 17, 18] as const;
+
 export interface RoomSettings {
   rounds: number;
   drawTime: number; // secondes
@@ -59,6 +84,7 @@ export interface RoomSettings {
   difficulty: Difficulty;
   customWords: string[];
   customOnly: boolean;
+  traps: TrapMode;
 }
 
 export const DEFAULT_SETTINGS: RoomSettings = {
@@ -70,6 +96,7 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   difficulty: 'moyen',
   customWords: [],
   customOnly: false,
+  traps: 'jamais',
 };
 
 export const SETTINGS_LIMITS = {
@@ -122,6 +149,8 @@ export interface RoomState {
   hint: string | null;
   /** Lien Google Meet du salon, partagé par l'hôte (vide si aucun). */
   meetUrl: string;
+  /** Piège du tour de dessin en cours (dès le choix du mot), null sinon. */
+  trap: Trap | null;
   /** État de Wavelength, null pour les autres jeux. */
   wave: WaveState | null;
   /** État du Téléphone dessiné, null pour les autres jeux. */
