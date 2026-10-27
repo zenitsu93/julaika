@@ -45,5 +45,7 @@ lettre près affiche « tu chauffes ». Ceux qui ont trouvé discutent entre eux
 
 ## Thème
 
-Concept « Néon Arcade ». Les couleurs sont des variables dans `apps/client/src/index.css` (`@theme`) :
-changer de concept se fait essentiellement là.
+Concept « Studio Pro » : tableau au centre, joueurs en pastilles au-dessus, dock flottant,
+thème clair et sombre selon le système. Raccourcis : `1`–`5` choisir le mot, `B`/`E`/`F` outils,
+`Ctrl+Z` annuler, `/` ou `Entrée` aller au chat. Les couleurs sont des variables dans
+`apps/client/src/index.css` (`@theme`) : changer de concept se fait essentiellement là.

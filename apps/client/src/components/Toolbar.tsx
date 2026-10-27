@@ -10,7 +10,7 @@ const TOOLS: { id: Tool; label: string; icon: string; key: string }[] = [
   { id: 'fill', label: 'Remplissage (F)', icon: '🪣', key: 'f' },
 ];
 
-/** Barre d'outils flottante façon « dock » (pattern 21st.dev). */
+/** Dock flottant (pattern « Dock » de 21st.dev). Raccourcis : B, E, F, Ctrl+Z. */
 export function Toolbar({ pen }: { pen: Pen }) {
   const [, force] = useState(0);
   const update = (fn: () => void) => {
@@ -37,56 +37,58 @@ export function Toolbar({ pen }: { pen: Pen }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [pen]);
 
+  const on = 'bg-on-primary/20 ring-1 ring-on-primary/60';
+  const tile = 'grid size-8 place-items-center rounded-full text-base transition hover:bg-on-primary/15';
+
   return (
-    <div className="glass flex flex-wrap items-center justify-center gap-3 p-2">
-      <div className="grid grid-cols-12 gap-1">
-        {PALETTE.map((c, i) => (
+    <div className="flex justify-center">
+      <div className="flex flex-wrap items-center justify-center gap-3 rounded-2xl bg-primary px-3 py-2 text-on-primary shadow-lg sm:rounded-full">
+        <div className="grid grid-cols-12 gap-1">
+          {PALETTE.map((c, i) => (
+            <button
+              key={c}
+              aria-label={`Couleur ${c}`}
+              onClick={() => update(() => ((pen.color = i), pen.tool === 'eraser' && (pen.tool = 'pen')))}
+              className={`size-5 rounded-full transition hover:scale-110 ${pen.color === i && pen.tool !== 'eraser' ? 'ring-2 ring-on-primary ring-offset-2 ring-offset-primary' : ''}`}
+              style={{ background: c }}
+            />
+          ))}
+        </div>
+        <span className="hidden h-6 w-px bg-on-primary/20 sm:block" />
+        <div className="flex gap-1">
+          {BRUSH_SIZES.map((s, i) => (
+            <button key={s} aria-label={`Taille ${s}`} onClick={() => update(() => (pen.sizeIndex = i))} className={`${tile} ${pen.sizeIndex === i ? on : ''}`}>
+              <span className="rounded-full bg-on-primary" style={{ width: 3 + i * 4, height: 3 + i * 4 }} />
+            </button>
+          ))}
+        </div>
+        <span className="hidden h-6 w-px bg-on-primary/20 sm:block" />
+        <div className="flex gap-1">
+          {TOOLS.map((t) => (
+            <button
+              key={t.id}
+              title={t.label}
+              aria-label={t.label}
+              aria-pressed={pen.tool === t.id}
+              onClick={() => update(() => (pen.tool = t.id))}
+              className={`${tile} ${pen.tool === t.id ? on : ''}`}
+            >
+              {t.icon}
+            </button>
+          ))}
+          <button title="Annuler (Ctrl+Z)" aria-label="Annuler" onClick={undo} className={tile}>↩️</button>
           <button
-            key={c}
-            aria-label={`Couleur ${c}`}
-            onClick={() => update(() => ((pen.color = i), pen.tool === 'eraser' && (pen.tool = 'pen')))}
-            className={`size-6 rounded-md transition hover:scale-110 ${pen.color === i ? 'ring-2 ring-neon-cyan ring-offset-2 ring-offset-night' : ''}`}
-            style={{ background: c }}
-          />
-        ))}
-      </div>
-      <div className="flex gap-1">
-        {BRUSH_SIZES.map((s, i) => (
-          <button
-            key={s}
-            aria-label={`Taille ${s}`}
-            onClick={() => update(() => (pen.sizeIndex = i))}
-            className={`grid size-9 place-items-center rounded-xl ${pen.sizeIndex === i ? 'bg-neon-violet/30 ring-1 ring-neon-violet' : 'bg-white/5'}`}
+            title="Tout effacer"
+            aria-label="Tout effacer"
+            onClick={() => {
+              board.reset();
+              net.send({ t: 'clear' });
+            }}
+            className={tile}
           >
-            <span className="rounded-full bg-ink" style={{ width: 4 + i * 5, height: 4 + i * 5 }} />
+            🗑️
           </button>
-        ))}
-      </div>
-      <div className="flex gap-1">
-        {TOOLS.map((t) => (
-          <button
-            key={t.id}
-            title={t.label}
-            aria-label={t.label}
-            aria-pressed={pen.tool === t.id}
-            onClick={() => update(() => (pen.tool = t.id))}
-            className={`grid size-9 place-items-center rounded-xl text-lg ${pen.tool === t.id ? 'bg-neon-violet/30 ring-1 ring-neon-violet' : 'bg-white/5'}`}
-          >
-            {t.icon}
-          </button>
-        ))}
-        <button title="Annuler (Ctrl+Z)" aria-label="Annuler" onClick={undo} className="grid size-9 place-items-center rounded-xl bg-white/5 text-lg">↩️</button>
-        <button
-          title="Tout effacer"
-          aria-label="Tout effacer"
-          onClick={() => {
-            board.reset();
-            net.send({ t: 'clear' });
-          }}
-          className="grid size-9 place-items-center rounded-xl bg-white/5 text-lg"
-        >
-          🗑️
-        </button>
+        </div>
       </div>
     </div>
   );

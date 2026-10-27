@@ -4,6 +4,7 @@ import { Pen, board } from '../lib/board';
 import { net } from '../lib/net';
 import { useGame } from '../lib/store';
 import { Overlay } from './Overlay';
+import { PlayerStrip } from './PlayerStrip';
 import { Toolbar } from './Toolbar';
 
 export function Board() {
@@ -26,8 +27,10 @@ export function Board() {
   };
 
   return (
-    <section className="order-1 flex min-w-0 flex-col gap-3 lg:order-none">
-      <div className="relative overflow-hidden rounded-2xl border border-edge shadow-[0_0_60px_-25px_var(--color-neon-cyan)]">
+    <section className="flex min-w-0 flex-col gap-3">
+      <PlayerStrip />
+      {/* Le tableau garde son ratio 4:3 et tient dans la hauteur de l’écran, dock compris. */}
+      <div className="relative mx-auto w-full max-w-[max(20rem,calc((100dvh-15rem)*4/3))] overflow-hidden rounded-lg border border-edge">
         <canvas
           ref={canvas}
           width={CANVAS_W}

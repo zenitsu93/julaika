@@ -32,27 +32,28 @@ export function Home() {
   return (
     <main className="grid min-h-full place-items-center p-4">
       <div className="w-full max-w-md">
-        <h1 className="mb-1 text-center text-5xl font-bold tracking-tight">
-          <span className="bg-gradient-to-r from-neon-violet via-neon-pink to-neon-cyan bg-clip-text text-transparent">
-            julaika
-          </span>
-        </h1>
-        <p className="mb-8 text-center text-muted">Dessine. Devine. Gagne.</p>
+        <div className="mb-6 flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-lg bg-primary text-xl text-on-primary" aria-hidden>✏️</span>
+          <div>
+            <h1 className="text-2xl font-bold leading-tight tracking-tight">julaika</h1>
+            <p className="text-sm text-muted">Dessine, devine, marque des points.</p>
+          </div>
+        </div>
 
         <form
-          className="glass space-y-5 p-6 shadow-[0_0_80px_-20px_var(--color-neon-violet)]"
+          className="panel space-y-5 p-5 shadow-sm"
           onSubmit={(e) => {
             e.preventDefault();
             play(code);
           }}
         >
           <div>
-            <label className="mb-2 block text-sm text-muted" htmlFor="name">Pseudo</label>
+            <label className="mb-1.5 block text-sm font-medium" htmlFor="name">Pseudo</label>
             <input id="name" className="input" maxLength={20} value={name} placeholder="Ton pseudo" onChange={(e) => setName(e.target.value)} />
           </div>
 
           <div>
-            <span className="mb-2 block text-sm text-muted">Avatar</span>
+            <span className="mb-1.5 block text-sm font-medium">Avatar</span>
             <div className="grid grid-cols-8 gap-2">
               {AVATARS.map((a, i) => (
                 <button
@@ -61,8 +62,8 @@ export function Home() {
                   aria-label={`Avatar ${i + 1}`}
                   aria-pressed={avatar === i}
                   onClick={() => setAvatar(i)}
-                  className={`aspect-square rounded-xl text-2xl transition hover:scale-110 ${
-                    avatar === i ? 'bg-neon-violet/30 ring-2 ring-neon-violet' : 'bg-white/5'
+                  className={`aspect-square rounded-md border text-xl transition hover:scale-105 ${
+                    avatar === i ? 'border-ink bg-page ring-2 ring-ink/10' : 'border-edge'
                   }`}
                 >
                   {a}
@@ -82,12 +83,12 @@ export function Home() {
             <button className="btn-ghost shrink-0" disabled={!code || status === 'connecting'}>Rejoindre</button>
           </div>
 
-          <button type="button" className="btn-neon w-full py-3 text-lg" disabled={status === 'connecting'} onClick={() => play()}>
+          <button type="button" className="btn-primary w-full py-2.5" disabled={status === 'connecting'} onClick={() => play()}>
             {status === 'connecting' ? 'Connexion…' : 'Créer un salon privé'}
           </button>
 
-          {error && <p className="text-center text-sm text-neon-pink">{error}</p>}
-          {status === 'closed' && !error && <p className="text-center text-sm text-neon-pink">Connexion perdue. Réessaie.</p>}
+          {error && <p className="text-center text-sm text-bad">{error}</p>}
+          {status === 'closed' && !error && <p className="text-center text-sm text-bad">Connexion perdue. Réessaie.</p>}
         </form>
       </div>
     </main>

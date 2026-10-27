@@ -17,8 +17,8 @@ export function Lobby() {
   const set = (settings: Partial<RoomSettings>) => net.send({ t: 'settings', settings });
 
   return (
-    <div className="glass p-5 text-left">
-      <h2 className="mb-4 text-center text-2xl font-bold">Salon #{room.code}</h2>
+    <div className="panel p-5 text-left shadow-sm">
+      <h2 className="mb-4 text-lg font-semibold">Réglages du salon <span className="font-mono text-muted">#{room.code}</span></h2>
       <div className="grid grid-cols-2 gap-3">
         {FIELDS.map(({ key, label, step }) => {
           const [min, max] = SETTINGS_LIMITS[key];
@@ -27,7 +27,7 @@ export function Lobby() {
               <span className="mb-1 block text-muted">{label}</span>
               <input
                 type="number"
-                className="input"
+                className="input font-mono tabular-nums"
                 min={min}
                 max={max}
                 step={step ?? 1}
@@ -53,13 +53,13 @@ export function Lobby() {
         Uniquement mes mots
       </label>
       {isHost ? (
-        <button className="btn-neon mt-5 w-full py-3 text-lg" disabled={room.players.length < 2} onClick={() => net.send({ t: 'start' })}>
+        <button className="btn-primary mt-5 w-full py-2.5" disabled={room.players.length < 2} onClick={() => net.send({ t: 'start' })}>
           {room.players.length < 2 ? 'En attente de joueurs…' : 'Lancer la partie'}
         </button>
       ) : (
         <p className="mt-5 text-center text-muted">L'hôte va lancer la partie…</p>
       )}
-      {error && <p className="mt-2 text-center text-sm text-neon-pink">{error}</p>}
+      {error && <p className="mt-2 text-center text-sm text-bad">{error}</p>}
     </div>
   );
 }
