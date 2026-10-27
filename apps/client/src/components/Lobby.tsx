@@ -69,6 +69,12 @@ const SOURIRE_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
+// Pitch saboté : chacun vend autant de fois qu'il y a de manches.
+const PITCH_FIELDS: typeof FIELDS = [
+  { key: 'rounds', label: 'Pitchs par joueur' },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
 const RULES: Partial<Record<RoomGame, string[]>> = {
   wavelength: [
     'Le télépathe voit où se cache la cible entre deux extrêmes, et donne un indice.',
@@ -115,6 +121,12 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
     'Au moindre sourire, on appuie sur « Il a souri ! » (ou Espace) : plus il craque tôt, plus l’attaquant marque.',
     'Puis on inverse les rôles. Allumez vos caméras, c’est bien plus drôle !',
   ],
+
+  pitch: [
+    'Le jeu invente un produit absurde : le vendeur a 60 s en visio pour convaincre les investisseurs.',
+    'Pendant ce temps, les investisseurs lui envoient des diapos absurdes en plein écran et des bruitages. Il doit improviser avec !',
+    'Puis chacun dit combien il investit, de « Pas un centime » à « Je mets tout ! ». On inverse les rôles.',
+  ],
 };
 
 export function Lobby() {
@@ -139,7 +151,7 @@ export function Lobby() {
     <div className="panel p-5 text-left shadow-sm">
       <h2 className="mb-4 text-lg font-semibold">Réglages du salon <span className="font-mono text-muted">#{room.code}</span></h2>
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : FIELDS).map(({ key, label, step, max: cap }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'pitch' ? PITCH_FIELDS : FIELDS).map(({ key, label, step, max: cap }) => {
           const [min, limit] = SETTINGS_LIMITS[key];
           const max = cap ?? limit;
           return (

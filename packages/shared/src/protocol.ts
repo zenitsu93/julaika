@@ -6,6 +6,7 @@ import type { ConnaitState } from './connait';
 import type { IntrusState } from './intrus';
 import type { BacState } from './petitbac';
 import type { PhotoShot, PhotoState } from './photomaton';
+import type { PitchState } from './pitch';
 import type { TelChain, TelEntry, TelState } from './telephone';
 import type { SoundId, SourireState, WarpId } from './sourire';
 import type { WaveState } from './wavelength';
@@ -22,7 +23,7 @@ export const PALETTE = [
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 /** Jeux proposés : chaque salon en porte un, choisi à sa création. */
-export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire'] as const;
+export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'pitch'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
@@ -37,6 +38,7 @@ export function isRoomGame(v: unknown): v is RoomGame {
  * Qui me connaît le mieux : answer (la vedette répond, les autres parient) → reveal.
  * Bombe à mots : bomb, jusqu'au dernier survivant. Photomaton : pose (consigne puis flash) → vote → reveal.
  * Pas un sourire ! : faceoff (3, 2, 1) → duel → verdict.
+ * Pitch saboté : brief (le produit) → pitch → vote (les offres) → verdict.
  */
 export type Phase =
   | 'lobby'
@@ -59,6 +61,8 @@ export type Phase =
   | 'faceoff'
   | 'duel'
   | 'verdict'
+  | 'brief'
+  | 'pitch'
   | 'gameEnd';
 
 /** Difficulté des mots proposés : sert au tirage dans les listes intégrées et à la génération par IA. */
@@ -186,6 +190,8 @@ export interface RoomState {
   photo: PhotoState | null;
   /** État de Pas un sourire !, null pour les autres jeux. */
   sourire: SourireState | null;
+  /** État du Pitch saboté, null pour les autres jeux. */
+  pitch: PitchState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -251,6 +257,10 @@ export type ClientMsg =
   | { t: 'sourire'; smiled: true }
   | { t: 'sourire'; dare: true }
   | { t: 'sourire'; warp: WarpId | null }
+  | { t: 'pitch'; slide: number }
+  | { t: 'pitch'; rate: number }
+  | { t: 'pitch'; done: true }
+  | { t: 'pitch'; reroll: true }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =

@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'pitch';
 
 export interface GameInfo {
   id: GameId;
@@ -100,6 +100,14 @@ export const GAMES: GameInfo[] = [
     players: 'À deux ou plus · visio',
     badge: 'À deux',
     keywords: ['sourire', 'rire', 'tu ris tu perds', 'serieux', 'grimace', 'visio', 'camera', 'duo', 'deux', 'sons', 'bruitages'],
+  },
+  {
+    id: 'pitch',
+    name: 'Pitch saboté',
+    pitch: 'Vends un produit absurde en 60 s, malgré les diapos piégées.',
+    players: 'À deux ou plus · visio',
+    badge: 'À deux',
+    keywords: ['pitch', 'sabote', 'startup', 'vendre', 'produit', 'diapo', 'diapos', 'impro', 'investisseur', 'visio', 'duo', 'deux', 'sons', 'bruitages'],
   },
 ];
 

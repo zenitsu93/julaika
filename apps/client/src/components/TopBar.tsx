@@ -94,6 +94,8 @@ export function TopBar() {
             ? `Question ${room.connait.turn}/${room.connait.turns}`
           : room.bomb
             ? `${Object.values(room.bomb.lives).filter(Boolean).length} en lice`
+          : room.pitch
+            ? `Pitch ${room.pitch.turn + 1}/${room.pitch.turns}`
           : room.sourire
             ? `Duel ${room.sourire.turn + 1}/${room.sourire.turns}`
             : room.tel
