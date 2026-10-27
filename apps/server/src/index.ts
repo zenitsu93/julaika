@@ -146,7 +146,7 @@ wss.on('connection', (ws: WebSocket & { alive?: boolean }) => {
     }
     if (!room || !playerId) return;
     if (msg.t === 'chat' && !chatBucket()) return;
-    if ((msg.t === 'wave' || msg.t === 'tel' || msg.t === 'intrus' || msg.t === 'bac') && !dialBucket()) return;
+    if ((msg.t === 'wave' || msg.t === 'tel' || msg.t === 'intrus' || msg.t === 'bac' || msg.t === 'connait') && !dialBucket()) return;
     room.handle(playerId, msg);
   });
 

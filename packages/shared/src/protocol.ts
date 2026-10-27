@@ -1,6 +1,7 @@
 // Contrat client <-> serveur.
 // Messages de contrôle : JSON (frames texte). Dessin : binaire (voir draw.ts).
 
+import type { ConnaitState } from './connait';
 import type { IntrusState } from './intrus';
 import type { BacState } from './petitbac';
 import type { TelChain, TelEntry, TelState } from './telephone';
@@ -18,7 +19,7 @@ export const PALETTE = [
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 /** Jeux proposés : chaque salon en porte un, choisi à sa création. */
-export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac'] as const;
+export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
@@ -30,6 +31,7 @@ export function isRoomGame(v: unknown): v is RoomGame {
  * → guess (l'équipe place l'aiguille) → reveal. Téléphone dessiné : write → draw → describe
  * → draw… (tous en même temps) → album. L'Intrus : clue (indices à tour de rôle) → vote
  * → steal (l'intrus démasqué tente le mot) → reveal. Petit Bac : fill (la grille) → vote → reveal.
+ * Qui me connaît le mieux : answer (la vedette répond, les autres parient) → reveal.
  */
 export type Phase =
   | 'lobby'
@@ -46,6 +48,7 @@ export type Phase =
   | 'vote'
   | 'steal'
   | 'fill'
+  | 'answer'
   | 'gameEnd';
 
 /** Difficulté des mots proposés : sert au tirage dans les listes intégrées et à la génération par IA. */
@@ -136,6 +139,8 @@ export interface RoomState {
   intrus: IntrusState | null;
   /** État du Petit Bac, null pour les autres jeux. */
   bac: BacState | null;
+  /** État de Qui me connaît le mieux, null pour les autres jeux. */
+  connait: ConnaitState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -190,6 +195,8 @@ export type ClientMsg =
   | { t: 'bac'; veto: { player: string; category: number; against: boolean } }
   | { t: 'bac'; done: boolean }
   | { t: 'bac'; next: true }
+  | { t: 'connait'; pick: number }
+  | { t: 'connait'; reroll: true }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =

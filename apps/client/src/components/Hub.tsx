@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type JSX } from 'react';
 import { GAMES, SOON, matchesGame, matchesSoon, type GameId, type GameInfo, type SoonId } from '../lib/games';
+import { ConnaitArt } from './connait/ConnaitArt';
 import { LogoMark } from './Logo';
 
 // L'entrée animée ne se joue qu'une fois par visite, comme sur l'écran du pseudo.
@@ -247,6 +248,7 @@ const ART: Record<GameId, JSX.Element> = {
   telephone: <TelArt />,
   intrus: <IntrusArt />,
   petitbac: <BacArt />,
+  connait: <ConnaitArt />,
 };
 
 /** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */
@@ -298,15 +300,6 @@ const SOON_ART: Record<SoonId, JSX.Element> = {
         <path key={i} className="soon-note stroke-gold" style={{ animationDelay: `${i * 600}ms` }} d="M150 100v-18l12-4" strokeWidth="5" />
       ))}
     </>,
-  ),
-  // Un cœur qui bat.
-  connait: svg(
-    <path
-      className="soon-beat fill-gold"
-      style={{ transformOrigin: '100px 72px' }}
-      d="M100 112S48 82 48 52a24 24 0 0 1 52-6 24 24 0 0 1 52 6c0 30-52 60-52 60z"
-      stroke="none"
-    />,
   ),
   // La grille des agents : les cases changent d'équipe.
   agents: svg(

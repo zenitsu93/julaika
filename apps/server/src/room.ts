@@ -22,6 +22,7 @@ import {
   type RoomState,
   type ServerMsg,
 } from '@julaika/shared';
+import { Connait } from './connait';
 import type { PairGenerator, WordGenerator } from './deepseek';
 import { Intrus } from './intrus';
 import { INTRUS_PAIRS } from './intrusPairs';
@@ -83,6 +84,7 @@ export class Room {
   private pairing = false;
   private usedPairs = new Set<string>();
   private bac: PetitBac | null = null;
+  private connait: Connait | null = null;
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -159,11 +161,12 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel || this.intrus || this.bac) {
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
       this.intrus?.onLeave(id);
       this.bac?.onLeave(id);
+      this.connait?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -208,6 +211,9 @@ export class Room {
         break;
       case 'bac':
         if (msg && typeof msg === 'object') this.bac?.handle(id, msg);
+        break;
+      case 'connait':
+        if (msg && typeof msg === 'object') this.connait?.handle(id, msg);
         break;
       case 'clear':
         if (this.tel) this.tel.clear(id);
@@ -300,6 +306,7 @@ export class Room {
     if (this.game === 'telephone') return this.startTel();
     if (this.game === 'intrus') return this.startIntrus();
     if (this.game === 'petitbac') return this.startBac();
+    if (this.game === 'connait') return this.startConnait();
     this.usedWords.clear();
     this.nextRound();
   }
@@ -559,6 +566,29 @@ export class Room {
     this.bac.start();
   }
 
+  private startConnait(): void {
+    this.connait?.dispose();
+    this.connait = new Connait({
+      playerIds: () => [...this.players.keys()],
+      player: (id) => this.players.get(id),
+      rounds: () => this.settings.rounds,
+      random: this.random,
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      system: (text) => this.system(text),
+      endGame: () => this.endGame(),
+    });
+    this.connait.start();
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -581,6 +611,8 @@ export class Room {
     this.intrus = null;
     this.bac?.dispose();
     this.bac = null;
+    this.connait?.dispose();
+    this.connait = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -669,6 +701,7 @@ export class Room {
       tel: this.tel?.state() ?? null,
       intrus: this.intrus?.stateFor(id) ?? null,
       bac: this.bac?.state() ?? null,
+      connait: this.connait?.stateFor(id) ?? null,
     };
   }
 
@@ -708,6 +741,7 @@ export class Room {
     this.tel?.dispose();
     this.intrus?.dispose();
     this.bac?.dispose();
+    this.connait?.dispose();
   }
 }
 
