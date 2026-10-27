@@ -282,32 +282,151 @@
     opacity 0.15s;
 }
 
-/* Accueil des jeux : cartes inclinées en 3D (le JS pose transform et --gx/--gy). */
+/* Accueil des jeux, tenue « Cacao » : le dessin dans un écrin chocolat, un liseré doré
+   qui fait le tour de la carte survolée et un reflet qui balaie l'écrin. */
+@property --hub-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
 .hub-card {
-  transform-style: preserve-3d;
   transition:
-    transform 0.3s var(--ease-out),
-    box-shadow 0.3s;
+    translate 0.35s var(--ease-out),
+    box-shadow 0.35s,
+    border-color 0.3s;
 }
-.hub-card:hover {
-  box-shadow: 0 30px 60px -30px rgb(0 0 0 / 0.5);
+.hub-card:not(.soon-card):hover {
+  translate: 0 -5px;
+  box-shadow: 0 30px 50px -30px rgb(43 26 18 / 0.7);
 }
-.hub-card:active {
+.hub-card:not(.soon-card):active {
   scale: 0.98;
 }
-.hub-pop {
-  transform: translateZ(40px);
+.hub-card::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1.5px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s;
+  background: conic-gradient(
+    from var(--hub-angle),
+    transparent 0 72%,
+    color-mix(in srgb, var(--color-gold) 40%, transparent) 82%,
+    var(--color-gold) 92%,
+    #fff3d0 96%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  animation: hub-beam 3.2s linear infinite;
 }
-.hub-glare {
+.hub-card:not(.soon-card):hover::after,
+.hub-card:focus-visible::after,
+.hub-feat::after {
+  opacity: 1;
+}
+@keyframes hub-beam {
+  to {
+    --hub-angle: 360deg;
+  }
+}
+.hub-panel {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(155deg, var(--color-cacao-2), var(--color-cacao) 70%);
+}
+.hub-panel::after {
+  content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s;
-  background: radial-gradient(300px circle at var(--gx, 50%) var(--gy, 50%), rgb(255 255 255 / 0.35), transparent 60%);
+  background: linear-gradient(115deg, transparent 30%, rgb(255 240 210 / 0.22) 48%, transparent 62%);
+  translate: -120%;
 }
-.hub-card:hover .hub-glare {
+.hub-card:hover .hub-panel::after {
+  translate: 120%;
+  transition: translate 0.9s ease;
+}
+.soon-card .hub-panel {
+  background: transparent;
+  border: 1px dashed var(--color-edge);
+}
+/* Flèche « jouer » qui glisse en place au survol. */
+.hub-go {
+  position: absolute;
+  right: 1.125rem;
+  bottom: 1.25rem;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  opacity: 0;
+  translate: -8px 0;
+  scale: 0.8;
+  transition:
+    opacity 0.3s,
+    translate 0.35s var(--ease-out),
+    scale 0.35s var(--ease-out);
+}
+.hub-card:hover .hub-go,
+.hub-card:focus-visible .hub-go {
   opacity: 1;
+  translate: 0;
+  scale: 1;
+}
+/* Lueur chocolat et or qui dérive lentement derrière le titre. */
+.hub-aurora {
+  position: absolute;
+  inset: -140px 0 auto;
+  height: 560px;
+  z-index: -1;
+  pointer-events: none;
+  filter: blur(70px);
+  opacity: 0.45;
+}
+.hub-aurora i {
+  position: absolute;
+  border-radius: 50%;
+  animation: hub-drift 14s ease-in-out infinite alternate;
+}
+.hub-aurora i:first-child {
+  width: min(420px, 70vw);
+  height: 300px;
+  left: 18%;
+  top: 80px;
+  background: color-mix(in srgb, var(--color-gold) 60%, transparent);
+}
+.hub-aurora i:last-child {
+  width: min(480px, 80vw);
+  height: 320px;
+  right: 12%;
+  top: 40px;
+  background: var(--color-butter);
+  animation-delay: -6s;
+}
+@keyframes hub-drift {
+  to {
+    transform: translate(60px, 30px) scale(1.15);
+  }
+}
+@media (prefers-color-scheme: dark) {
+  .hub-aurora {
+    opacity: 0.6;
+  }
+  .hub-aurora i:last-child {
+    background: var(--color-cacao-2);
+  }
 }
 @keyframes m-draw-loop {
   0% {
@@ -436,12 +555,6 @@
 
 /* Cartes « Bientôt » de l'accueil ------------------------------------------------------- */
 
-.soon-card .hub-pop {
-  transition: opacity 0.3s;
-}
-.soon-card:hover {
-  border-color: var(--color-muted);
-}
 @keyframes soon-bob {
   0%,
   100% {
@@ -531,7 +644,7 @@
   86%,
   96% {
     transform: scaleX(1);
-    fill: #f5b700;
+    fill: var(--color-gold);
   }
 }
 .soon-flip {
@@ -554,8 +667,9 @@
   }
   31%,
   85% {
-    background: #15803d;
-    border-color: #15803d;
+    background: var(--color-gold);
+    border-color: var(--color-gold);
+    color: var(--color-cacao);
   }
   40%,
   85% {
