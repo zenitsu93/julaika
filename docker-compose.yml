@@ -9,6 +9,7 @@ services:
     container_name: julaika
     restart: unless-stopped
     networks: [frontend]
+    # DEEPSEEK_API_KEY pour générer les mots selon la difficulté (sans clé : listes intégrées),
     # TURN_URLS et TURN_SECRET pour le relais de la visio (voir deploy/turnserver.conf).
     env_file:
       - path: .env

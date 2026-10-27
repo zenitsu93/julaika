@@ -14,12 +14,21 @@ export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 export type Phase = 'lobby' | 'choosing' | 'drawing' | 'turnEnd' | 'gameEnd';
 
+/** Difficulté des mots proposés : sert au tirage dans les listes intégrées et à la génération par IA. */
+export const DIFFICULTIES = ['facile', 'moyen', 'difficile'] as const;
+export type Difficulty = (typeof DIFFICULTIES)[number];
+
+export function isDifficulty(v: unknown): v is Difficulty {
+  return (DIFFICULTIES as readonly unknown[]).includes(v);
+}
+
 export interface RoomSettings {
   rounds: number;
   drawTime: number; // secondes
   maxPlayers: number;
   wordChoices: number;
   hints: number;
+  difficulty: Difficulty;
   customWords: string[];
   customOnly: boolean;
 }
@@ -30,6 +39,7 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   maxPlayers: 10,
   wordChoices: 3,
   hints: 2,
+  difficulty: 'moyen',
   customWords: [],
   customOnly: false,
 };

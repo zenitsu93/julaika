@@ -1,0 +1,116 @@
+import { normalize, type Difficulty } from '@julaika/shared';
+
+/** Fournit `count` mots nouveaux pour une difficulté, en évitant ceux de `avoid`. */
+export type WordGenerator = (difficulty: Difficulty, count: number, avoid: string[]) => Promise<string[]>;
+
+// Quelques thèmes tirés au hasard à chaque appel : sans eux, le modèle ressort toujours les mêmes mots.
+const THEMES = [
+  'animaux', 'cuisine', 'sport', 'métiers', 'maison', 'nature', 'transports', 'musique', 'fêtes',
+  'école', 'vêtements', 'corps humain', 'météo', 'mer', 'espace', 'contes et légendes', 'bricolage',
+  'jeux et jouets', 'ville', 'ferme', 'technologie', 'vacances', 'cinéma', 'Afrique', 'marché', 'jardin',
+];
+
+// Les trois niveaux sont décrits ensemble et le modèle range ses mots dans chacun : il calibre
+// bien mieux en comparant qu'en jugeant un niveau isolé. Seule la liste demandée est gardée.
+const SYSTEM = `Tu fournis des mots pour julaïka, un jeu de dessin en ligne : un joueur dessine le mot, les autres le devinent dans le chat. Les joueurs sont francophones (France, Afrique, Canada…) et de tous âges.
+Les trois niveaux :
+- facile : un objet, animal, aliment ou personnage du quotidien, qu'un enfant de 8 ans dessine en quelques traits (ex. chat, pomme, soleil, vélo) ;
+- moyen : un objet moins courant, un métier, un lieu ou un mot composé, qui demande un dessin travaillé (ex. phare, boulanger, brosse à dents, hamac) ;
+- difficile : une scène, une action, une situation, une expression imagée ou un phénomène, qu'on fait deviner en combinant plusieurs éléments ou avec astuce, jamais une idée abstraite ni un mot rare (ex. embouteillage, coup de soleil, tir à la corde, fou rire).
+Chaque mot doit être :
+- en français, au singulier, en minuscules (sauf noms propres), de 1 à 4 mots courts et 30 caractères au plus ;
+- dessinable : on doit pouvoir le faire deviner par un dessin, sans écrire de lettres ni de chiffres ;
+- connu de la plupart des gens et tout public (ni violence, ni armes, ni sexe, ni alcool ni drogue, ni politique) ;
+- différent des autres mots et des exemples ci-dessus.
+Réponds uniquement en JSON, au format {"facile": [...], "moyen": [...], "difficile": [...]}.`;
+
+const MAX_LENGTH = 30;
+const MAX_WORDS = 4;
+const WORD = /^\p{L}[\p{L}' -]*\p{L}$/u;
+const MAX_CALLS_PER_HOUR = 60;
+const PAUSE_AFTER_ERROR_MS = 60_000;
+const TIMEOUT_MS = 15_000;
+
+/**
+ * Générateur de mots par l'API DeepSeek (format OpenAI), ou `null` sans `DEEPSEEK_API_KEY`.
+ * Les salons sont ouverts à tous : les appels sont plafonnés par heure pour tout le serveur,
+ * et suspendus une minute après une erreur (le jeu repasse alors sur les listes intégrées).
+ */
+export function deepseekWords(env = process.env, fetchImpl: typeof fetch = fetch, random = Math.random): WordGenerator | null {
+  const key = env.DEEPSEEK_API_KEY?.trim();
+  if (!key) return null;
+  const model = env.DEEPSEEK_MODEL?.trim() || 'deepseek-flash';
+  const baseUrl = (env.DEEPSEEK_BASE_URL?.trim() || 'https://api.deepseek.com').replace(/\/+$/, '');
+  const calls: number[] = [];
+  let pausedUntil = 0;
+
+  return async (difficulty, count, avoid) => {
+    const now = Date.now();
+    while (calls.length && calls[0]! <= now - 3_600_000) calls.shift();
+    if (now < pausedUntil || calls.length >= MAX_CALLS_PER_HOUR) throw new Error('DeepSeek : appels suspendus pour le moment');
+    calls.push(now);
+
+    const themes = [...THEMES].sort(() => random() - 0.5).slice(0, 3);
+    const prompt = [
+      `Pour varier, pioche surtout dans ces thèmes : ${themes.join(', ')}.`,
+      avoid.length ? `Mots déjà sortis, à ne pas redonner : ${avoid.join(', ')}.` : '',
+      `Donne ${count} mots du niveau « ${difficulty} ». Pour te calibrer, range aussi 8 mots dans chacun des deux autres niveaux.`,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    try {
+      const res = await fetchImpl(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: SYSTEM },
+            { role: 'user', content: prompt },
+          ],
+          response_format: { type: 'json_object' },
+          // Sans ça, deepseek-flash réfléchit d'abord : plus lent, et la réflexion peut épuiser max_tokens.
+          thinking: { type: 'disabled' },
+          temperature: 1,
+          max_tokens: 1500,
+        }),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+      if (!res.ok) throw new Error(`DeepSeek : HTTP ${res.status}`);
+      const body = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+      const taken = new Set(avoid.map(normalize));
+      const words = parseWords(body.choices?.[0]?.message?.content ?? '', difficulty).filter((w) => !taken.has(normalize(w)));
+      if (!words.length) throw new Error('DeepSeek : aucun mot exploitable dans la réponse');
+      return words.slice(0, count);
+    } catch (err) {
+      pausedUntil = Date.now() + PAUSE_AFTER_ERROR_MS;
+      console.warn(`[mots] ${err instanceof Error ? err.message : err} : listes intégrées pendant une minute`);
+      throw err;
+    }
+  };
+}
+
+/** Extrait les mots du niveau demandé (`{"difficile": [...]}`) en écartant ce qui ne tiendrait pas dans le jeu. */
+export function parseWords(content: string, difficulty: Difficulty): string[] {
+  let data: unknown;
+  try {
+    data = JSON.parse(content);
+  } catch {
+    return [];
+  }
+  const list = (data as Partial<Record<Difficulty, unknown>> | null)?.[difficulty];
+  if (!Array.isArray(list)) return [];
+  const seen = new Set<string>();
+  const words: string[] = [];
+  for (const raw of list) {
+    if (typeof raw !== 'string') continue;
+    const word = raw.replace(/[’`]/g, "'").replace(/\s+/g, ' ').trim();
+    if (word.length > MAX_LENGTH || word.split(' ').length > MAX_WORDS || !WORD.test(word)) continue;
+    const id = normalize(word);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    words.push(word);
+  }
+  return words;
+}

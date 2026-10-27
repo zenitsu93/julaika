@@ -4,12 +4,14 @@ import { extname, join, normalize as normalizePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, type WebSocket } from 'ws';
 import type { ClientMsg } from '@julaika/shared';
+import { deepseekWords } from './deepseek';
 import { iceServersFor } from './ice';
 import { Room } from './room';
 
 const PORT = Number(process.env.PORT ?? 3001);
 const STATIC_DIR = process.env.STATIC_DIR ?? fileURLToPath(new URL('../../client/dist', import.meta.url));
 const rooms = new Map<string, Room>();
+const generateWords = deepseekWords();
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -120,6 +122,7 @@ function createRoom(): Room {
     },
     Math.random,
     (playerId) => iceServersFor(playerId),
+    generateWords,
   );
   rooms.set(code, room);
   return room;
@@ -150,4 +153,7 @@ function toBytes(data: unknown): Uint8Array {
   return new Uint8Array(0);
 }
 
-http.listen(PORT, () => console.log(`julaïka : http://localhost:${PORT}`));
+http.listen(PORT, () => {
+  console.log(`julaïka : http://localhost:${PORT}`);
+  console.log(generateWords ? '[mots] générés par DeepSeek selon la difficulté' : '[mots] listes intégrées (DEEPSEEK_API_KEY absente)');
+});

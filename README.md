@@ -34,7 +34,7 @@
 
 ```bash
 pnpm install
-pnpm dev          # client sur http://localhost:5173, serveur WebSocket sur :3001
+pnpm dev          # client sur http://localhost:5173, serveur WebSocket sur :3001 (lit .env)
 pnpm test         # tests de la logique de jeu et du protocole
 pnpm build && pnpm start   # un seul process sur :3001 (client + WebSocket)
 ```
@@ -70,6 +70,22 @@ dans la seconde moitié) → `turnEnd` (mot + points, 6 s) → dessinateur suiva
 Points : le devineur gagne 50 à 500 selon sa rapidité (+ bonus aux premiers), le dessinateur gagne
 selon la part des joueurs qui ont trouvé. Les réponses ignorent casse et accents ; une réponse à une
 lettre près affiche « tu chauffes ». Ceux qui ont trouvé discutent entre eux sans spoiler.
+
+## Mots et difficulté
+
+L'hôte choisit la difficulté dans le salon : **facile** (objets et animaux du quotidien), **moyen**
+(objets moins courants, métiers, mots composés) ou **difficile** (scènes, actions, expressions).
+
+Avec `DEEPSEEK_API_KEY` dans `.env`, les mots sont inventés par DeepSeek (`deepseek-flash`, sans
+réflexion, environ 2 s par lot de 30). Chaque salon commande un lot dès qu'il a deux joueurs, puis en
+recommande quand il lui reste moins de trois tours, en donnant les mots déjà sortis à éviter. Un tour
+n'attend jamais l'API. Le modèle range ses mots dans les trois niveaux à la fois (on ne garde que celui
+demandé) : il calibre mieux en comparant. Sans clé, si l'API échoue ou si le premier lot n'est pas
+encore arrivé, le jeu tire dans les listes intégrées de la même difficulté (`apps/server/src/words.ts`).
+
+Garde-fous : 60 appels par heure au plus pour tout le serveur, une minute de pause après une erreur,
+mots filtrés (lettres, espaces, tirets et apostrophes, 4 mots et 30 caractères au plus). Variables
+facultatives : `DEEPSEEK_MODEL` et `DEEPSEEK_BASE_URL`.
 
 ## Visio
 

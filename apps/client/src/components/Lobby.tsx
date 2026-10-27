@@ -1,4 +1,4 @@
-import { SETTINGS_LIMITS, type RoomSettings } from '@julaika/shared';
+import { SETTINGS_LIMITS, type Difficulty, type RoomSettings } from '@julaika/shared';
 import { net } from '../lib/net';
 import { useGame } from '../lib/store';
 
@@ -8,6 +8,12 @@ const FIELDS: { key: keyof typeof SETTINGS_LIMITS; label: string; step?: number 
   { key: 'maxPlayers', label: 'Joueurs max' },
   { key: 'wordChoices', label: 'Mots proposés' },
   { key: 'hints', label: 'Indices' },
+];
+
+const LEVELS: { value: Difficulty; label: string }[] = [
+  { value: 'facile', label: 'Facile' },
+  { value: 'moyen', label: 'Moyen' },
+  { value: 'difficile', label: 'Difficile' },
 ];
 
 export function Lobby() {
@@ -38,6 +44,28 @@ export function Lobby() {
             </label>
           );
         })}
+      </div>
+      <div className="mt-3 text-sm">
+        <span className="mb-1 block text-muted">Difficulté des mots</span>
+        <div role="group" aria-label="Difficulté des mots" className="grid grid-cols-3 gap-1 rounded-md border border-edge p-1">
+          {LEVELS.map(({ value, label }) => {
+            const active = room.settings.difficulty === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={active}
+                disabled={!isHost}
+                onClick={() => set({ difficulty: value })}
+                className={`rounded px-3 py-1.5 font-medium transition outline-none focus-visible:ring-2 focus-visible:ring-info disabled:cursor-not-allowed ${
+                  active ? 'bg-primary text-on-primary' : 'text-muted enabled:hover:bg-edge/50'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </div>
       <label className="mt-3 block text-sm">
         <span className="mb-1 block text-muted">Mots perso (séparés par des virgules)</span>

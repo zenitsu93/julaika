@@ -5,10 +5,12 @@ import {
   SETTINGS_LIMITS,
   checkGuess,
   decodeDraw,
+  isDifficulty,
   maskWord,
   parseMeetUrl,
   type ChatLine,
   type ClientMsg,
+  type Difficulty,
   type IceServer,
   type Phase,
   type PlayerPublic,
@@ -16,6 +18,7 @@ import {
   type RoomState,
   type ServerMsg,
 } from '@julaika/shared';
+import type { WordGenerator } from './deepseek';
 import { WORDS_FR } from './words';
 
 export interface Conn {
@@ -39,6 +42,9 @@ export const CHOOSE_TIME = 15;
 export const TURN_END_TIME = 6;
 export const GAME_END_TIME = 12;
 const MAX_STROKE_BYTES = 2_000_000;
+/** Mots demandés à l'IA par appel, et nombre de mots déjà proposés qu'on lui demande d'éviter. */
+export const WORD_BATCH = 30;
+const AVOID_MAX = 60;
 
 let nextId = 1;
 
@@ -66,12 +72,17 @@ export class Room {
   private timers: ReturnType<typeof setTimeout>[] = [];
   private guessCount = 0;
   private usedWords = new Set<string>();
+  // Stock de mots générés par l'IA, par difficulté : chaque mot ne sert qu'une fois.
+  private generated: Record<Difficulty, string[]> = { facile: [], moyen: [], difficile: [] };
+  private generating = new Set<Difficulty>();
+  private offered: string[] = [];
 
   constructor(
     code: string,
     private readonly onEmpty: (room: Room) => void = () => {},
     private readonly random: () => number = Math.random,
     private readonly iceServers: (playerId: string) => IceServer[] = () => [],
+    private readonly generateWords: WordGenerator | null = null,
   ) {
     this.code = code;
   }
@@ -101,6 +112,8 @@ export class Room {
     if (this.phase === 'choosing' && this.drawerId === id) this.sendTo(id, { t: 'choices', words: this.choices });
     this.system(`${player.name} a rejoint la partie.`);
     this.broadcastState(id);
+    // Les mots sont commandés dès qu'une partie devient possible, pour être prêts au lancement.
+    if (this.players.size >= 2) this.refillWords();
     return id;
   }
 
@@ -140,6 +153,7 @@ export class Room {
         if (id === this.hostId && this.phase === 'lobby') {
           this.settings = mergeSettings(this.settings, msg.settings);
           this.broadcastState();
+          if (this.players.size >= 2) this.refillWords();
         }
         break;
       case 'start':
@@ -397,8 +411,11 @@ export class Room {
   }
 
   private pickWords(n: number): string[] {
-    const custom = this.settings.customWords;
-    const pool = this.settings.customOnly && custom.length >= n ? custom : [...WORDS_FR, ...custom];
+    const { customWords: custom, customOnly, difficulty } = this.settings;
+    // Mots de l'IA s'il en reste assez, sinon la liste intégrée de la même difficulté.
+    const generated = this.generated[difficulty].filter((w) => !this.usedWords.has(w));
+    const base = generated.length >= n ? generated : WORDS_FR[difficulty];
+    const pool = customOnly && custom.length >= n ? custom : [...base, ...custom];
     const fresh = pool.filter((w) => !this.usedWords.has(w));
     const source = fresh.length >= n ? fresh : pool;
     // Fisher-Yates partiel : n tirages sans remise, sans boucle infinie.
@@ -408,7 +425,27 @@ export class Room {
       const j = i + Math.floor(this.random() * (bag.length - i));
       [bag[i], bag[j]] = [bag[j]!, bag[i]!];
     }
-    return bag.slice(0, count);
+    const picked = bag.slice(0, count);
+    this.generated[difficulty] = generated.filter((w) => !picked.includes(w));
+    this.offered = [...this.offered, ...picked].slice(-AVOID_MAX);
+    this.refillWords();
+    return picked;
+  }
+
+  /** Recommande des mots à l'IA quand le stock de la difficulté choisie descend sous trois tours. */
+  private refillWords(): void {
+    const { difficulty, customOnly, customWords, wordChoices } = this.settings;
+    if (!this.generateWords || this.generating.has(difficulty)) return;
+    if (customOnly && customWords.length >= wordChoices) return;
+    if (this.generated[difficulty].length >= wordChoices * 3) return;
+    this.generating.add(difficulty);
+    const avoid = [...new Set([...this.generated[difficulty], ...this.offered])];
+    this.generateWords(difficulty, WORD_BATCH, avoid)
+      .then((words) => {
+        this.generated[difficulty] = [...new Set([...this.generated[difficulty], ...words])];
+      })
+      .catch(() => {}) // déjà signalé par le générateur ; les listes intégrées prennent le relais
+      .finally(() => this.generating.delete(difficulty));
   }
 
   // ---- Diffusion --------------------------------------------------------------
@@ -500,5 +537,6 @@ function mergeSettings(cur: RoomSettings, patch: Partial<RoomSettings>): RoomSet
     next.customWords = [...new Set(patch.customWords.map((w) => String(w).trim().slice(0, 30)).filter(Boolean))].slice(0, 500);
   }
   if (typeof patch.customOnly === 'boolean') next.customOnly = patch.customOnly;
+  if (isDifficulty(patch.difficulty)) next.difficulty = patch.difficulty;
   return next;
 }
