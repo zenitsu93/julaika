@@ -28,6 +28,7 @@ import {
   type Trap,
 } from '@julaika/shared';
 import { Bombe } from './bombe';
+import { Cadavre } from './cadavre';
 import { Connait } from './connait';
 import type { PairGenerator, WordGenerator } from './deepseek';
 import { Intrus } from './intrus';
@@ -102,6 +103,7 @@ export class Room {
   private bomb: Bombe | null = null;
   private photo: Photomaton | null = null;
   private sourire: Sourire | null = null;
+  private cadavre: Cadavre | null = null;
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -152,6 +154,7 @@ export class Room {
     if (this.phase === 'choosing' && this.drawerId === id) this.sendTo(id, { t: 'choices', words: this.choices });
     this.tel?.onJoin(id);
     this.photo?.onJoin(id);
+    this.cadavre?.onJoin(id);
     this.system(`${player.name} a rejoint la partie.`);
     this.broadcastState(id);
     // Les mots sont commandés dès qu'une partie devient possible, pour être prêts au lancement.
@@ -180,7 +183,7 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire) {
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.cadavre) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
       this.intrus?.onLeave(id);
@@ -189,6 +192,7 @@ export class Room {
       this.bomb?.onLeave(id);
       this.photo?.onLeave(id);
       this.sourire?.onLeave(id);
+      this.cadavre?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -246,12 +250,16 @@ export class Room {
       case 'sourire':
         if (msg && typeof msg === 'object') this.sourire?.handle(id, msg);
         break;
+      case 'cadavre':
+        if (msg && typeof msg === 'object') this.cadavre?.handle(id, msg);
+        break;
       case 'sound':
         // Boîte à sons, dans tous les jeux : l'émetteur l'a déjà joué chez lui.
         if (isSoundId(msg.id)) this.broadcast({ t: 'sound', id: msg.id, by: id }, id);
         break;
       case 'clear':
         if (this.tel) this.tel.clear(id);
+        else if (this.cadavre) this.cadavre.clear(id);
         else if (this.isDrawing(id)) {
           this.strokes = [];
           this.strokeBytes = 0;
@@ -260,6 +268,7 @@ export class Room {
         break;
       case 'undo':
         if (this.tel) this.tel.undo(id);
+        else if (this.cadavre) this.cadavre.undo(id);
         else if (this.isDrawing(id) && this.strokes.length) {
           const removed = this.strokes.pop()!;
           this.strokeBytes -= removed.reduce((n, p) => n + p.byteLength, 0);
@@ -308,6 +317,7 @@ export class Room {
   /** Paquet de dessin binaire : validé, archivé puis relayé tel quel aux autres. */
   handleDraw(id: string, data: Uint8Array): void {
     if (this.tel) return this.tel.draw(id, data);
+    if (this.cadavre) return this.cadavre.draw(id, data);
     if (!this.isDrawing(id)) return;
     const packet = decodeDraw(data);
     if (!packet) return;
@@ -347,6 +357,7 @@ export class Room {
     if (this.game === 'bombe') return this.startBomb();
     if (this.game === 'photomaton') return this.startPhoto();
     if (this.game === 'sourire') return this.startSourire();
+    if (this.game === 'cadavre') return this.startCadavre();
     this.usedWords.clear();
     this.nextRound();
   }
@@ -704,6 +715,27 @@ export class Room {
     this.sourire.start();
   }
 
+  private startCadavre(): void {
+    this.cadavre?.dispose();
+    this.cadavre = new Cadavre({
+      playerIds: () => [...this.players.keys()],
+      player: (id) => this.players.get(id),
+      isHost: (id) => id === this.hostId,
+      drawTime: () => this.settings.drawTime,
+      random: this.random,
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      sendTo: (id, msg) => this.sendTo(id, msg),
+      system: (text) => this.system(text),
+      toLobby: () => this.toLobby(),
+    });
+    this.cadavre.start();
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -735,6 +767,8 @@ export class Room {
     this.photo = null;
     this.sourire?.dispose();
     this.sourire = null;
+    this.cadavre?.dispose();
+    this.cadavre = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -839,6 +873,7 @@ export class Room {
       bomb: this.bomb?.state() ?? null,
       photo: this.photo?.state() ?? null,
       sourire: this.sourire?.stateFor(id) ?? null,
+      cadavre: this.cadavre?.state() ?? null,
     };
   }
 
@@ -882,6 +917,7 @@ export class Room {
     this.bomb?.dispose();
     this.photo?.dispose();
     this.sourire?.dispose();
+    this.cadavre?.dispose();
   }
 }
 

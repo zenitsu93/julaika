@@ -1,0 +1,261 @@
+/* Cadavre exquis : la feuille pliée, la bande de jonction, le dépliage et le bestiaire. */
+
+/* ---- Carte de l'accueil et teaser : les trois volets se déplient puis se replient ---- */
+
+@keyframes cad-art-fold {
+  0%,
+  8% {
+    transform: scaleY(0.04);
+  }
+  22%,
+  78% {
+    transform: scaleY(1);
+  }
+  92%,
+  100% {
+    transform: scaleY(0.04);
+  }
+}
+.cad-art-panel {
+  transform-box: fill-box;
+  transform-origin: top;
+  animation: cad-art-fold 6.4s cubic-bezier(0.34, 1.4, 0.64, 1) infinite;
+}
+@keyframes cad-art-blink {
+  0%,
+  44%,
+  48%,
+  100% {
+    transform: scaleY(1);
+  }
+  46% {
+    transform: scaleY(0.1);
+  }
+}
+.cad-art-eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cad-art-blink 6.4s infinite;
+}
+
+/* ---- Pendant le dessin ------------------------------------------------------------- */
+
+/* Le volet plié au-dessus de la bande : rayures de papier replié, qui se soulève au survol. */
+.cad-flap {
+  background:
+    repeating-linear-gradient(-45deg, color-mix(in oklab, var(--color-cacao) 9%, transparent) 0 8px, transparent 8px 16px),
+    linear-gradient(to bottom, var(--color-butter), color-mix(in oklab, var(--color-butter) 70%, var(--color-cacao)));
+  color: var(--color-cacao);
+  box-shadow: inset 0 -10px 14px -12px rgb(40 20 10 / 0.6);
+  transform-origin: bottom;
+  transition: transform 0.4s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+.cad-flap:hover {
+  transform: perspective(500px) rotateX(-14deg);
+}
+
+/* La bande arrive en glissant sous le volet. */
+@keyframes cad-peek {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+}
+.cad-peek {
+  animation: cad-peek 0.7s 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+/* Points de raccord : là où les traits d'au-dessus touchent ta feuille. */
+@keyframes cad-dot {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-gold) 60%, transparent);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.25);
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+.cad-dot {
+  position: absolute;
+  top: 0;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: var(--color-gold);
+  border: 2px solid #fff;
+  pointer-events: none;
+  animation: cad-dot 1.6s ease-in-out infinite;
+}
+
+/* Ligne de pliure du bas : ce qui dépasse dessous sera vu par le suivant. */
+.cad-fold-guide {
+  border-top: 2px dashed color-mix(in oklab, var(--color-gold) 80%, transparent);
+  background: linear-gradient(to bottom, color-mix(in oklab, var(--color-gold) 12%, transparent), transparent);
+}
+@keyframes cad-guide {
+  from {
+    opacity: 0;
+    transform: scaleX(0.2);
+  }
+}
+.cad-fold-guide {
+  animation: cad-guide 0.6s 0.5s var(--ease-out, ease-out) backwards;
+}
+
+/* La silhouette du morceau en cours, dans la pastille de progression. */
+@keyframes cad-pip {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+.cad-pip-now {
+  animation: cad-pip 1.2s ease-in-out infinite;
+}
+
+/* ---- Dévoilement ------------------------------------------------------------------ */
+
+.cad-strip {
+  perspective: 1100px;
+}
+/* Chaque morceau se déplie depuis la pliure du dessus, avec un rebond de papier. */
+@keyframes cad-unfold {
+  0% {
+    transform: rotateX(-96deg);
+    filter: brightness(0.6);
+  }
+  65% {
+    transform: rotateX(10deg);
+    filter: brightness(1.05);
+  }
+  100% {
+    transform: rotateX(0);
+    filter: none;
+  }
+}
+.cad-part {
+  transform-origin: top;
+  backface-visibility: hidden;
+  animation: cad-unfold 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+/* La pliure reste marquée d'une ombre fine entre deux morceaux. */
+.cad-part + .cad-part::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 10px;
+  z-index: 1;
+  background: linear-gradient(to bottom, rgb(40 20 10 / 0.09), transparent);
+  pointer-events: none;
+}
+
+/* Signature de l'auteur, posée en coin une fois le morceau déplié. */
+@keyframes cad-credit {
+  from {
+    opacity: 0;
+    transform: translateX(-8px) scale(0.9);
+  }
+}
+.cad-credit {
+  animation: cad-credit 0.35s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) backwards;
+}
+
+/* Le nom en tête : chaque lettre arrive floue et se pose. */
+@keyframes cad-letter {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(8px) rotate(-6deg);
+  }
+}
+.cad-letter {
+  display: inline-block;
+  white-space: pre;
+  animation: cad-letter 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+/* Cœur donné : il gonfle, et deux petits cœurs s'envolent. */
+@keyframes cad-heart {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.45);
+  }
+  60% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.cad-heart-on svg {
+  animation: cad-heart 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes cad-fly {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), -26px) scale(1);
+  }
+}
+.cad-fly {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  pointer-events: none;
+  animation: cad-fly 0.7s ease-out forwards;
+}
+
+/* ---- Bestiaire -------------------------------------------------------------------- */
+
+@keyframes cad-toss {
+  0% {
+    opacity: 0;
+    transform: translateY(-60px) rotate(calc(var(--tilt) * -3)) scale(1.1);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(5px) rotate(calc(var(--tilt) * 1.3));
+  }
+  100% {
+    transform: rotate(var(--tilt));
+  }
+}
+.cad-card {
+  --tilt: 0deg;
+  transform: rotate(var(--tilt));
+  animation: cad-toss 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  transition:
+    transform 0.45s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    box-shadow 0.45s ease;
+  box-shadow: 0 18px 36px -24px rgb(40 20 10 / 0.6);
+}
+.cad-card:hover {
+  transform: rotate(0deg) translateY(-6px) scale(1.03);
+  box-shadow: 0 30px 50px -26px rgb(40 20 10 / 0.65);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cad-art-panel,
+  .cad-art-eyes,
+  .cad-dot,
+  .cad-pip-now,
+  .cad-part,
+  .cad-peek,
+  .cad-fold-guide,
+  .cad-credit,
+  .cad-letter,
+  .cad-card,
+  .cad-heart-on svg,
+  .cad-fly {
+    animation: none;
+  }
+}

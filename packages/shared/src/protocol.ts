@@ -2,6 +2,8 @@
 // Messages de contrôle : JSON (frames texte). Dessin : binaire (voir draw.ts).
 
 import type { BombEvent, BombState } from './bombe';
+import type { CadavreState, Creature } from './cadavre';
+import type { DrawPacket } from './draw';
 import type { ConnaitState } from './connait';
 import type { IntrusState } from './intrus';
 import type { BacState } from './petitbac';
@@ -22,7 +24,7 @@ export const PALETTE = [
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 /** Jeux proposés : chaque salon en porte un, choisi à sa création. */
-export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire'] as const;
+export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'cadavre'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
@@ -37,6 +39,7 @@ export function isRoomGame(v: unknown): v is RoomGame {
  * Qui me connaît le mieux : answer (la vedette répond, les autres parient) → reveal.
  * Bombe à mots : bomb, jusqu'au dernier survivant. Photomaton : pose (consigne puis flash) → vote → reveal.
  * Pas un sourire ! : faceoff (3, 2, 1) → duel → verdict.
+ * Cadavre exquis : draw (tête, corps, jambes, tous en même temps) → reveal.
  */
 export type Phase =
   | 'lobby'
@@ -186,6 +189,8 @@ export interface RoomState {
   photo: PhotoState | null;
   /** État de Pas un sourire !, null pour les autres jeux. */
   sourire: SourireState | null;
+  /** État du Cadavre exquis, null pour les autres jeux. */
+  cadavre: CadavreState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -251,6 +256,11 @@ export type ClientMsg =
   | { t: 'sourire'; smiled: true }
   | { t: 'sourire'; dare: true }
   | { t: 'sourire'; warp: WarpId | null }
+  | { t: 'cadavre'; done: true }
+  | { t: 'cadavre'; edit: true }
+  | { t: 'cadavre'; name: string }
+  | { t: 'cadavre'; heart: string }
+  | { t: 'cadavre'; next: true }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =
@@ -277,5 +287,9 @@ export type ServerMsg =
   | { t: 'photos'; round: number; shots: PhotoShot[] }
   /** Bruitage envoyé par un joueur : chacun le synthétise chez lui (sauf s'il a coupé le son). */
   | { t: 'sound'; id: SoundId; by: string }
+  /** Cadavre exquis : le morceau à dessiner, et la bande de jonction de celui d'au-dessus. */
+  | { t: 'cadPrompt'; step: number; above: { name: string; strokes: DrawPacket[] } | null }
+  /** Cadavre exquis : toutes les créatures, envoyées une fois au dévoilement. */
+  | { t: 'creatures'; creatures: Creature[] }
   | { t: 'pong'; at: number; now: number }
   | { t: 'error'; message: string };
