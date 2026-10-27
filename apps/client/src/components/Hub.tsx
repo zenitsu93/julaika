@@ -4,6 +4,7 @@ import { AgentsArt } from './agents/AgentsArt';
 import { AlibiArt } from './alibi/AlibiArt';
 import { BombGlyph } from './bombe/BombGlyph';
 import { BrasGlyph } from './bras/BrasGlyph';
+import { ArcadeGlyph } from './arcade/ArcadeGlyphs';
 import { CadArt } from './cadavre/CadArt';
 import { CerveauArt } from './cerveau/CerveauArt';
 import { ConnaitArt } from './connait/ConnaitArt';
@@ -415,6 +416,9 @@ const ART: Record<GameId, JSX.Element> = {
   cerveau: <CerveauArt />,
   verite: <AovArt />,
   quiz: <QuizArt />,
+  foot: <ArcadeGlyph kind="foot" className="mx-auto max-h-36 w-full" />,
+  oreillers: <ArcadeGlyph kind="oreillers" className="mx-auto max-h-36 w-full" />,
+  drap: <ArcadeGlyph kind="drap" className="mx-auto max-h-36 w-full" />,
 };
 
 /** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */

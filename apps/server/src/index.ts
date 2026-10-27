@@ -9,6 +9,7 @@ import { deepseekDares, deepseekPairs, deepseekQuiz, deepseekWords } from './dee
 import { warmDictionary } from './dico';
 import { iceServersFor } from './ice';
 import { MotDuJour, isToken } from './motdujour';
+import { musicSearch } from './musique';
 import { Room } from './room';
 
 const PORT = Number(process.env.PORT ?? 3001);
@@ -20,6 +21,9 @@ const generateDares = deepseekDares();
 const generateQuiz = deepseekQuiz();
 const mot = new MotDuJour(process.env.MOT_DATA_DIR ?? 'data/mot', Date.now, process.env.MOT_TZ || 'Europe/Paris');
 const motBuckets = keyedBuckets(30, 2);
+const music = musicSearch(process.env.YOUTUBE_API_KEY || undefined);
+// Une recherche coûte 1 % du quota YouTube du jour : 6 d'un coup par IP, puis une toutes les 10 s.
+const musicBuckets = keyedBuckets(6, 0.1);
 
 /** Garde-fous d'un serveur ouvert à tous : connexions par IP, salons en tout, essais de code. */
 const MAX_CONNECTIONS_PER_IP = 20;
@@ -34,7 +38,7 @@ const connections = connectionCounter(MAX_CONNECTIONS_PER_IP);
 /** Messages propres à chaque jeu, qui partagent le seau de l'aiguille de Wavelength. */
 const GAME_MESSAGES = new Set<string>([
   'wave', 'tel', 'intrus', 'bac', 'connait', 'bomb', 'photo', 'sourire', 'bras', 'flash', 'cadavre', 'interdits',
-  'motamot', 'agents', 'fred', 'alibi', 'pitch', 'cerveau', 'aov', 'quiz', 'mimeShot',
+  'motamot', 'agents', 'fred', 'alibi', 'pitch', 'cerveau', 'aov', 'quiz', 'mimeShot', 'arcade',
 ]);
 const joinBuckets = keyedBuckets(20, 1 / 3); // 20 salons rejoints d'un coup par IP, puis un toutes les 3 s
 
@@ -58,6 +62,7 @@ const http = createServer(async (req, res) => {
     res.end(JSON.stringify({ ok: true }));
     return;
   }
+  if (url.pathname.startsWith('/api/musique')) return musicApi(req, res, url);
   if (url.pathname.startsWith('/api/mot')) return motApi(req, res, url);
   const safe = normalizePath(url.pathname).replace(/^(\.\.[/\\])+/, '');
   let file = join(STATIC_DIR, safe);
@@ -106,6 +111,22 @@ async function motApi(req: IncomingMessage, res: ServerResponse, url: URL) {
   send(404, { error: 'introuvable' });
 }
 
+/** Lecteur de musique : GET /api/musique/recherche?q=, /api/musique/playlist?list=, /api/musique/video?id=. */
+async function musicApi(req: IncomingMessage, res: ServerResponse, url: URL) {
+  const send = (status: number, body: unknown) => {
+    res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+    res.end(JSON.stringify(body));
+  };
+  if (req.method !== 'GET') return send(405, { error: 'requete' });
+  const route = url.pathname.slice('/api/musique/'.length);
+  if (route !== 'recherche' && route !== 'playlist' && route !== 'video') return send(404, { error: 'introuvable' });
+  if (!musicBuckets.take(clientIp(req))) return send(429, { error: 'trop' });
+  const p = (k: string) => url.searchParams.get(k) ?? '';
+  const out = route === 'recherche' ? await music.search(p('q')) : route === 'playlist' ? await music.playlist(p('list')) : await music.video(p('id'));
+  const status = 'tracks' in out ? 200 : out.error === 'cle' ? 503 : out.error === 'requete' ? 400 : out.error === 'introuvable' ? 404 : 502;
+  send(status, out);
+}
+
 function readBody(req: IncomingMessage, limit: number): Promise<string> {
   return new Promise((resolve, reject) => {
     let size = 0;
@@ -125,6 +146,7 @@ function readBody(req: IncomingMessage, limit: number): Promise<string> {
 // Les seaux des visiteurs partis depuis 10 minutes sont oubliés.
 setInterval(() => {
   motBuckets.prune();
+  musicBuckets.prune();
   joinBuckets.prune();
 }, 60_000).unref();
 
@@ -162,6 +184,7 @@ wss.on('connection', (ws: WebSocket & { alive?: boolean }, req: IncomingMessage)
   const callBucket = bucket(10, 2); // entrée et sortie de visio, caméra et micro
   const rtcBucket = bucket(300, 60); // signalisation WebRTC : rafale de candidats en arrivant dans la visio
   const settingsBucket = bucket(20, 8); // réglages de l'hôte (curseurs glissés)
+  const musicBucket = bucket(10, 2); // lecteur partagé : pause, saut, morceau suivant
   // Réglages arrivés trop vite : le dernier état est gardé et appliqué un peu plus tard, jamais perdu.
   let pendingSettings: ClientMsg | null = null;
   let settingsTimer: ReturnType<typeof setTimeout> | null = null;
@@ -229,6 +252,7 @@ wss.on('connection', (ws: WebSocket & { alive?: boolean }, req: IncomingMessage)
     if (msg.t === 'chat' && !chatBucket()) return;
     if (GAME_MESSAGES.has(msg.t) && !dialBucket()) return;
     if (msg.t === 'sound' && !soundBucket()) return;
+    if (msg.t === 'music' && !musicBucket()) return;
     room.handle(playerId, msg);
   });
 
@@ -293,5 +317,6 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
 
 http.listen(PORT, () => {
   console.log(`julaïka : http://localhost:${PORT}`);
+  console.log(music.enabled ? '[musique] recherche YouTube active' : '[musique] recherche coupée (YOUTUBE_API_KEY absente) : liens YouTube seulement');
   console.log(generateWords ? '[mots] générés par DeepSeek selon la difficulté' : '[mots] listes intégrées (DEEPSEEK_API_KEY absente)');
 });

@@ -23,3 +23,8 @@ export * from './pitch';
 export * from './cerveau';
 export * from './verite';
 export * from './quiz';
+export * from './arcade';
+export * from './foot';
+export * from './oreillers';
+export * from './drap';
+export * from './musique';

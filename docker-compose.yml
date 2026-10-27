@@ -10,7 +10,8 @@ services:
     restart: unless-stopped
     networks: [frontend]
     # DEEPSEEK_API_KEY pour générer les mots selon la difficulté (sans clé : listes intégrées),
-    # TURN_URLS et TURN_SECRET pour le relais de la visio (voir deploy/turnserver.conf).
+    # TURN_URLS et TURN_SECRET pour le relais de la visio (voir deploy/turnserver.conf),
+    # YOUTUBE_API_KEY pour la recherche du lecteur de musique (sans clé : liens YouTube collés seulement).
     env_file:
       - path: .env
         required: false

@@ -98,6 +98,12 @@ const BRAS_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
+// Jeux d'action : à deux, une partie par manche ; à plus, chacun joue avec son voisin.
+const ARCADE_FIELDS: typeof FIELDS = [
+  { key: 'rounds', label: 'Manches' },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
 // Cadavre exquis : trois morceaux par créature, seul le temps de dessin se règle.
 const CAD_FIELDS: typeof FIELDS = [
   { key: 'drawTime', label: 'Temps par morceau (s)', step: 10 },
@@ -270,6 +276,22 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
     'Le modèle se pose sur le dessin : plus ça se ressemble, plus votre complicité grimpe. Les rôles tournent à chaque dessin.',
   ],
 
+  foot: [
+    'Foot vu de côté, un joueur par camp : marque dans la cage d’en face. 90 secondes, premier à 5 buts.',
+    'Clavier : ← → pour courir, ↑ pour sauter, Espace pour frapper. Au téléphone, une manette apparaît sous le terrain.',
+    'La jauge autour de ta tête se remplit : C (ou 💋) lance la frappe bisou, tendue et suivie d’une traînée de cœurs.',
+  ],
+  oreillers: [
+    'Deux pantins mous sur un lit, un oreiller chacun : fais tomber l’autre du matelas.',
+    'Espace pour le coup d’oreiller, ← → pour marcher, ↑ pour sauter. Chaque coup reçu fait monter ses dégâts : plus ils sont hauts, plus il vole loin.',
+    'Premier à 3 chutes. Si vous tombez ensemble, c’est un câlin forcé : la manche ne compte pas.',
+  ],
+  drap: [
+    'Chacun tient un coin du drap : ← → pour bouger ta main. Si tu tires trop fort, tu entraînes l’autre.',
+    'Attrapez les cœurs (les dorés valent 3, les séries multiplient), laissez passer les orages : trois orages et c’est fini.',
+    'Appuyez sur Espace en même temps : le bisou chasse les orages proches. Battez votre record à deux !',
+  ],
+
   verite: [
     'La bouteille tourne et désigne un joueur : Action ou Vérité ?',
     'Il relève la carte devant sa caméra. Deux jokers « je passe » par partie pour changer de carte.',
@@ -344,7 +366,7 @@ export function Lobby() {
       )}
       {room.game === 'verite' && <AovLevelPicker isHost={isHost} />}
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'brasdefer' ? BRAS_FIELDS : room.game === 'flash' ? FLASH_FIELDS : room.game === 'cadavre' ? CAD_FIELDS : room.game === 'interdits' ? INTERDITS_FIELDS : room.game === 'motamot' ? STORY_FIELDS : room.game === 'agents' ? AGENTS_FIELDS : room.game === 'fredonne' ? FRED_FIELDS : room.game === 'alibi' ? ALIBI_FIELDS : room.game === 'pitch' ? PITCH_FIELDS : room.game === 'cerveau' ? CERVEAU_FIELDS : room.game === 'verite' ? AOV_FIELDS : room.game === 'quiz' ? QUIZ_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'brasdefer' ? BRAS_FIELDS : room.game === 'flash' ? FLASH_FIELDS : room.game === 'cadavre' ? CAD_FIELDS : room.game === 'interdits' ? INTERDITS_FIELDS : room.game === 'motamot' ? STORY_FIELDS : room.game === 'agents' ? AGENTS_FIELDS : room.game === 'fredonne' ? FRED_FIELDS : room.game === 'alibi' ? ALIBI_FIELDS : room.game === 'pitch' ? PITCH_FIELDS : room.game === 'cerveau' ? CERVEAU_FIELDS : room.game === 'verite' ? AOV_FIELDS : room.game === 'quiz' ? QUIZ_FIELDS : room.game === 'foot' || room.game === 'oreillers' || room.game === 'drap' ? ARCADE_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
           const label = key === 'drawTime' && !rules && room.settings.mode !== 'dessin' ? 'Temps par tour (s)' : base;
           const [min, limit] = SETTINGS_LIMITS[key];
           const max = cap ?? limit;

@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import './motion/motion.css';
 @import './motion/sourire.css';
+@import './motion/musique.css';
 
 /* Concept « Studio Pro » en tenue « Cacao » : crème et chocolat (Whipped Butter #f2e6b3,
    Cookie Crumble #4b2e21), avec un or bruni en accent.
@@ -65,6 +66,8 @@ body,
 
 body {
   margin: 0;
+  /* Pas de zoom au double appui (les jeux se tapent vite) ; le pincement reste possible. */
+  touch-action: manipulation;
   background: var(--color-page);
   color: var(--color-ink);
   font-family: var(--font-sans);
@@ -98,9 +101,10 @@ h2 {
   @apply btn border border-edge bg-surface hover:bg-edge/50;
 }
 
-/* 16px sur téléphone : en dessous, iOS zoome au focus et reste zoomé. */
+/* 16px sur écran tactile : en dessous, iOS zoome au focus et reste zoomé. Le 14px ne vaut
+   qu'avec une souris, sinon un téléphone tourné en paysage (plus de 640px) zoomait. */
 @utility input {
-  @apply w-full rounded-md border border-edge bg-surface px-3 py-2 text-base outline-none sm:text-sm transition placeholder:text-muted focus:border-ink focus:ring-4 focus:ring-ink/10 aria-invalid:border-bad;
+  @apply w-full rounded-md border border-edge bg-surface px-3 py-2 text-base outline-none sm:pointer-fine:text-sm transition placeholder:text-muted focus:border-ink focus:ring-4 focus:ring-ink/10 aria-invalid:border-bad;
 }
 
 /* Petite touche de clavier, pour afficher les raccourcis. */

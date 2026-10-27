@@ -1,8 +1,10 @@
-import { decodeDraw, isSoundId, type ClientMsg, type GameMode, type RoomGame, type RoomState, type ServerMsg } from '@julaika/shared';
+import { decodeDraw, isArcadeFrame, isSoundId, type ClientMsg, type GameMode, type RoomGame, type RoomState, type ServerMsg } from '@julaika/shared';
 import { wipeBoard } from '../motion';
+import { arcadeFrames, emitArcadeEvents } from './arcade';
 import { board } from './board';
 import { call } from './call';
 import { mimeSnapshot } from './mime';
+import { configureMusic, receiveRoomMusic } from './music';
 import { inkLayers, resetInk } from './cerveau';
 import { configureSounds, receive as receiveSound } from './sounds';
 import { store, type GameState } from './store';
@@ -29,6 +31,7 @@ class Net {
     };
     ws.onmessage = (e) => {
       if (e.data instanceof ArrayBuffer) {
+        if (isArcadeFrame(e.data)) return arcadeFrames.push(e.data);
         const packet = decodeDraw(e.data);
         // Octet 3 : calque du Cerveau coupé (0 = tableau commun).
         const layer = inkLayers[new Uint8Array(e.data)[3]! - 1];
@@ -77,6 +80,7 @@ class Net {
     switch (msg.t) {
       case 'welcome':
         board.reset();
+        arcadeFrames.reset();
         resetInk();
         call.configure({
           selfId: msg.selfId,
@@ -171,12 +175,18 @@ class Net {
       case 'creatures':
         store.set({ creatures: msg.creatures });
         break;
+      case 'arcadeEv':
+        emitArcadeEvents(msg.ev);
+        break;
       case 'dial':
         store.set({ dial: msg.value });
         break;
       case 'sound':
         // Joué sauf en muet, mais la bulle s'affiche toujours.
         if (isSoundId(msg.id)) receiveSound(msg.id, msg.by);
+        break;
+      case 'music':
+        receiveRoomMusic(msg.music);
         break;
       case 'rtc':
         void call.onSignal(msg.from, msg.data);
@@ -200,6 +210,7 @@ class Net {
 
 export const net = new Net();
 configureSounds((id) => net.send({ t: 'sound', id }));
+configureMusic((msg) => net.send(msg));
 
 /** À la révélation d'une manche du Photomaton, garde sa meilleure photo pour le final. */
 function keepBest(reel: GameState['reel'], photos: GameState['photos'], state: RoomState): GameState['reel'] {
