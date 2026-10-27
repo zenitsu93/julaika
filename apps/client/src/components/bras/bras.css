@@ -1,0 +1,355 @@
+/* Bras de fer : la prise qui penche, la jauge à ressort, les cibles qui éclatent, le vumètre qui s'enflamme. */
+
+/* ---- Illustration (accueil et salon) ------------------------------------------------- */
+@keyframes bf-arm-l {
+  0%,
+  100% {
+    d: path('M62 108L96 50');
+  }
+  25% {
+    d: path('M62 108L78 54');
+  }
+  65% {
+    d: path('M62 108L114 54');
+  }
+}
+@keyframes bf-arm-r {
+  0%,
+  100% {
+    d: path('M138 108L104 50');
+  }
+  25% {
+    d: path('M138 108L86 54');
+  }
+  65% {
+    d: path('M138 108L122 54');
+  }
+}
+@keyframes bf-clasp {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-18px, 4px) rotate(-10deg);
+  }
+  65% {
+    transform: translate(18px, 4px) rotate(10deg);
+  }
+}
+@keyframes bf-knot {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-40px);
+  }
+  65% {
+    transform: translateX(40px);
+  }
+}
+@keyframes bf-spark {
+  0%,
+  20%,
+  30%,
+  60%,
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  25%,
+  65% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.bf-arm-l {
+  animation: bf-arm-l 3.4s var(--ease-out) infinite;
+}
+.bf-arm-r {
+  animation: bf-arm-r 3.4s var(--ease-out) infinite;
+}
+.bf-clasp {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bf-clasp 3.4s var(--ease-out) infinite;
+}
+.bf-spark {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: bf-spark 3.4s ease-out infinite;
+}
+.bf-knot {
+  animation: bf-knot 3.4s var(--ease-out) infinite;
+}
+
+/* ---- Jauge ----------------------------------------------------------------------------- */
+.bf-track {
+  background:
+    linear-gradient(90deg, color-mix(in oklab, var(--color-cacao-2) 55%, transparent), transparent 50%, color-mix(in oklab, var(--color-gold) 55%, transparent)),
+    color-mix(in oklab, var(--color-ink) 6%, transparent);
+  box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.18);
+}
+/* Le remplissage part du milieu vers le camp de l'adversaire. */
+.bf-fill {
+  transition: background-color 0.3s;
+}
+.bf-knot-pos {
+  will-change: transform;
+}
+@keyframes bf-squash {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.22, 0.86);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.bf-squash {
+  animation: bf-squash 0.28s var(--ease-spring);
+}
+@keyframes bf-tremble {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  25% {
+    transform: translateX(-2px) rotate(-3deg);
+  }
+  75% {
+    transform: translateX(2px) rotate(3deg);
+  }
+}
+/* Le camp où la jauge s'approche tremble. */
+.bf-danger {
+  animation: bf-tremble 0.18s linear infinite;
+}
+@keyframes bf-flame {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.12);
+  }
+}
+.bf-boost {
+  animation: m-pop 0.24s var(--ease-spring) backwards;
+}
+.bf-boost > span {
+  display: inline-block;
+  animation: bf-flame 0.35s ease-in-out infinite;
+}
+@keyframes bf-float {
+  0% {
+    transform: translate(-50%, 0) scale(0.6);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(-50%, -14px) scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -46px) scale(1);
+    opacity: 0;
+  }
+}
+.bf-float {
+  position: absolute;
+  pointer-events: none;
+  animation: bf-float 0.8s var(--ease-out) forwards;
+}
+
+/* ---- Cibles ------------------------------------------------------------------------------ */
+.bf-zone {
+  background-image: radial-gradient(color-mix(in oklab, var(--color-ink) 9%, transparent) 1px, transparent 1.4px);
+  background-size: 18px 18px;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+@keyframes bf-target-in {
+  from {
+    transform: translate(-50%, -50%) scale(0.2) rotate(-40deg);
+    opacity: 0;
+  }
+}
+@keyframes bf-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+.bf-target {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  animation: bf-target-in 0.32s var(--ease-spring) backwards;
+  -webkit-tap-highlight-color: transparent;
+}
+.bf-target::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 3px solid currentColor;
+  animation: bf-ring 1.2s var(--ease-out) infinite;
+}
+.bf-target:active {
+  transform: translate(-50%, -50%) scale(0.92);
+}
+@keyframes bf-shine {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-gold) 60%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 22px 6px color-mix(in oklab, var(--color-gold) 60%, transparent);
+  }
+}
+.bf-gold {
+  animation:
+    bf-target-in 0.32s var(--ease-spring) backwards,
+    bf-shine 0.9s ease-in-out infinite;
+}
+@keyframes bf-burst {
+  from {
+    transform: translate(-50%, -50%) rotate(var(--a)) translateY(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(var(--a)) translateY(-38px) scale(0.3);
+    opacity: 0;
+  }
+}
+.bf-shard {
+  position: absolute;
+  width: 6px;
+  height: 14px;
+  border-radius: 3px;
+  pointer-events: none;
+  animation: bf-burst 0.45s var(--ease-out) forwards;
+}
+
+/* ---- Vumètre ----------------------------------------------------------------------------- */
+.bf-meter-fill {
+  transform-origin: left;
+  will-change: transform;
+}
+.bf-meter[data-loud] {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-gold) 45%, transparent);
+}
+@keyframes bf-mic-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+.bf-mic-cta {
+  animation: bf-mic-pulse 1.6s ease-in-out infinite;
+}
+
+/* ---- Face-à-face et verdict ------------------------------------------------------------ */
+@keyframes bf-charge-l {
+  from {
+    transform: translateX(-60px) rotate(-12deg) scale(0.8);
+    opacity: 0;
+  }
+  70% {
+    transform: translateX(8px) rotate(4deg) scale(1.04);
+  }
+}
+@keyframes bf-charge-r {
+  from {
+    transform: translateX(60px) rotate(12deg) scale(0.8);
+    opacity: 0;
+  }
+  70% {
+    transform: translateX(-8px) rotate(-4deg) scale(1.04);
+  }
+}
+.bf-charge-l {
+  animation: bf-charge-l 0.6s var(--ease-out) backwards;
+}
+.bf-charge-r {
+  animation: bf-charge-r 0.6s 0.08s var(--ease-out) backwards;
+}
+@keyframes bf-count {
+  0% {
+    transform: scale(2.4);
+    opacity: 0;
+    filter: blur(6px);
+  }
+  35% {
+    transform: scale(0.94);
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.bf-count {
+  display: inline-block;
+  animation: bf-count 0.5s var(--ease-out) backwards;
+}
+@keyframes bf-stamp {
+  0% {
+    transform: scale(2.6) rotate(-14deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.94) rotate(-6deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(-6deg);
+  }
+}
+.bf-stamp {
+  animation: bf-stamp 0.5s var(--ease-out) backwards;
+}
+@keyframes bf-crown {
+  from {
+    transform: translateY(-30px) rotate(-20deg);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(3px) rotate(6deg);
+  }
+}
+.bf-crown {
+  display: inline-block;
+  animation: bf-crown 0.6s 0.35s var(--ease-spring) backwards;
+}
+.bf-teaser {
+  animation: m-float 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bf-arm-l,
+  .bf-arm-r,
+  .bf-clasp,
+  .bf-spark,
+  .bf-knot,
+  .bf-danger,
+  .bf-target::before,
+  .bf-mic-cta {
+    animation: none;
+  }
+  .bf-shard,
+  .bf-float {
+    display: none;
+  }
+}

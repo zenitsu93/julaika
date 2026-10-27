@@ -43,6 +43,7 @@ import { INTRUS_PAIRS } from './intrusPairs';
 import { PetitBac } from './petitbac';
 import { Photomaton } from './photomaton';
 import { Sourire } from './sourire';
+import { BrasDeFer } from './brasdefer';
 import { Telephone } from './telephone';
 import { Wavelength } from './wavelength';
 import { MIME_FR, WORDS_FR } from './words';
@@ -113,6 +114,7 @@ export class Room {
   private bomb: Bombe | null = null;
   private photo: Photomaton | null = null;
   private sourire: Sourire | null = null;
+  private bras: BrasDeFer | null = null;
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -198,7 +200,7 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire) {
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.bras) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
       this.intrus?.onLeave(id);
@@ -207,6 +209,7 @@ export class Room {
       this.bomb?.onLeave(id);
       this.photo?.onLeave(id);
       this.sourire?.onLeave(id);
+      this.bras?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -266,6 +269,9 @@ export class Room {
         break;
       case 'mimeShot':
         this.mimeShot(id, msg.finder, msg.image);
+        break;
+      case 'bras':
+        if (msg && typeof msg === 'object') this.bras?.handle(id, msg);
         break;
       case 'sound':
         // Boîte à sons, dans tous les jeux : l'émetteur l'a déjà joué chez lui.
@@ -368,6 +374,7 @@ export class Room {
     if (this.game === 'bombe') return this.startBomb();
     if (this.game === 'photomaton') return this.startPhoto();
     if (this.game === 'sourire') return this.startSourire();
+    if (this.game === 'brasdefer') return this.startBras();
     this.usedWords.clear();
     this.shotCount = 0;
     this.nextRound();
@@ -772,6 +779,29 @@ export class Room {
     this.sourire.start();
   }
 
+  private startBras(): void {
+    this.bras?.dispose();
+    this.bras = new BrasDeFer({
+      playerIds: () => [...this.players.keys()],
+      player: (id) => this.players.get(id),
+      rounds: () => this.settings.rounds,
+      random: this.random,
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      system: (text) => this.system(text),
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      endGame: () => this.endGame(),
+    });
+    this.bras.start();
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -805,6 +835,8 @@ export class Room {
     this.photo = null;
     this.sourire?.dispose();
     this.sourire = null;
+    this.bras?.dispose();
+    this.bras = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -924,6 +956,7 @@ export class Room {
       bomb: this.bomb?.state() ?? null,
       photo: this.photo?.state() ?? null,
       sourire: this.sourire?.stateFor(id) ?? null,
+      bras: this.bras?.stateFor(id) ?? null,
     };
   }
 
@@ -967,6 +1000,7 @@ export class Room {
     this.bomb?.dispose();
     this.photo?.dispose();
     this.sourire?.dispose();
+    this.bras?.dispose();
   }
 }
 
