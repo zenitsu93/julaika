@@ -50,6 +50,7 @@ import { MotAMot } from './motamot';
 import { INTRUS_PAIRS } from './intrusPairs';
 import { PetitBac } from './petitbac';
 import { Photomaton } from './photomaton';
+import { Pitch } from './pitch';
 import { Sourire } from './sourire';
 import { BrasDeFer } from './brasdefer';
 import { Telephone } from './telephone';
@@ -130,6 +131,7 @@ export class Room {
   private mot: MotAMot | null = null;
   private fred: Fredonne | null = null;
   private alibi: Alibi | null = null;
+  private pitch: Pitch | null = null;
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -218,7 +220,7 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.bras || this.flash || this.cadavre || this.interdits || this.mot || this.agents || this.fred || this.alibi) {
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.bras || this.flash || this.cadavre || this.interdits || this.mot || this.agents || this.fred || this.alibi || this.pitch) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
       this.intrus?.onLeave(id);
@@ -235,6 +237,7 @@ export class Room {
       this.agents?.onLeave(id);
       this.fred?.onLeave(id);
       this.alibi?.onLeave(id);
+      this.pitch?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -318,6 +321,9 @@ export class Room {
         break;
       case 'alibi':
         if (msg && typeof msg === 'object') this.alibi?.handle(id, msg);
+        break;
+      case 'pitch':
+        if (msg && typeof msg === 'object') this.pitch?.handle(id, msg);
         break;
       case 'sound':
         // Boîte à sons, dans tous les jeux : l'émetteur l'a déjà joué chez lui.
@@ -434,6 +440,7 @@ export class Room {
     if (this.game === 'agents') return this.startAgents();
     if (this.game === 'fredonne') return this.startFred();
     if (this.game === 'alibi') return this.startAlibi();
+    if (this.game === 'pitch') return this.startPitch();
     this.usedWords.clear();
     this.shotCount = 0;
     this.nextRound();
@@ -1041,6 +1048,29 @@ export class Room {
     this.alibi.start();
   }
 
+  private startPitch(): void {
+    this.pitch?.dispose();
+    this.pitch = new Pitch({
+      playerIds: () => [...this.players.keys()],
+      player: (id) => this.players.get(id),
+      rounds: () => this.settings.rounds,
+      random: this.random,
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      system: (text) => this.system(text),
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      endGame: () => this.endGame(),
+    });
+    this.pitch.start();
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -1091,6 +1121,8 @@ export class Room {
     this.fred = null;
     this.alibi?.dispose();
     this.alibi = null;
+    this.pitch?.dispose();
+    this.pitch = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -1218,6 +1250,7 @@ export class Room {
       agents: this.agents?.stateFor(id) ?? null,
       fred: this.fred?.stateFor(id) ?? null,
       alibi: this.alibi?.stateFor(id) ?? null,
+      pitch: this.pitch?.stateFor() ?? null,
     };
   }
 
@@ -1269,6 +1302,7 @@ export class Room {
     this.agents?.dispose();
     this.fred?.dispose();
     this.alibi?.dispose();
+    this.pitch?.dispose();
   }
 }
 

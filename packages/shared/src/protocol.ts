@@ -16,6 +16,7 @@ import type { MimeShot, MimeTwist } from './mime';
 import type { StoryState } from './motamot';
 import type { BacState } from './petitbac';
 import type { PhotoShot, PhotoState } from './photomaton';
+import type { PitchState } from './pitch';
 import type { TelChain, TelEntry, TelState } from './telephone';
 import type { SoundId, SourireState, WarpId } from './sourire';
 import type { WaveState } from './wavelength';
@@ -32,7 +33,7 @@ export const PALETTE = [
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 /** Jeux proposés : chaque salon en porte un, choisi à sa création. */
-export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre', 'interdits', 'motamot', 'agents', 'fredonne', 'alibi'] as const;
+export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre', 'interdits', 'motamot', 'agents', 'fredonne', 'alibi', 'pitch'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
@@ -51,6 +52,7 @@ export function isRoomGame(v: unknown): v is RoomGame {
  * Mots interdits : faceoff (qui fait deviner) → explain (les cartes défilent) → verdict. Mot à mot : write (un mot chacun) → album (lecture).
  * Agents secrets : clue (l'espion donne son indice) → guess (on retourne les cartes) → reveal. Fredonne ! : pick (le chanteur choisit) → hum → reveal.
  * L'Alibi : plot (les complices se concertent) → trial (les pièces tombent) → vote (le jury) → verdict.
+ * Pitch saboté : brief (le produit) → pitch → vote (les offres) → verdict.
  */
 export type Phase =
   | 'lobby'
@@ -79,6 +81,8 @@ export type Phase =
   | 'hum'
   | 'plot'
   | 'trial'
+  | 'brief'
+  | 'pitch'
   | 'gameEnd';
 
 /** Difficulté des mots proposés : sert au tirage dans les listes intégrées et à la génération par IA. */
@@ -242,6 +246,8 @@ export interface RoomState {
   fred: FredState | null;
   /** État de L'Alibi vu par ce joueur (le carnet reste aux complices), null pour les autres jeux. */
   alibi: AlibiState | null;
+  /** État du Pitch saboté, null pour les autres jeux. */
+  pitch: PitchState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -339,6 +345,10 @@ export type ClientMsg =
   | { t: 'alibi'; statement: string }
   | { t: 'alibi'; object: AlibiObjection }
   | { t: 'alibi'; vote: boolean }
+  | { t: 'pitch'; slide: number }
+  | { t: 'pitch'; rate: number }
+  | { t: 'pitch'; done: true }
+  | { t: 'pitch'; reroll: true }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =

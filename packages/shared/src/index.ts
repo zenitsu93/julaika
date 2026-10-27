@@ -19,3 +19,4 @@ export * from './motamot';
 export * from './agents';
 export * from './fredonne';
 export * from './alibi';
+export * from './pitch';

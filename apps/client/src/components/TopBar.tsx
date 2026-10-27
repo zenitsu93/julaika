@@ -98,6 +98,8 @@ export function TopBar() {
             ? room.phase === 'album'
               ? 'Lecture'
               : `Histoire ${room.motamot.story}/${room.motamot.stories}`
+          : room.pitch
+            ? `Pitch ${room.pitch.turn + 1}/${room.pitch.turns}`
           : room.sourire
             ? `Duel ${room.sourire.turn + 1}/${room.sourire.turns}`
           : room.bras

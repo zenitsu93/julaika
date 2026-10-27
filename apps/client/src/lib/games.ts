@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash' | 'cadavre' | 'interdits' | 'motamot' | 'agents' | 'fredonne' | 'alibi';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash' | 'cadavre' | 'interdits' | 'motamot' | 'agents' | 'fredonne' | 'alibi' | 'pitch';
 
 export interface GameInfo {
   id: GameId;
@@ -164,6 +164,14 @@ export const GAMES: GameInfo[] = [
     players: '3 joueurs ou plus · visio',
     badge: 'Nouveau',
     keywords: ['alibi', 'juge', 'proces', 'tribunal', 'complices', 'mensonge', 'impro', 'histoire', 'visio', 'contradiction'],
+  },
+  {
+    id: 'pitch',
+    name: 'Pitch saboté',
+    pitch: 'Vends un produit absurde en 60 s, malgré les diapos piégées.',
+    players: 'À deux ou plus · visio',
+    badge: 'À deux',
+    keywords: ['pitch', 'sabote', 'startup', 'vendre', 'produit', 'diapo', 'diapos', 'impro', 'investisseur', 'visio', 'duo', 'deux', 'sons', 'bruitages'],
   },
 ];
 

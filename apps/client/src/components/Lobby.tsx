@@ -127,6 +127,12 @@ const ALIBI_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
+// Pitch saboté : chacun vend autant de fois qu'il y a de manches.
+const PITCH_FIELDS: typeof FIELDS = [
+  { key: 'rounds', label: 'Pitchs par joueur' },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
 const RULES: Partial<Record<RoomGame, string[]>> = {
   wavelength: [
     'Le télépathe voit où se cache la cible entre deux extrêmes, et donne un indice.',
@@ -221,6 +227,12 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
     'Les pièces à conviction tombent une à une : le complice désigné a 10 s pour l’intégrer à l’histoire, à voix haute.',
     'Le juge buzze « Contradiction ! » ou « Hésitation ! » et la crédibilité fond. À quatre ou plus, le jury tranche.',
   ],
+
+  pitch: [
+    'Le jeu invente un produit absurde : le vendeur a 60 s en visio pour convaincre les investisseurs.',
+    'Pendant ce temps, les investisseurs lui envoient des diapos absurdes en plein écran et des bruitages. Il doit improviser avec !',
+    'Puis chacun dit combien il investit, de « Pas un centime » à « Je mets tout ! ». On inverse les rôles.',
+  ],
 };
 
 export function Lobby() {
@@ -289,7 +301,7 @@ export function Lobby() {
       </div>
       )}
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'brasdefer' ? BRAS_FIELDS : room.game === 'flash' ? FLASH_FIELDS : room.game === 'cadavre' ? CAD_FIELDS : room.game === 'interdits' ? INTERDITS_FIELDS : room.game === 'motamot' ? STORY_FIELDS : room.game === 'agents' ? AGENTS_FIELDS : room.game === 'fredonne' ? FRED_FIELDS : room.game === 'alibi' ? ALIBI_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'brasdefer' ? BRAS_FIELDS : room.game === 'flash' ? FLASH_FIELDS : room.game === 'cadavre' ? CAD_FIELDS : room.game === 'interdits' ? INTERDITS_FIELDS : room.game === 'motamot' ? STORY_FIELDS : room.game === 'agents' ? AGENTS_FIELDS : room.game === 'fredonne' ? FRED_FIELDS : room.game === 'alibi' ? ALIBI_FIELDS : room.game === 'pitch' ? PITCH_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
           const label = key === 'drawTime' && !rules && room.settings.mode !== 'dessin' ? 'Temps par tour (s)' : base;
           const [min, limit] = SETTINGS_LIMITS[key];
           const max = cap ?? limit;

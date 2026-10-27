@@ -12,6 +12,7 @@ import { StoryArt } from './motamot/StoryArt';
 import './photo/photo.css';
 import './interdits/interdits.css';
 import './fred/fred.css';
+import './pitch/pitch.css';
 
 // L'entrée animée ne se joue qu'une fois par visite, comme sur l'écran du pseudo.
 let introPlayed = false;
@@ -243,6 +244,27 @@ const SourireArt = () => (
   </svg>
 );
 
+/** L'écran de présentation : la courbe grimpe puis s'écrase, une diapo tombe, le micro attend. */
+const PitchArt = () => (
+  <svg viewBox="0 0 220 140" className="mx-auto max-h-36 w-full" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <rect x="26" y="14" width="150" height="92" rx="8" className="fill-butter" />
+    <path d="M100 106v18M82 128h36" stroke="currentColor" strokeOpacity=".5" strokeWidth="5" />
+    <path d="M42 34h52" className="stroke-cacao" strokeWidth="6" />
+    <path d="M42 46h22" className="stroke-gold" strokeWidth="4" />
+    <path className="pt-art-line" pathLength={1} d="M44 92c14-4 22-10 32-22s20-24 30-20 14 34 26 38 22 0 30 2" stroke="#dc2626" strokeWidth="5" />
+    <g className="pt-art-slide" style={{ transformOrigin: '150px 40px' }}>
+      <rect x="128" y="22" width="44" height="30" rx="4" className="fill-cacao" />
+      <text x="150" y="43" textAnchor="middle" fontSize="16">
+        🦞
+      </text>
+    </g>
+    <g className="pt-art-mic" style={{ transformOrigin: '196px 120px' }}>
+      <rect x="186" y="66" width="20" height="32" rx="10" className="fill-gold" />
+      <path d="M180 88c0 12 32 12 32 0M196 100v20" stroke="currentColor" strokeWidth="4" />
+    </g>
+  </svg>
+);
+
 /** L'appareil instantané : le flash éclate, puis le polaroid sort de la fente et se révèle. */
 const PhotoArt = () => (
   <svg viewBox="0 0 200 150" className="mx-auto max-h-36 w-full" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -371,6 +393,7 @@ const ART: Record<GameId, JSX.Element> = {
   agents: <AgentsArt />,
   fredonne: <FredArt />,
   alibi: <AlibiArt />,
+  pitch: <PitchArt />,
 };
 
 /** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */
