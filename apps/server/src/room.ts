@@ -18,6 +18,8 @@ import {
   isArcadeKind,
   isDifficulty,
   isGameMode,
+  isRoomGame,
+  ROOM_GAME_NAMES,
   isPhotoDataUrl,
   isTrapMode,
   isSoundId,
@@ -134,8 +136,10 @@ export class Room {
   word: string | null = null;
   endsAt: number | null = null;
   meetUrl = '';
-  /** Jeu du salon, fixé à sa création. */
+  /** Jeu du salon : celui de la création, puis celui que l'hôte choisit entre deux parties. */
   game: RoomGame = 'dessin';
+  /** Appelé quand l'hôte change de jeu (pour préparer ce dont le nouveau jeu a besoin). */
+  onGame: (game: RoomGame) => void = () => {};
 
   /** Piège du tour en cours (manches piégées du Dessin). */
   trap: Trap | null = null;
@@ -378,6 +382,9 @@ export class Room {
       case 'start':
         if (id === this.hostId && this.phase === 'lobby') this.startGame();
         break;
+      case 'game':
+        if (id === this.hostId) this.switchGame(player, msg.game, msg.mode);
+        break;
       case 'choose':
         if (id === this.drawerId && this.phase === 'choosing') this.chooseWord(msg.index);
         break;
@@ -557,6 +564,34 @@ export class Room {
   }
 
   // ---- Boucle de jeu ----------------------------------------------------------
+
+  /**
+   * Change le jeu sans recréer de salon : joueurs, hôte, code, visio, musique et places gardées
+   * restent. En pleine partie (ou sur le podium), elle s'arrête et tout le monde revient au salon.
+   */
+  private switchGame(player: Player, game: unknown, mode: unknown): void {
+    if (!isRoomGame(game)) return;
+    const nextMode = game === 'dessin' && isGameMode(mode) ? mode : null;
+    const same = game === this.game && (!nextMode || nextMode === this.settings.mode);
+    if (this.phase !== 'lobby') {
+      this.system(same ? `${player.name} a ramené tout le monde au salon.` : `${player.name} a arrêté la partie.`);
+      this.toLobby();
+    }
+    if (same) return;
+    this.game = game;
+    if (nextMode) this.settings = { ...this.settings, mode: nextMode };
+    for (const p of this.players.values()) p.score = 0;
+    this.system(`${player.name} a choisi : ${game === 'dessin' && this.settings.mode === 'mime' ? 'Mime' : ROOM_GAME_NAMES[game]}.`);
+    this.onGame(game);
+    this.broadcastState();
+    // Comme à l'arrivée du deuxième joueur : ce que le nouveau jeu tire de l'IA se commande tout de suite.
+    if (this.players.size >= 2) {
+      this.refillWords();
+      this.refillPairs();
+      this.refillDares();
+    }
+    this.prefetchQuiz();
+  }
 
   private startGame(): void {
     if (this.players.size < 2) {

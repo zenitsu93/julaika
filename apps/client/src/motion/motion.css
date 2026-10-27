@@ -2125,3 +2125,152 @@
     display: none;
   }
 }
+
+/* Changer de jeu sans quitter le salon : deux cartes qu'on bat au survol du bouton, une feuille
+   qui monte (en bas sur téléphone, au centre ailleurs), et la carte du nouveau jeu distribuée. */
+.sw-glyph .sw-back,
+.sw-glyph .sw-front {
+  transform-box: fill-box;
+  transition: transform 0.38s var(--ease-spring);
+}
+.sw-glyph .sw-back {
+  transform-origin: 50% 100%;
+}
+.sw-glyph .sw-front {
+  transform-origin: 50% 100%;
+}
+.sw-btn:hover .sw-back,
+.sw-btn:focus-visible .sw-back {
+  transform: translateX(-2px) rotate(-12deg);
+}
+.sw-btn:hover .sw-front,
+.sw-btn:focus-visible .sw-front {
+  transform: translateX(2px) rotate(10deg);
+}
+.sw-btn:active .sw-glyph {
+  scale: 0.9;
+}
+.sw-glyph-big .sw-back {
+  animation: sw-fan-back 0.7s 0.15s var(--ease-spring) backwards;
+}
+.sw-glyph-big .sw-front {
+  animation: sw-fan-front 0.7s 0.15s var(--ease-spring) backwards;
+}
+@keyframes sw-fan-back {
+  from {
+    transform: translateX(5px) rotate(14deg);
+  }
+}
+@keyframes sw-fan-front {
+  from {
+    transform: translateX(-5px) rotate(-14deg);
+  }
+}
+
+.sw-sheet {
+  animation: sw-sheet-up 0.42s var(--ease-out) backwards;
+}
+[data-leaving] .sw-sheet {
+  animation: sw-sheet-down 0.2s ease-in forwards;
+}
+@keyframes sw-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes sw-sheet-down {
+  to {
+    transform: translateY(100%);
+  }
+}
+@media (min-width: 40rem) {
+  @keyframes sw-sheet-up {
+    from {
+      opacity: 0;
+      transform: translateY(18px) scale(0.97);
+    }
+  }
+  @keyframes sw-sheet-down {
+    to {
+      opacity: 0;
+      transform: translateY(10px) scale(0.98);
+    }
+  }
+}
+
+/* Les dessins de l'accueil, en petit. */
+.sw-art {
+  position: relative;
+}
+.sw-art > svg,
+.sw-art > span {
+  max-height: 4.75rem;
+  max-width: 100%;
+}
+.sw-art .bomb-art {
+  width: 4.5rem;
+}
+.sw-mini > svg,
+.sw-mini > span {
+  max-height: 3rem;
+  scale: 0.9;
+}
+.sw-mini .bomb-art {
+  width: 3rem;
+}
+.sw-card:hover {
+  translate: 0 -3px;
+}
+
+/* La carte choisie s'allume, les autres s'effacent derrière elle. */
+[data-picked] .sw-card:not(.sw-picked) {
+  opacity: 0.35;
+  scale: 0.97;
+  transition:
+    opacity 0.2s,
+    scale 0.2s;
+}
+.sw-picked {
+  animation: sw-pick 0.26s var(--ease-spring) forwards;
+}
+.sw-picked::after {
+  opacity: 1;
+}
+@keyframes sw-pick {
+  50% {
+    scale: 1.05;
+  }
+  to {
+    scale: 1.02;
+  }
+}
+
+/* Le nouveau jeu arrive comme une carte distribuée sur la table. */
+.sw-deal {
+  animation: sw-deal 0.6s var(--ease-spring) backwards;
+}
+@keyframes sw-deal {
+  from {
+    opacity: 0;
+    transform: perspective(400px) translate(-28px, -10px) rotateY(-70deg) rotate(-8deg);
+  }
+}
+.sw-name {
+  animation: m-rise 0.4s 0.12s var(--ease-out) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sw-sheet,
+  [data-leaving] .sw-sheet,
+  .sw-glyph-big .sw-back,
+  .sw-glyph-big .sw-front,
+  .sw-picked,
+  .sw-deal,
+  .sw-name {
+    animation: none;
+  }
+  .sw-glyph .sw-back,
+  .sw-glyph .sw-front {
+    transition: none;
+  }
+}

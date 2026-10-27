@@ -37,13 +37,41 @@ export const PALETTE = [
 ] as const;
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
-/** Jeux proposés : chaque salon en porte un, choisi à sa création. */
+/** Jeux proposés : chaque salon en porte un, choisi à sa création puis changé par l'hôte entre deux parties. */
 export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre', 'interdits', 'motamot', 'agents', 'fredonne', 'alibi', 'pitch', 'cerveau', 'verite', 'quiz', 'foot', 'oreillers', 'drap'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
   return (ROOM_GAMES as readonly unknown[]).includes(v);
 }
+
+/** Nom de chaque jeu, pour annoncer dans le chat le jeu que l'hôte vient de choisir. */
+export const ROOM_GAME_NAMES: Record<RoomGame, string> = {
+  dessin: 'Dessin',
+  wavelength: 'Wavelength',
+  telephone: 'Téléphone dessiné',
+  intrus: "L'Intrus",
+  petitbac: 'Petit Bac',
+  connait: 'Qui me connaît le mieux ?',
+  bombe: 'Bombe à mots',
+  photomaton: 'Photomaton',
+  sourire: 'Pas un sourire !',
+  brasdefer: 'Bras de fer',
+  flash: 'Flash',
+  cadavre: 'Cadavre exquis',
+  interdits: 'Mots interdits',
+  motamot: 'Mot à mot',
+  agents: 'Agents secrets',
+  fredonne: 'Fredonne !',
+  alibi: "L'Alibi",
+  pitch: 'Pitch saboté',
+  cerveau: 'Cerveau coupé',
+  verite: 'Action ou vérité',
+  quiz: 'Quiz culture G',
+  foot: 'Tête-à-tête',
+  oreillers: 'Bataille d’oreillers',
+  drap: 'Le Drap tendu',
+};
 
 /**
  * Dessin : choosing → drawing → turnEnd. Wavelength : clue (le télépathe cherche son indice)
@@ -314,6 +342,8 @@ export type ClientMsg =
   | { t: 'leave' }
   | { t: 'settings'; settings: Partial<RoomSettings> }
   | { t: 'start' }
+  /** L'hôte change le jeu du salon (même code, mêmes joueurs) ; en pleine partie, elle s'arrête d'abord. */
+  | { t: 'game'; game: RoomGame; mode?: GameMode }
   | { t: 'choose'; index: number }
   | { t: 'chat'; text: string }
   | { t: 'clear' }

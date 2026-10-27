@@ -392,7 +392,8 @@ const FredArt = () => (
   </svg>
 );
 
-const ART: Record<GameId, JSX.Element> = {
+/** Dessin de chaque jeu, repris en petit par le sélecteur de jeu du salon. */
+export const ART: Record<GameId, JSX.Element> = {
   dessin: <DrawArt />,
   mime: <MimeArt />,
   wavelength: <WaveArt />,

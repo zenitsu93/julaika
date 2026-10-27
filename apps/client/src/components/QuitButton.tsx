@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { net } from '../lib/net';
 import { serverNow, useGame } from '../lib/store';
 import { Presence, reducedMotion } from '../motion';
+import { SwitchButton } from './GamePicker';
 
 /** Le temps que la porte se referme et que la carte s'efface avant de rendre l'accueil. */
 const CLOSE_MS = 420;
@@ -122,13 +123,13 @@ export function useQuit(onQuit: () => void) {
  * Fin de partie : le podium ne dure que quelques secondes avant le retour au salon. Un dock
  * rappelle le temps qui reste et offre la sortie sans aller la chercher en haut.
  */
-export function EndDock({ onAsk }: { onAsk: () => void }) {
+export function EndDock({ onAsk, onSwitch }: { onAsk: () => void; onSwitch?: () => void }) {
   const ending = useGame((s) => s.room!.phase === 'gameEnd');
   const endsAt = useGame((s) => s.room!.endsAt);
-  return <Presence>{ending && endsAt && <Dock endsAt={endsAt} onAsk={onAsk} />}</Presence>;
+  return <Presence>{ending && endsAt && <Dock endsAt={endsAt} onAsk={onAsk} onSwitch={onSwitch} />}</Presence>;
 }
 
-function Dock({ endsAt, onAsk }: { endsAt: number; onAsk: () => void }) {
+function Dock({ endsAt, onAsk, onSwitch }: { endsAt: number; onAsk: () => void; onSwitch?: () => void }) {
   const [start] = useState(() => serverNow());
   const [now, setNow] = useState(start);
   useEffect(() => {
@@ -160,6 +161,8 @@ function Dock({ endsAt, onAsk }: { endsAt: number; onAsk: () => void }) {
         <span className="text-sm whitespace-nowrap" aria-live="polite">
           Retour au salon dans <span className="font-mono font-semibold tabular-nums">{`${left}\u00a0s`}</span>
         </span>
+        {/* L'hôte enchaîne sur un autre jeu sans attendre la fin du compte à rebours. */}
+        {onSwitch && <SwitchButton onClick={onSwitch} label="Autre jeu" className="rounded-full" />}
         <QuitButton onAsk={onAsk} label="Quitter la partie" className="rounded-full" />
       </div>
     </div>
