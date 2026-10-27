@@ -9,6 +9,7 @@ import type { DrawPacket } from './draw';
 import type { ConnaitState } from './connait';
 import type { FlashSketch, FlashState } from './flash';
 import type { InterditsState } from './interdits';
+import type { FredState } from './fredonne';
 import type { IntrusState } from './intrus';
 import type { MimeShot, MimeTwist } from './mime';
 import type { StoryState } from './motamot';
@@ -30,7 +31,7 @@ export const PALETTE = [
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 /** Jeux proposés : chaque salon en porte un, choisi à sa création. */
-export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre', 'interdits', 'motamot', 'agents'] as const;
+export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre', 'interdits', 'motamot', 'agents', 'fredonne'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
@@ -47,7 +48,7 @@ export function isRoomGame(v: unknown): v is RoomGame {
  * Pas un sourire ! : faceoff (3, 2, 1) → duel → verdict. Bras de fer : pareil. Flash : memorize (l'image 3 s) → draw → vote → reveal.
  * Cadavre exquis : draw (tête, corps, jambes, tous en même temps) → reveal.
  * Mots interdits : faceoff (qui fait deviner) → explain (les cartes défilent) → verdict. Mot à mot : write (un mot chacun) → album (lecture).
- * Agents secrets : clue (l'espion donne son indice) → guess (on retourne les cartes) → reveal.
+ * Agents secrets : clue (l'espion donne son indice) → guess (on retourne les cartes) → reveal. Fredonne ! : pick (le chanteur choisit) → hum → reveal.
  */
 export type Phase =
   | 'lobby'
@@ -72,6 +73,8 @@ export type Phase =
   | 'verdict'
   | 'memorize'
   | 'explain'
+  | 'pick'
+  | 'hum'
   | 'gameEnd';
 
 /** Difficulté des mots proposés : sert au tirage dans les listes intégrées et à la génération par IA. */
@@ -231,6 +234,8 @@ export interface RoomState {
   motamot: StoryState | null;
   /** État d'Agents secrets, null pour les autres jeux. */
   agents: AgentsState | null;
+  /** État de Fredonne ! vu par ce joueur (la chanson reste secrète), null pour les autres jeux. */
+  fred: FredState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -322,6 +327,8 @@ export type ClientMsg =
   | { t: 'agents'; point: number }
   | { t: 'agents'; guess: number }
   | { t: 'agents'; pass: true }
+  | { t: 'fred'; pick: number }
+  | { t: 'fred'; reroll: true }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =

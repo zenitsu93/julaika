@@ -40,6 +40,7 @@ import { Bombe } from './bombe';
 import { Cadavre } from './cadavre';
 import { Connait } from './connait';
 import { Flash } from './flash';
+import { Fredonne } from './fredonne';
 import type { PairGenerator, WordGenerator } from './deepseek';
 import { Interdits } from './interdits';
 import { Intrus } from './intrus';
@@ -125,6 +126,7 @@ export class Room {
   private cadavre: Cadavre | null = null;
   private interdits: Interdits | null = null;
   private mot: MotAMot | null = null;
+  private fred: Fredonne | null = null;
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -213,7 +215,7 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.bras || this.flash || this.cadavre || this.interdits || this.mot || this.agents) {
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.bras || this.flash || this.cadavre || this.interdits || this.mot || this.agents || this.fred) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
       this.intrus?.onLeave(id);
@@ -228,6 +230,7 @@ export class Room {
       this.interdits?.onLeave(id);
       this.mot?.onLeave(id);
       this.agents?.onLeave(id);
+      this.fred?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -305,6 +308,9 @@ export class Room {
         break;
       case 'agents':
         if (msg && typeof msg === 'object') this.agents?.handle(id, msg);
+        break;
+      case 'fred':
+        if (msg && typeof msg === 'object') this.fred?.handle(id, msg);
         break;
       case 'sound':
         // Boîte à sons, dans tous les jeux : l'émetteur l'a déjà joué chez lui.
@@ -419,6 +425,7 @@ export class Room {
     if (this.game === 'interdits') return this.startInterdits();
     if (this.game === 'motamot') return this.startMot();
     if (this.game === 'agents') return this.startAgents();
+    if (this.game === 'fredonne') return this.startFred();
     this.usedWords.clear();
     this.shotCount = 0;
     this.nextRound();
@@ -537,6 +544,7 @@ export class Room {
     const text = raw.trim().slice(0, 120);
     if (!text) return;
     if (this.interdits?.chat(player.id, text)) return;
+    if (this.fred?.chat(player.id, text)) return;
     const line: ChatLine = { from: player.id, name: player.name, text, kind: 'msg' };
 
     const canGuess = this.phase === 'drawing' && this.word && player.id !== this.drawerId && !player.guessed;
@@ -968,6 +976,36 @@ export class Room {
     this.agents.start();
   }
 
+  private startFred(): void {
+    this.fred?.dispose();
+    this.fred = new Fredonne({
+      playerIds: () => [...this.players.keys()],
+      player: (id) => this.players.get(id),
+      rounds: () => this.settings.rounds,
+      humTime: () => this.settings.drawTime,
+      difficulty: () => this.settings.difficulty,
+      random: this.random,
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      setGuessed: (id) => {
+        for (const p of this.players.values()) if (id === null || p.id === id) p.guessed = id !== null;
+      },
+      broadcastState: () => this.broadcastState(),
+      broadcast: (msg, except) => this.broadcast(msg, except),
+      sendTo: (id, msg) => this.sendTo(id, msg),
+      system: (text) => this.system(text),
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      endGame: () => this.endGame(),
+    });
+    this.fred.start();
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -1014,6 +1052,8 @@ export class Room {
     this.mot = null;
     this.agents?.dispose();
     this.agents = null;
+    this.fred?.dispose();
+    this.fred = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -1139,6 +1179,7 @@ export class Room {
       interdits: this.interdits?.stateFor(id) ?? null,
       motamot: this.mot?.state() ?? null,
       agents: this.agents?.stateFor(id) ?? null,
+      fred: this.fred?.stateFor(id) ?? null,
     };
   }
 
@@ -1188,6 +1229,7 @@ export class Room {
     this.interdits?.dispose();
     this.mot?.dispose();
     this.agents?.dispose();
+    this.fred?.dispose();
   }
 }
 

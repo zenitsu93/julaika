@@ -114,6 +114,13 @@ const AGENTS_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
+// Fredonne ! : chacun chante autant de fois qu'il y a de tours.
+const FRED_FIELDS: typeof FIELDS = [
+  { key: 'rounds', label: 'Chansons par joueur' },
+  { key: 'drawTime', label: 'Temps pour fredonner (s)', step: 10 },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
 const RULES: Partial<Record<RoomGame, string[]>> = {
   wavelength: [
     'Le télépathe voit où se cache la cible entre deux extrêmes, et donne un indice.',
@@ -196,6 +203,12 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
     'Les autres crient leurs réponses ou les tapent dans le chat. Trouvé ? Entrée, carte suivante !',
     'À trois et plus, un gardien voit la carte et buzze ; à deux, l’oreille de l’arbitre (reconnaissance vocale) s’en charge.',
   ],
+
+  fredonne: [
+    'Le chanteur choisit une chanson parmi trois, en secret, parfois avec une consigne (« bouche fermée », « en sifflant »…).',
+    'Il la fredonne au micro, sans les paroles : le micro des autres est coupé pour mieux écouter.',
+    'Tapez le titre au plus vite. L’interprète, puis les initiales, viennent en indice. Ensuite le micro passe au suivant.',
+  ],
 };
 
 export function Lobby() {
@@ -264,7 +277,7 @@ export function Lobby() {
       </div>
       )}
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'brasdefer' ? BRAS_FIELDS : room.game === 'flash' ? FLASH_FIELDS : room.game === 'cadavre' ? CAD_FIELDS : room.game === 'interdits' ? INTERDITS_FIELDS : room.game === 'motamot' ? STORY_FIELDS : room.game === 'agents' ? AGENTS_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'brasdefer' ? BRAS_FIELDS : room.game === 'flash' ? FLASH_FIELDS : room.game === 'cadavre' ? CAD_FIELDS : room.game === 'interdits' ? INTERDITS_FIELDS : room.game === 'motamot' ? STORY_FIELDS : room.game === 'agents' ? AGENTS_FIELDS : room.game === 'fredonne' ? FRED_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
           const label = key === 'drawTime' && !rules && room.settings.mode !== 'dessin' ? 'Temps par tour (s)' : base;
           const [min, limit] = SETTINGS_LIMITS[key];
           const max = cap ?? limit;
@@ -292,9 +305,9 @@ export function Lobby() {
           );
         })}
       </div>
-      {(!rules || room.game === 'bombe' || room.game === 'interdits') && (
+      {(!rules || room.game === 'bombe' || room.game === 'interdits' || room.game === 'fredonne') && (
         <div className="mt-3 text-sm">
-          <span className="mb-1 block text-muted">{room.game === 'bombe' ? 'Difficulté des syllabes' : room.game === 'interdits' ? 'Mots interdits par carte (3, 4 ou 5)' : 'Difficulté des mots'}</span>
+          <span className="mb-1 block text-muted">{room.game === 'bombe' ? 'Difficulté des syllabes' : room.game === 'interdits' ? 'Mots interdits par carte (3, 4 ou 5)' : room.game === 'fredonne' ? 'Difficulté des chansons' : 'Difficulté des mots'}</span>
           <div ref={level.container} role="group" aria-label="Difficulté" className="relative grid grid-cols-3 gap-1 rounded-md border border-edge p-1">
             <span ref={level.indicator} className="m-indicator rounded bg-primary" />
             {LEVELS.map(({ value, label }) => {

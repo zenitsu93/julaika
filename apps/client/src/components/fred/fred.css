@@ -1,0 +1,293 @@
+/* Fredonne ! : disques qui tournent, pochettes qui s'ouvrent, égaliseur et notes qui s'envolent. */
+
+/* ---- Disque --------------------------------------------------------------------- */
+
+.f-vinyl {
+  transform-origin: center;
+  filter: drop-shadow(0 18px 30px rgb(0 0 0 / 0.35));
+}
+.f-spin-on {
+  animation: f-spin 1.8s linear infinite;
+}
+.f-spin-slow {
+  animation: f-spin 6s linear infinite;
+}
+@keyframes f-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Le disque tombe sur la platine, rebondit à peine, puis tourne. */
+.f-drop {
+  animation:
+    f-drop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards,
+    f-spin 1.8s 0.6s linear infinite;
+}
+@keyframes f-drop {
+  from {
+    transform: translateY(-40px) scale(0.85) rotate(-40deg);
+    opacity: 0;
+  }
+}
+
+/* À la révélation, il ralentit et s'arrête. */
+.f-stop {
+  animation: f-stop 1.4s cubic-bezier(0.1, 0.6, 0.3, 1) both;
+}
+@keyframes f-stop {
+  from {
+    transform: rotate(-720deg) scale(0.9);
+  }
+  to {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+/* Le bras se pose sur le disque. */
+.f-arm {
+  transform-origin: 75% 11%;
+  animation: f-arm 0.9s 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+@keyframes f-arm {
+  from {
+    transform: rotate(-28deg);
+  }
+}
+
+/* ---- Pochettes ------------------------------------------------------------------ */
+
+.f-sleeve {
+  --tilt: 0deg;
+  transform: rotate(var(--tilt));
+  animation: f-deal 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.f-sleeve:hover,
+.f-sleeve:focus-visible {
+  transform: rotate(0deg) translateY(-4px);
+}
+@keyframes f-deal {
+  from {
+    transform: translateY(40px) rotate(calc(var(--tilt) * 4)) scale(0.9);
+    opacity: 0;
+  }
+}
+.f-sleeve-cover {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--color-gold) 35%, transparent), transparent 60%),
+    linear-gradient(160deg, var(--color-cacao-2), var(--color-cacao));
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.08),
+    0 18px 36px -22px rgb(40 20 10 / 0.7);
+}
+/* Le disque glisse hors de la pochette au survol, et tourne un peu. */
+.f-sleeve-disc {
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.f-sleeve:hover .f-sleeve-disc,
+.f-sleeve:focus-visible .f-sleeve-disc {
+  transform: translateY(-28%) rotate(120deg);
+}
+
+/* Pendant que le chanteur choisit : on fouille dans le bac à disques. */
+.f-crate-sleeve {
+  --i: 0;
+  background: linear-gradient(160deg, var(--color-cacao-2), var(--color-cacao));
+  border: 1px solid color-mix(in srgb, var(--color-gold) 30%, transparent);
+  transform: translateX(calc((var(--i) - 1) * 18px)) rotate(calc((var(--i) - 1) * 6deg));
+  transform-origin: bottom center;
+  animation: f-dig 1.05s ease-in-out infinite;
+}
+@keyframes f-dig {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  35% {
+    translate: 0 -22px;
+  }
+}
+
+/* ---- Consigne, ticket, lettres -------------------------------------------------- */
+
+.f-style {
+  rotate: -2deg;
+  animation: f-stamp 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+@keyframes f-stamp {
+  from {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.95);
+    opacity: 1;
+  }
+}
+
+/* Ticket de la chanson : un reflet doré passe de temps en temps. */
+.f-ticket::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 40%, rgb(255 255 255 / 0.18) 50%, transparent 60%);
+  background-size: 250% 100%;
+  animation: f-sheen 4.5s ease-in-out infinite;
+}
+@keyframes f-sheen {
+  0%,
+  60% {
+    background-position: 130% 0;
+  }
+  100% {
+    background-position: -30% 0;
+  }
+}
+
+/* Initiale dévoilée : elle tombe à sa place. */
+.f-letter {
+  display: inline-block;
+  animation: m-drop 0.42s ease-out backwards;
+}
+
+/* Case vide du titre : un trait qui se dessine. */
+.f-slot {
+  display: inline-block;
+  width: 1ch;
+  height: 1.3em;
+  border-bottom: 2px solid currentColor;
+  opacity: 0.55;
+  transform-origin: left;
+  animation: m-grow-x 0.3s var(--ease-out) backwards;
+}
+@keyframes m-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* Indice qui se retourne comme une carte. */
+.f-flip {
+  transform-origin: center top;
+  animation: f-flip 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+@keyframes f-flip {
+  from {
+    transform: perspective(300px) rotateX(-90deg);
+    opacity: 0;
+  }
+}
+
+/* « Ouvrir mon micro » respire pour attirer l'œil. */
+.f-mic-call {
+  animation:
+    m-pop 0.24s var(--ease-spring) backwards,
+    f-call 1.6s 0.3s ease-in-out infinite;
+}
+@keyframes f-call {
+  50% {
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-gold) 30%, transparent);
+  }
+}
+
+/* ---- Égaliseur et notes --------------------------------------------------------- */
+
+.f-eq > i {
+  flex: 1;
+  height: 100%;
+  border-radius: 3px 3px 1px 1px;
+  background: linear-gradient(to top, var(--color-gold), color-mix(in srgb, var(--color-butter) 85%, transparent));
+  transform: scaleY(0.06);
+  transform-origin: bottom;
+  opacity: 0.85;
+}
+/* Sans son (micro fermé, pas encore en visio) : les barres ondulent doucement. */
+.f-eq.idle > i {
+  animation: f-idle 1.3s ease-in-out infinite alternate;
+}
+@keyframes f-idle {
+  from {
+    transform: scaleY(0.05);
+  }
+  to {
+    transform: scaleY(0.22);
+  }
+}
+
+.f-note {
+  position: absolute;
+  bottom: 18%;
+  color: var(--color-gold);
+  text-shadow: 0 2px 10px rgb(0 0 0 / 0.4);
+  will-change: transform, opacity;
+}
+.f-note-idle {
+  animation: f-note-idle 3.3s ease-out infinite backwards;
+}
+@keyframes f-note-idle {
+  0% {
+    transform: translate(0, 20px) scale(0.6);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(30px, -90px) rotate(18deg) scale(1.1);
+    opacity: 0;
+  }
+}
+
+.f-urgent {
+  animation: f-urgent 0.6s ease-in-out infinite;
+}
+@keyframes f-urgent {
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+/* ---- Carte de l'accueil ----------------------------------------------------------- */
+
+.f-art-disc {
+  transform-origin: 84px 74px;
+  animation: f-spin 2.6s linear infinite;
+}
+.f-art-bar {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: f-idle 0.7s ease-in-out infinite alternate;
+}
+.f-art-note {
+  animation: f-note-idle 2.4s ease-out infinite backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .f-spin-on,
+  .f-spin-slow,
+  .f-drop,
+  .f-stop,
+  .f-arm,
+  .f-sleeve,
+  .f-crate-sleeve,
+  .f-style,
+  .f-ticket::after,
+  .f-letter,
+  .f-slot,
+  .f-flip,
+  .f-mic-call,
+  .f-eq.idle > i,
+  .f-note-idle,
+  .f-urgent,
+  .f-art-disc,
+  .f-art-bar,
+  .f-art-note {
+    animation: none;
+  }
+  .f-sleeve,
+  .f-sleeve-disc {
+    transition: none;
+  }
+}

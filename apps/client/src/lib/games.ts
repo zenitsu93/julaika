@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash' | 'cadavre' | 'interdits' | 'motamot' | 'agents';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash' | 'cadavre' | 'interdits' | 'motamot' | 'agents' | 'fredonne';
 
 export interface GameInfo {
   id: GameId;
@@ -149,14 +149,21 @@ export const GAMES: GameInfo[] = [
     badge: 'Nouveau',
     keywords: ['agents', 'secret', 'espion', 'equipes', 'grille', 'codenames', 'indice', 'mots', 'duo', 'deux', 'coop'],
   },
+  {
+    id: 'fredonne',
+    name: 'Fredonne\u00a0!',
+    pitch: 'Fredonne une chanson au micro, les autres trouvent le titre.',
+    players: 'À deux ou plus · micro',
+    badge: 'Nouveau',
+    keywords: ['fredonne', 'fredonner', 'chanson', 'chanter', 'musique', 'micro', 'blind test', 'titre', 'visio', 'duo', 'deux'],
+  },
 ];
 
-export type SoonId = 'fredonne';
+/** Aucun jeu en préparation pour l'instant : la section « Bientôt » de l'accueil reste cachée. */
+export type SoonId = never;
 
 /** Jeux en préparation, affichés en « Bientôt » après les jeux disponibles (ordre de la liste des jeux à faire). */
-export const SOON: { id: SoonId; name: string; pitch: string; keywords: string[] }[] = [
-  { id: 'fredonne', name: 'Fredonne !', pitch: 'Fredonne une chanson, les autres trouvent le titre.', keywords: ['fredonne', 'chanson', 'musique', 'micro', 'blind test'] },
-];
+export const SOON: { id: SoonId; name: string; pitch: string; keywords: string[] }[] = [];
 
 const fold = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
 

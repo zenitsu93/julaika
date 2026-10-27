@@ -10,6 +10,7 @@ import { LogoMark } from './Logo';
 import { StoryArt } from './motamot/StoryArt';
 import './photo/photo.css';
 import './interdits/interdits.css';
+import './fred/fred.css';
 
 // L'entrée animée ne se joue qu'une fois par visite, comme sur l'écran du pseudo.
 let introPlayed = false;
@@ -323,6 +324,32 @@ const InterditsArt = () => (
   </svg>
 );
 
+/** Le disque tourne, l'égaliseur danse et les notes s'envolent. */
+const FredArt = () => (
+  <svg viewBox="0 0 200 140" className="mx-auto max-h-36 w-full" fill="none" strokeLinecap="round" aria-hidden>
+    <g className="f-art-disc">
+      <circle cx="84" cy="74" r="52" fill="#1b110c" />
+      {[44, 36, 28].map((r) => (
+        <circle key={r} cx="84" cy="74" r={r} stroke="#fff" strokeOpacity=".1" strokeWidth="1.5" />
+      ))}
+      <path d="M84 24a50 50 0 0 1 35 15L84 74Z" fill="#fff" fillOpacity=".08" />
+      <circle cx="84" cy="74" r="18" className="fill-gold" />
+      <path d="M76 77q8 6 16 0" className="stroke-cacao" strokeWidth="2.5" />
+      <circle cx="84" cy="74" r="2.5" fill="#1b110c" />
+    </g>
+    <path d="M150 20v58l-30 22" className="stroke-butter" strokeWidth="5" />
+    <circle cx="150" cy="20" r="7" className="fill-butter" />
+    {[0, 1, 2, 3, 4].map((i) => (
+      <rect key={i} className="f-art-bar fill-gold" style={{ animationDelay: `${(i * 170) % 500}ms` }} x={146 + i * 9} y="96" width="6" height="34" rx="2" />
+    ))}
+    {['♪', '♫', '♪'].map((n, i) => (
+      <text key={i} className="f-art-note fill-gold" style={{ animationDelay: `${i * 800}ms` }} x={134 + i * 14} y="56" fontSize="22" stroke="none">
+        {n}
+      </text>
+    ))}
+  </svg>
+);
+
 const ART: Record<GameId, JSX.Element> = {
   dessin: <DrawArt />,
   mime: <MimeArt />,
@@ -341,6 +368,7 @@ const ART: Record<GameId, JSX.Element> = {
   interdits: <InterditsArt />,
   motamot: <StoryArt />,
   agents: <AgentsArt />,
+  fredonne: <FredArt />,
 };
 
 /** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */
@@ -373,16 +401,4 @@ const svg = (body: JSX.Element, viewBox = '0 0 200 140') => (
   </svg>
 );
 
-const SOON_ART: Record<SoonId, JSX.Element> = {
-  // Des notes qui s'envolent.
-  fredonne: svg(
-    <>
-      <path d="M70 104V44l50-12v60" strokeWidth="5" />
-      <ellipse cx="60" cy="104" rx="12" ry="9" fill="currentColor" stroke="none" />
-      <ellipse cx="110" cy="92" rx="12" ry="9" fill="currentColor" stroke="none" />
-      {[0, 1, 2].map((i) => (
-        <path key={i} className="soon-note stroke-gold" style={{ animationDelay: `${i * 600}ms` }} d="M150 100v-18l12-4" strokeWidth="5" />
-      ))}
-    </>,
-  ),
-};
+const SOON_ART: Record<SoonId, JSX.Element> = {};
