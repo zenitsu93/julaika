@@ -69,6 +69,12 @@ const SOURIRE_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
+// Bras de fer : à deux, un duel par manche ; à plus, chacun affronte son voisin.
+const BRAS_FIELDS: typeof FIELDS = [
+  { key: 'rounds', label: 'Manches' },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
 const RULES: Partial<Record<RoomGame, string[]>> = {
   wavelength: [
     'Le télépathe voit où se cache la cible entre deux extrêmes, et donne un indice.',
@@ -115,6 +121,12 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
     'Au moindre sourire, on appuie sur « Il a souri ! » (ou Espace) : plus il craque tôt, plus l’attaquant marque.',
     'Puis on inverse les rôles. Allumez vos caméras, c’est bien plus drôle !',
   ],
+
+  brasdefer: [
+    'Deux joueurs face à face, une jauge au milieu : tapote les cibles qui apparaissent pour la pousser dans le camp de l’autre.',
+    'Crie, commente, rugis au micro : tant que tu dépasses le seuil, chaque coup pousse deux fois plus. Les cibles dorées aussi.',
+    'Jauge plaquée au bout : K.O. ! Sinon, au bout de 30 s, celui qui mène gagne aux points.',
+  ],
 };
 
 export function Lobby() {
@@ -139,7 +151,7 @@ export function Lobby() {
     <div className="panel p-5 text-left shadow-sm">
       <h2 className="mb-4 text-lg font-semibold">Réglages du salon <span className="font-mono text-muted">#{room.code}</span></h2>
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : FIELDS).map(({ key, label, step, max: cap }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'brasdefer' ? BRAS_FIELDS : FIELDS).map(({ key, label, step, max: cap }) => {
           const [min, limit] = SETTINGS_LIMITS[key];
           const max = cap ?? limit;
           return (

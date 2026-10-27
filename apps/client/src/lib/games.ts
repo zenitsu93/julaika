@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer';
 
 export interface GameInfo {
   id: GameId;
@@ -100,6 +100,14 @@ export const GAMES: GameInfo[] = [
     players: 'À deux ou plus · visio',
     badge: 'À deux',
     keywords: ['sourire', 'rire', 'tu ris tu perds', 'serieux', 'grimace', 'visio', 'camera', 'duo', 'deux', 'sons', 'bruitages'],
+  },
+  {
+    id: 'brasdefer',
+    name: 'Bras de fer',
+    pitch: 'Tapote, crie, pousse la jauge chez l’autre.',
+    players: 'À deux ou plus · micro',
+    badge: 'À deux',
+    keywords: ['bras de fer', 'guerre des pouces', 'pouce', 'duel', 'jauge', 'tapoter', 'rapidite', 'micro', 'crier', 'voix', 'duo', 'deux'],
   },
 ];
 

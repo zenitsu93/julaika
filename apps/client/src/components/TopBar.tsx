@@ -96,6 +96,8 @@ export function TopBar() {
             ? `${Object.values(room.bomb.lives).filter(Boolean).length} en lice`
           : room.sourire
             ? `Duel ${room.sourire.turn + 1}/${room.sourire.turns}`
+          : room.bras
+            ? `Duel ${room.bras.turn + 1}/${room.bras.turns}`
             : room.tel
             ? room.phase === 'album'
               ? 'Album'
