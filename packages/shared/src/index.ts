@@ -11,3 +11,4 @@ export * from './petitbac';
 export * from './photomaton';
 export * from './sourire';
 export * from './agents';
+export * from './mime';
