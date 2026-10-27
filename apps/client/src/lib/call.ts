@@ -9,6 +9,10 @@ import { createWarp, type Warp } from './warp';
  * connexion ; il crée d'emblée un transceiver audio et un vidéo en `sendrecv`. Activer ou couper
  * la caméra remplace juste la piste (`replaceTrack`), sans renégociation.
  *
+ * La voix des autres passe par un <audio> caché par participant, jamais par les <video> des
+ * tuiles : une vidéo dont la caméra est coupée ne reçoit aucune image, reste en pause, et sa voix
+ * avec. Si le navigateur refuse de lancer le son tout seul, le prochain geste le relance.
+ *
  * Une déformation (`setWarp`) intercale un canvas entre la caméra et l'envoi : la piste vidéo
  * envoyée et affichée en local est alors celle du canvas (voir `outVideo`).
  */
@@ -19,6 +23,8 @@ type Kind = 'audio' | 'video';
 interface Peer {
   pc: RTCPeerConnection;
   stream: MediaStream;
+  /** Lecteur caché de sa voix (voir l'en-tête). */
+  audio: HTMLAudioElement;
   initiator: boolean;
   pending: RTCIceCandidateInit[];
 }
@@ -44,6 +50,8 @@ export interface CallView {
   /** Déformation choisie, appliquée dès que la caméra est allumée. */
   warp: WarpId | null;
   remotes: Record<string, MediaStream>;
+  /** Le navigateur a bloqué le son des autres : un geste (bouton « Activer le son ») le relance. */
+  muted: boolean;
   error: string | null;
 }
 
@@ -61,7 +69,7 @@ class Call {
   private miming = false;
   /** Fredonne ! : le chanteur (micro ouvert, réglé pour la musique) ou un auditeur (micro coupé). */
   private stage: 'singer' | 'listener' | null = null;
-  private view: CallView = { joined: false, cam: false, mic: false, hushed: false, local: null, warp: null, remotes: {}, error: null };
+  private view: CallView = { joined: false, cam: false, mic: false, hushed: false, local: null, warp: null, remotes: {}, muted: false, error: null };
 
   configure(opts: { selfId: string; ice: IceServer[]; send: Send; announce: Call['announce'] }) {
     this.leave(false);
@@ -88,7 +96,7 @@ class Call {
     for (const t of Object.values(this.tracks)) t?.stop();
     this.tracks = {};
     const was = this.view.joined;
-    this.update({ joined: false, cam: false, mic: false, hushed: false, local: null, warp: null, remotes: {} });
+    this.update({ joined: false, cam: false, mic: false, hushed: false, local: null, warp: null, remotes: {}, muted: false });
     if (notify && was) this.announce(false, false, false);
   }
 
@@ -144,9 +152,17 @@ class Call {
 
   // ---- Synchronisation avec l'état du salon ----------------------------------
 
+  /** Relance le son des autres après un refus du navigateur (appelé sur un geste). */
+  unmute = () => {
+    for (const { audio } of this.peers.values()) if (audio.srcObject) this.play(audio);
+  };
+
   /** Ouvre une connexion vers chaque participant, ferme celles des absents. */
   sync(players: PlayerPublic[]) {
     if (!this.view.joined || !this.selfId) return;
+    // Pas d'offre tant que le serveur ne nous compte pas dans la visio : il ne la relaierait pas,
+    // et la connexion resterait muette pour de bon (le micro peut mettre des secondes à s'ouvrir).
+    if (!players.some((p) => p.id === this.selfId && p.inCall)) return;
     const present = new Set(players.filter((p) => p.inCall && p.id !== this.selfId).map((p) => p.id));
     for (const id of this.peers.keys()) if (!present.has(id)) this.drop(id);
     for (const id of present) if (!this.peers.has(id) && this.selfId < id) void this.offer(this.peer(id, true));
@@ -180,7 +196,14 @@ class Call {
 
   private peer(id: string, initiator: boolean): Peer {
     const pc = new RTCPeerConnection({ iceServers: this.ice as RTCIceServer[] });
-    const peer: Peer = { pc, stream: new MediaStream(), initiator, pending: [] };
+    const audio = document.createElement('audio');
+    audio.autoplay = true;
+    audio.hidden = true;
+    audio.onplaying = () => {
+      if (this.view.muted && [...this.peers.values()].every((p) => !p.audio.paused || !p.audio.srcObject)) this.update({ muted: false });
+    };
+    document.body.append(audio);
+    const peer: Peer = { pc, stream: new MediaStream(), audio, initiator, pending: [] };
     this.peers.set(id, peer);
 
     if (initiator) {
@@ -193,6 +216,10 @@ class Call {
     };
     pc.ontrack = (e) => {
       peer.stream.addTrack(e.track);
+      if (e.track.kind === 'audio') {
+        audio.srcObject = new MediaStream([e.track]);
+        this.play(audio);
+      }
       this.update({ remotes: { ...this.view.remotes, [id]: peer.stream } });
     };
     pc.onconnectionstatechange = () => {
@@ -217,9 +244,21 @@ class Call {
     const peer = this.peers.get(id);
     if (!peer) return;
     peer.pc.close();
+    peer.audio.srcObject = null;
+    peer.audio.remove();
     this.peers.delete(id);
     const { [id]: _, ...rest } = this.view.remotes;
     this.update({ remotes: rest });
+  }
+
+  private play(audio: HTMLAudioElement) {
+    audio.play().catch((err: unknown) => {
+      // Lecture refusée sans geste (iPhone surtout) : on réessaie au prochain toucher ou clic.
+      if (err instanceof DOMException && err.name === 'NotAllowedError' && !this.view.muted) {
+        this.update({ muted: true });
+        for (const type of ['pointerdown', 'keydown'] as const) addEventListener(type, this.unmute, { once: true, capture: true });
+      }
+    });
   }
 
   private async capBitrate(pc: RTCPeerConnection) {
