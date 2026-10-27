@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { serverNow, useGame } from '../lib/store';
+import { LogoMark } from './Logo';
 import { MeetButton } from './MeetButton';
 
 function useCountdown(endsAt: number | null): number {
@@ -34,7 +35,10 @@ export function TopBar() {
       >
         {room.endsAt ? clock(left) : '--:--'}
       </span>
-      <b className="hidden sm:block">julaika</b>
+      <span className="hidden items-center gap-1.5 sm:flex">
+        <LogoMark className="h-6 w-auto" />
+        <b className="font-semibold tracking-[-0.05em]">julaika</b>
+      </span>
       <span className="text-sm text-muted">
         {room.phase === 'lobby' ? 'Salon' : `Manche ${Math.min(room.round, room.settings.rounds)}/${room.settings.rounds}`}
       </span>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AVATARS } from '../lib/avatars';
 import { net } from '../lib/net';
 import { useGame } from '../lib/store';
+import { LogoMark } from './Logo';
 
 const codeFromUrl = () => location.pathname.match(/^\/r\/([A-Z0-9]{4,8})/i)?.[1]?.toUpperCase() ?? '';
 
@@ -33,9 +34,9 @@ export function Home() {
     <main className="grid min-h-full place-items-center p-4">
       <div className="w-full max-w-md">
         <div className="mb-6 flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-lg bg-primary text-xl text-on-primary" aria-hidden>✏️</span>
+          <LogoMark className="h-12 w-auto" />
           <div>
-            <h1 className="text-2xl font-bold leading-tight tracking-tight">julaika</h1>
+            <h1 className="text-3xl font-semibold leading-tight tracking-[-0.055em]">julaika</h1>
             <p className="text-sm text-muted">Dessine, devine, marque des points.</p>
           </div>
         </div>
