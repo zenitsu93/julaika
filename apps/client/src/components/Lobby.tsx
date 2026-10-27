@@ -44,6 +44,12 @@ const PHOTO_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
+// Flash : une image par manche, les temps sont fixes.
+const FLASH_FIELDS: typeof FIELDS = [
+  { key: 'rounds', label: 'Images' },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
 // Petit Bac : des manches, le temps pour remplir la grille.
 const BAC_FIELDS: typeof FIELDS = [
   { key: 'rounds', label: 'Manches' },
@@ -110,6 +116,12 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
     'Les tirages se posent côte à côte : note ceux des autres de 1 à 5 étoiles.',
   ],
 
+  flash: [
+    'Une image s’affiche trois secondes, pas une de plus : regarde bien !',
+    'Redessine-la de mémoire en 15 s, avec ses trois couleurs seulement.',
+    'Les croquis entourent l’original : note la ressemblance de 1 à 5 étoiles. Chaque étoile rapporte 20 points.',
+  ],
+
   sourire: [
     'Un défenseur garde un visage de marbre pendant 30 s ; son attaquant a des bruitages, des grimaces à faire et peut déformer sa visio.',
     'Au moindre sourire, on appuie sur « Il a souri ! » (ou Espace) : plus il craque tôt, plus l’attaquant marque.',
@@ -139,7 +151,7 @@ export function Lobby() {
     <div className="panel p-5 text-left shadow-sm">
       <h2 className="mb-4 text-lg font-semibold">Réglages du salon <span className="font-mono text-muted">#{room.code}</span></h2>
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : FIELDS).map(({ key, label, step, max: cap }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'flash' ? FLASH_FIELDS : FIELDS).map(({ key, label, step, max: cap }) => {
           const [min, limit] = SETTINGS_LIMITS[key];
           const max = cap ?? limit;
           return (

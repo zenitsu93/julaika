@@ -12,7 +12,8 @@ const TOOLS: { id: Tool; label: string; icon: string; key: string }[] = [
 ];
 
 /** Dock flottant (pattern « Dock » de 21st.dev), qui monte quand vient ton tour. Raccourcis : B, E, F, Ctrl+Z. */
-export function Toolbar({ pen, trap = null }: { pen: Pen; trap?: Trap | null }) {
+/** `colors` : seules ces couleurs de la palette sont proposées (Flash : trois par image). */
+export function Toolbar({ pen, trap = null, colors }: { pen: Pen; trap?: Trap | null; colors?: readonly number[] }) {
   const [, force] = useState(0);
   const update = (fn: () => void) => {
     fn();
@@ -32,7 +33,8 @@ export function Toolbar({ pen, trap = null }: { pen: Pen; trap?: Trap | null }) 
   const activeColor = pen.tool === 'eraser' || trap?.kind === 'shifty' ? -1 : trap?.kind === 'mono' ? trap.color : pen.color;
 
   // Les anneaux de la couleur, de la taille et de l'outil actifs glissent d'un élément à l'autre.
-  const colorRing = useIndicator(activeColor);
+  const shown = colors ?? PALETTE.map((_, i) => i);
+  const colorRing = useIndicator(shown.indexOf(activeColor));
   const sizeRing = useIndicator(pen.sizeIndex);
   const toolRing = useIndicator(TOOLS.findIndex((t) => t.id === pen.tool));
 
@@ -78,9 +80,10 @@ export function Toolbar({ pen, trap = null }: { pen: Pen; trap?: Trap | null }) 
             {TRAP_INFO[trap.kind].name}
           </span>
         )}
-        <div ref={colorRing.container} className="relative grid grid-cols-12 gap-1">
+        <div ref={colorRing.container} className={`relative grid gap-1 ${colors ? 'grid-cols-3 gap-1.5' : 'grid-cols-12'}`}>
           <span ref={colorRing.indicator} className="m-indicator rounded-full ring-2 ring-on-primary ring-offset-2 ring-offset-primary" />
-          {PALETTE.map((c, i) => {
+          {shown.map((i) => {
+            const c = PALETTE[i]!;
             const locked = lockedPalette && !(trap?.kind === 'mono' && trap.color === i);
             return (
               <button
@@ -89,7 +92,7 @@ export function Toolbar({ pen, trap = null }: { pen: Pen; trap?: Trap | null }) 
                 aria-label={`Couleur ${c}`}
                 disabled={locked}
                 onClick={() => update(() => ((pen.color = i), pen.tool === 'eraser' && (pen.tool = 'pen')))}
-                className={`size-5 rounded-full transition duration-300 ${locked ? 'scale-75 opacity-20 grayscale' : 'hover:scale-110'}`}
+                className={`${colors ? 'size-7' : 'size-5'} rounded-full transition duration-300 ${locked ? 'scale-75 opacity-20 grayscale' : 'hover:scale-110'}`}
                 style={{ background: c, transitionDelay: locked ? `${(i % 12) * 15}ms` : undefined }}
               />
             );

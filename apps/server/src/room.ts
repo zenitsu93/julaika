@@ -29,6 +29,7 @@ import {
 } from '@julaika/shared';
 import { Bombe } from './bombe';
 import { Connait } from './connait';
+import { Flash } from './flash';
 import type { PairGenerator, WordGenerator } from './deepseek';
 import { Intrus } from './intrus';
 import { INTRUS_PAIRS } from './intrusPairs';
@@ -102,6 +103,7 @@ export class Room {
   private bomb: Bombe | null = null;
   private photo: Photomaton | null = null;
   private sourire: Sourire | null = null;
+  private flash: Flash | null = null;
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -152,6 +154,7 @@ export class Room {
     if (this.phase === 'choosing' && this.drawerId === id) this.sendTo(id, { t: 'choices', words: this.choices });
     this.tel?.onJoin(id);
     this.photo?.onJoin(id);
+    this.flash?.onJoin(id);
     this.system(`${player.name} a rejoint la partie.`);
     this.broadcastState(id);
     // Les mots sont commandés dès qu'une partie devient possible, pour être prêts au lancement.
@@ -180,7 +183,7 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire) {
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.flash) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
       this.intrus?.onLeave(id);
@@ -189,6 +192,7 @@ export class Room {
       this.bomb?.onLeave(id);
       this.photo?.onLeave(id);
       this.sourire?.onLeave(id);
+      this.flash?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -246,12 +250,16 @@ export class Room {
       case 'sourire':
         if (msg && typeof msg === 'object') this.sourire?.handle(id, msg);
         break;
+      case 'flash':
+        if (msg && typeof msg === 'object') this.flash?.handle(id, msg);
+        break;
       case 'sound':
         // Boîte à sons, dans tous les jeux : l'émetteur l'a déjà joué chez lui.
         if (isSoundId(msg.id)) this.broadcast({ t: 'sound', id: msg.id, by: id }, id);
         break;
       case 'clear':
         if (this.tel) this.tel.clear(id);
+        else if (this.flash) this.flash.clear(id);
         else if (this.isDrawing(id)) {
           this.strokes = [];
           this.strokeBytes = 0;
@@ -260,6 +268,7 @@ export class Room {
         break;
       case 'undo':
         if (this.tel) this.tel.undo(id);
+        else if (this.flash) this.flash.undo(id);
         else if (this.isDrawing(id) && this.strokes.length) {
           const removed = this.strokes.pop()!;
           this.strokeBytes -= removed.reduce((n, p) => n + p.byteLength, 0);
@@ -308,6 +317,7 @@ export class Room {
   /** Paquet de dessin binaire : validé, archivé puis relayé tel quel aux autres. */
   handleDraw(id: string, data: Uint8Array): void {
     if (this.tel) return this.tel.draw(id, data);
+    if (this.flash) return this.flash.draw(id, data);
     if (!this.isDrawing(id)) return;
     const packet = decodeDraw(data);
     if (!packet) return;
@@ -347,6 +357,7 @@ export class Room {
     if (this.game === 'bombe') return this.startBomb();
     if (this.game === 'photomaton') return this.startPhoto();
     if (this.game === 'sourire') return this.startSourire();
+    if (this.game === 'flash') return this.startFlash();
     this.usedWords.clear();
     this.nextRound();
   }
@@ -704,6 +715,31 @@ export class Room {
     this.sourire.start();
   }
 
+  private startFlash(): void {
+    this.flash?.dispose();
+    this.flash = new Flash({
+      playerIds: () => [...this.players.keys()],
+      player: (id) => this.players.get(id),
+      rounds: () => this.settings.rounds,
+      random: this.random,
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      broadcast: (msg, except) => this.broadcast(msg, except),
+      sendTo: (id, msg) => this.sendTo(id, msg),
+      system: (text) => this.system(text),
+      endGame: () => this.endGame(),
+    });
+    this.flash.start();
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -735,6 +771,8 @@ export class Room {
     this.photo = null;
     this.sourire?.dispose();
     this.sourire = null;
+    this.flash?.dispose();
+    this.flash = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -839,6 +877,7 @@ export class Room {
       bomb: this.bomb?.state() ?? null,
       photo: this.photo?.state() ?? null,
       sourire: this.sourire?.stateFor(id) ?? null,
+      flash: this.flash?.state() ?? null,
     };
   }
 
@@ -882,6 +921,7 @@ export class Room {
     this.bomb?.dispose();
     this.photo?.dispose();
     this.sourire?.dispose();
+    this.flash?.dispose();
   }
 }
 

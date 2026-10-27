@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { BombEvent, ChatLine, PhotoShot, PlayerPublic, RoomState, TelChain, TelEntry } from '@julaika/shared';
+import type { BombEvent, ChatLine, FlashSketch, PhotoShot, PlayerPublic, RoomState, TelChain, TelEntry } from '@julaika/shared';
 
 export interface GameState {
   status: 'idle' | 'connecting' | 'online' | 'closed';
@@ -21,6 +21,8 @@ export interface GameState {
   /** Photomaton : les polaroids de la manche, et la meilleure photo de chaque manche pour la fin. */
   photos: { round: number; shots: PhotoShot[] } | null;
   reel: { round: number; prompt: string; shot: PhotoShot }[];
+  /** Flash : les croquis de la manche, révélés au vote. */
+  sketches: { round: number; sketches: FlashSketch[] } | null;
   /** Décalage horloge serveur - horloge locale (ms). */
   clockOffset: number;
 }
@@ -41,6 +43,7 @@ const initial: GameState = {
   bombEvent: null,
   photos: null,
   reel: [],
+  sketches: null,
   clockOffset: 0,
 };
 

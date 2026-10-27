@@ -90,6 +90,7 @@ class Net {
           bombEvent: msg.state.bomb ? s.bombEvent : null,
           photos: msg.state.photo && phase !== 'pose' ? s.photos : null,
           reel: msg.state.photo ? keepBest(s.reel, s.photos, msg.state) : [],
+          sketches: msg.state.flash && (phase === 'vote' || phase === 'reveal') ? s.sketches : null,
         }));
         call.sync(msg.state.players);
         break;
@@ -127,6 +128,9 @@ class Net {
         break;
       case 'photos':
         store.set({ photos: { round: msg.round, shots: msg.shots } });
+        break;
+      case 'sketches':
+        store.set({ sketches: { round: msg.round, sketches: msg.sketches } });
         break;
       case 'dial':
         store.set({ dial: msg.value });
