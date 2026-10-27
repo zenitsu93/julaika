@@ -142,8 +142,22 @@ function Writing({ s }: { s: StoryState }) {
 
       {s.turn && endsAt && <Fuse key={`${s.written}:${s.turn}`} endsAt={endsAt} />}
 
-      {mine ? (
-        <WordInput key={s.written} s={s} draft={draft} setDraft={setDraft} />
+      {s.turn && selfId && s.order.includes(selfId) ? (
+        <>
+          {!mine && (
+            <p className="text-center text-sm text-muted">
+              <b className="text-ink">{players.get(s.turn)?.name ?? '…'}</b> écrit
+              <span className="m-dots" aria-hidden>
+                <span>.</span>
+                <span>.</span>
+                <span>.</span>
+              </span>
+              {inTurns > 0 && <span className="ml-1">· à toi dans {plural(inTurns, 'mot')}</span>}
+            </p>
+          )}
+          {/* Toujours là pendant l'histoire : au téléphone le clavier reste ouvert d'un tour à l'autre. */}
+          <WordInput s={s} mine={mine} selfId={selfId} draft={draft} setDraft={setDraft} />
+        </>
       ) : s.turn ? (
         <p className="text-center text-sm text-muted">
           <b className="text-ink">{players.get(s.turn)?.name ?? '…'}</b> écrit
@@ -260,23 +274,30 @@ function Fuse({ endsAt }: { endsAt: number }) {
 const PUNCT = [',', '.', '!', '?'];
 
 /** Saisie du mot : Espace ou Entrée valide, les boutons collent une ponctuation et valident. */
-function WordInput({ s, draft, setDraft }: { s: StoryState; draft: string; setDraft: (v: string) => void }) {
+function WordInput({ s, mine, selfId, draft, setDraft }: { s: StoryState; mine: boolean; selfId: string; draft: string; setDraft: (v: string) => void }) {
   const field = useRef<HTMLInputElement>(null);
   const form = useRef<HTMLFormElement>(null);
 
+  useEffect(() => () => setDraft(''), []);
+  // Mon tour : le champ s'anime et ce que j'avais préparé part aussitôt chez les autres.
   useEffect(() => {
-    setDraft('');
+    if (!mine) return;
     field.current?.focus({ preventScroll: true });
     bump(form.current, 1.03);
-    return () => setDraft('');
-  }, []);
+    if (draft) net.send({ t: 'motamot', typing: draft });
+  }, [mine, s.written]);
+  // Mon mot est posé : le champ se vide pour préparer le suivant.
+  useEffect(() => {
+    if (s.words.at(-1)?.by === selfId) setDraft('');
+  }, [s.written]);
 
   const type = (value: string) => {
     const v = value.replace(/\s+/g, '').slice(0, STORY_WORD_MAX);
     setDraft(v);
-    net.send({ t: 'motamot', typing: v });
+    if (mine) net.send({ t: 'motamot', typing: v });
   };
   const submit = (suffix = '') => {
+    if (!mine) return shake(field.current);
     const word = (draft + suffix).trim();
     if (!/[\p{L}\p{N}]/u.test(word)) return shake(field.current);
     net.send({ t: 'motamot', word });
@@ -292,7 +313,17 @@ function WordInput({ s, draft, setDraft }: { s: StoryState; draft: string; setDr
       }}
     >
       <p className="text-center text-sm">
-        <b>À toi !</b> <span className="text-muted">{s.rule ? s.rule.text : 'Un mot, vite'}</span>
+        {mine ? (
+          <>
+            <b>À toi !</b> <span className="text-muted">{s.rule ? s.rule.text : 'Un mot, vite'}</span>
+          </>
+        ) : (
+          <span className="text-muted">Prépare ton prochain mot, il partira à ton tour.</span>
+        )}
+      </p>
+      {/* Téléphone : le clavier peut cacher la page ; la fin de la phrase reste sous les yeux. */}
+      <p className="truncate text-center text-base italic text-muted sm:hidden" aria-hidden>
+        … {s.words.slice(-3).map((w) => w.text).join(' ')}
       </p>
       <div className="flex gap-2">
         <input
@@ -305,7 +336,7 @@ function WordInput({ s, draft, setDraft }: { s: StoryState; draft: string; setDr
           autoCorrect="off"
           spellCheck={false}
           enterKeyHint="send"
-          placeholder="Ton mot…"
+          placeholder={mine ? 'Ton mot…' : 'Prépare ton mot…'}
           value={draft}
           onKeyDown={(e) => {
             if (e.key === ' ') {
@@ -315,14 +346,17 @@ function WordInput({ s, draft, setDraft }: { s: StoryState; draft: string; setDr
           }}
           onChange={(e) => type(e.target.value)}
         />
-        <button className="btn-primary shrink-0">Poser</button>
+        <button className="btn-primary shrink-0 transition-opacity" disabled={!mine}>
+          Poser
+        </button>
       </div>
       <div className="flex justify-center gap-1.5" role="group" aria-label="Ponctuation">
         {PUNCT.map((p) => (
           <button
             key={p}
             type="button"
-            className="grid size-9 place-items-center rounded-lg border border-edge font-mono text-lg font-bold transition hover:-translate-y-0.5 hover:border-accent active:scale-95"
+            disabled={!mine}
+            className="grid size-11 place-items-center rounded-lg border border-edge font-mono text-lg font-bold transition enabled:hover:-translate-y-0.5 enabled:hover:border-accent active:scale-95 disabled:opacity-40"
             onClick={(e) => {
               bump(e.currentTarget);
               submit(p);

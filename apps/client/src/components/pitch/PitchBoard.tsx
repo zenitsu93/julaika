@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import {
   PITCH_FUNDED,
   PITCH_MIN_TALK,
@@ -15,7 +16,7 @@ import { useCall } from '../../lib/call';
 import { net } from '../../lib/net';
 import { play, tick } from '../../lib/sounds';
 import { serverNow, useGame } from '../../lib/store';
-import { bump, confetti, Presence, Ticker, useCountUp } from '../../motion';
+import { bump, confetti, Presence, Ticker, useCountUp, useMedia } from '../../motion';
 import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
 import { SoundBoard } from '../SoundBoard';
@@ -239,6 +240,9 @@ function Stage({ p }: { p: PitchState }) {
   const tr = TRANSITIONS[(p.slide?.n ?? 0) % TRANSITIONS.length]!;
   const pages = Object.values(p.sent).reduce((a, b) => a + b, 0);
   const sender = usePlayer(p.slide?.by);
+  // Téléphone : la diapo est minuscule ; un toucher l'ouvre en grand, couchée pour remplir l'écran.
+  const coarse = useMedia('(pointer: coarse)');
+  const [zoom, setZoom] = useState(false);
 
   useEffect(() => {
     if (left > 0 && left <= 5) tick(left <= 3);
@@ -257,11 +261,18 @@ function Stage({ p }: { p: PitchState }) {
               <Ticker value={left} />
             </span>
           </div>
-          <div className="pt-screen mt-2">
+          <div className="pt-screen mt-2" onClick={() => coarse && setZoom(true)} title={coarse ? 'Agrandir la diapo' : undefined}>
             {slide ? (
               <Slide key={p.slide!.n} slide={slide} brand={p.product.brand} page={pages} className={tr.cls} />
             ) : (
               <TitleSlide product={p.product} />
+            )}
+            {coarse && (
+              <span className="pt-zoom-hint" aria-hidden>
+                <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                </svg>
+              </span>
             )}
             {slide && (
               <span key={`tag-${p.slide!.n}`} className="pt-tag m-pop">
@@ -275,6 +286,14 @@ function Stage({ p }: { p: PitchState }) {
         {me && <Conclude endsAt={endsAt} />}
       </div>
       <aside className="flex flex-col gap-3">{me ? <Notes p={p} /> : <Arsenal p={p} />}</aside>
+      {zoom &&
+        createPortal(
+          <div className="pt-zoom" role="dialog" aria-label="Diapo en grand" onClick={() => setZoom(false)}>
+            <div className="pt-zoom-frame">{slide ? <Slide slide={slide} brand={p.product.brand} page={pages} /> : <TitleSlide product={p.product} />}</div>
+            <p className="pt-zoom-close">Touche pour fermer</p>
+          </div>,
+          document.body,
+        )}
       {me && p.slide && slide && p.slide.by !== selfId && <Takeover key={p.slide.n} slide={slide} brand={p.product.brand} tr={tr} />}
     </div>
   );

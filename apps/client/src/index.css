@@ -117,3 +117,37 @@ h2 {
 @utility accroche {
   @apply relative z-10 block font-script font-normal leading-[0.8] tracking-normal -mb-[0.12em] -rotate-3;
 }
+
+/* Barre du haut au téléphone (debout ou couché) : une ligne d'icônes, cibles de 44 px, sans libellés. */
+.tb-compact .sm\:inline,
+.tb-compact .sm\:flex {
+  display: none;
+}
+.tb-compact :is(.btn-ghost, .btn-primary) {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  justify-content: center;
+}
+.tb-compact .mp-dockbtn {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+.tb-compact > div:last-child {
+  gap: 0.25rem;
+}
+
+/* Au doigt, rien sous 12 px : les petites étiquettes (10–11 px) restent lisibles sur téléphone. */
+@media (pointer: coarse) {
+  .text-\[9px\],
+  .text-\[10px\],
+  .text-\[11px\] {
+    font-size: 12px;
+  }
+}
+
+/* iPhone à encoche : la page occupe tout l'écran (viewport-fit=cover), le contenu reste dans la zone sûre. */
+.safe-x {
+  padding-left: max(0.75rem, env(safe-area-inset-left));
+  padding-right: max(0.75rem, env(safe-area-inset-right));
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}

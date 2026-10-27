@@ -169,7 +169,8 @@ function Pick({ f }: { f: FredState }) {
         </p>
       </div>
       <Style style={f.style} />
-      <div className="mt-6 grid w-full max-w-3xl gap-x-4 gap-y-10 sm:grid-cols-3">
+      {/* Téléphone : trois pochettes en bandeau, les trois choix tiennent dans un écran. */}
+      <div className="mt-6 grid w-full max-w-3xl gap-x-4 gap-y-10 max-sm:mt-3 max-sm:gap-y-3 sm:grid-cols-3">
         {f.choices.map((song, i) => (
           <Sleeve key={`${f.rerolled}-${song.title}`} song={song} index={i} />
         ))}
@@ -197,17 +198,17 @@ function Sleeve({ song, index }: { song: FredSong; index: number }) {
       ref={btn}
       type="button"
       style={{ animationDelay: `${index * 90}ms`, '--tilt': `${tilt}deg` } as CSSProperties}
-      className="f-sleeve group relative flex aspect-square flex-col justify-end overflow-visible rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      className="f-sleeve group relative flex aspect-square flex-col justify-end overflow-visible rounded-xl text-left max-sm:aspect-[3.4/1] outline-none focus-visible:ring-2 focus-visible:ring-accent"
       onClick={() => {
         bump(btn.current, 1.05);
         net.send({ t: 'fred', pick: index });
       }}
     >
-      <Vinyl spin="off" className="f-sleeve-disc absolute left-[8%] top-[8%] size-[84%]" />
-      <span className="f-sleeve-cover relative flex size-full flex-col justify-between rounded-xl p-4 text-butter">
-        <span className="font-mono text-xs opacity-70">{index + 1}</span>
+      <Vinyl spin="off" className="f-sleeve-disc absolute left-[8%] top-[8%] size-[84%] max-sm:hidden" />
+      <span className="f-sleeve-cover relative flex size-full flex-col justify-between rounded-xl p-4 text-butter max-sm:flex-row max-sm:items-center max-sm:justify-start max-sm:gap-4 max-sm:py-3">
+        <span className="font-mono text-xs opacity-70 max-sm:text-2xl max-sm:font-bold max-sm:opacity-50">{index + 1}</span>
         <span>
-          <span className="block text-xl font-bold leading-tight tracking-[-0.03em]">{song.title}</span>
+          <span className="block text-xl font-bold leading-tight tracking-[-0.03em] max-sm:text-lg">{song.title}</span>
           <span className="mt-0.5 block text-sm opacity-75">{song.artist}</span>
         </span>
       </span>

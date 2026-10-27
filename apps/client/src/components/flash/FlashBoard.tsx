@@ -546,7 +546,7 @@ function Gallery() {
           type="button"
           aria-pressed={overlay}
           onClick={(e) => (bump(e.currentTarget), setOverlay((o) => !o))}
-          className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors duration-300 ${overlay ? 'border-accent/50 bg-accent/15 text-ink' : 'border-edge text-muted hover:text-ink'}`}
+          className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm max-sm:min-h-11 max-sm:px-4 transition-colors duration-300 ${overlay ? 'border-accent/50 bg-accent/15 text-ink' : 'border-edge text-muted hover:text-ink'}`}
         >
           <svg viewBox="0 0 20 20" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
             <rect x="2.5" y="2.5" width="10" height="10" rx="2" />

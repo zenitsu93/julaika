@@ -1,16 +1,18 @@
 import { ALIBI_MIN_PLAYERS, BOMB_MAX_LIVES, INTRUS_MIN_PLAYERS, SETTINGS_LIMITS, TRAPS, type Difficulty, type GameMode, type RoomGame, type RoomSettings } from '@julaika/shared';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { net } from '../lib/net';
 import { TRAP_INFO, TRAP_MODE_LABELS } from '../lib/traps';
 import { CerveauModes } from './cerveau/CerveauModes';
 import { useGame } from '../lib/store';
 import { QuizThemeField } from './quiz/QuizThemeField';
-import { bump, Ticker, useIndicator } from '../motion';
+import { bump, Ticker, useIndicator, useMedia } from '../motion';
 import { Planche } from './mime/Planche';
 import { InviteCard } from './InviteCard';
 import { GameSwitch } from './GamePicker';
 import { TremaLoader } from './Logo';
 import { AovLevelPicker } from './verite/AovBoard';
+import './lobby.css';
 
 const FIELDS: { key: keyof typeof SETTINGS_LIMITS; label: string; step?: number; max?: number }[] = [
   { key: 'rounds', label: 'Manches' },
@@ -316,6 +318,9 @@ export function Lobby() {
   const minPlayers = room.game === 'intrus' ? INTRUS_MIN_PLAYERS : room.game === 'alibi' ? ALIBI_MIN_PLAYERS : 2;
   const canStart = room.players.length >= minPlayers;
   const start = useRef<HTMLButtonElement>(null);
+  // Téléphone : réglages rares repliés, et « Lancer la partie » toujours à portée de pouce en bas.
+  const phone = useMedia('(max-width: 639.98px)');
+  const [more, setMore] = useState(false);
 
   // Le bouton s'éclaire quand le deuxième joueur arrive.
   useEffect(() => {
@@ -331,7 +336,7 @@ export function Lobby() {
       )}
       <GameSwitch isHost={isHost} />
       <InviteCard />
-      <h2 className="mb-4 text-lg font-semibold">Réglages du salon <span className="font-mono text-muted">#{room.code}</span></h2>
+      <h2 className="mb-4 text-lg font-semibold">Réglages du salon</h2>
       {!rules && (
       <div className="mb-3 text-sm">
         <span className="mb-1 block text-muted">Mode de jeu</span>
@@ -359,7 +364,7 @@ export function Lobby() {
         <p key={modeIndex} className="m-fade mt-1 text-xs text-muted">{MODES[modeIndex]!.hint}</p>
         {room.settings.mode !== 'dessin' && (
           <label className="m-rise mt-2 flex items-start gap-2 rounded-md border border-edge bg-surface px-3 py-2 text-sm">
-            <input type="checkbox" className="mt-0.5 accent-primary" disabled={!isHost} checked={room.settings.twists} onChange={(e) => set({ twists: e.target.checked })} />
+            <input type="checkbox" className="mt-0.5 size-5 shrink-0 accent-primary" disabled={!isHost} checked={room.settings.twists} onChange={(e) => set({ twists: e.target.checked })} />
             <span>
               <span className="font-medium">Consignes surprises</span>
               <span className="block text-xs text-muted">Toutes les 20 s, le mimeur change de style : au ralenti, comme un robot, sur un pied…</span>
@@ -369,8 +374,9 @@ export function Lobby() {
       </div>
       )}
       {room.game === 'verite' && <AovLevelPicker isHost={isHost} />}
-      <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'brasdefer' ? BRAS_FIELDS : room.game === 'flash' ? FLASH_FIELDS : room.game === 'cadavre' ? CAD_FIELDS : room.game === 'interdits' ? INTERDITS_FIELDS : room.game === 'motamot' ? STORY_FIELDS : room.game === 'agents' ? AGENTS_FIELDS : room.game === 'fredonne' ? FRED_FIELDS : room.game === 'alibi' ? ALIBI_FIELDS : room.game === 'pitch' ? PITCH_FIELDS : room.game === 'cerveau' ? CERVEAU_FIELDS : room.game === 'verite' ? AOV_FIELDS : room.game === 'quiz' ? QUIZ_FIELDS : room.game === 'foot' || room.game === 'oreillers' || room.game === 'drap' ? ARCADE_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
+      {(() => {
+        const fields = (wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'brasdefer' ? BRAS_FIELDS : room.game === 'flash' ? FLASH_FIELDS : room.game === 'cadavre' ? CAD_FIELDS : room.game === 'interdits' ? INTERDITS_FIELDS : room.game === 'motamot' ? STORY_FIELDS : room.game === 'agents' ? AGENTS_FIELDS : room.game === 'fredonne' ? FRED_FIELDS : room.game === 'alibi' ? ALIBI_FIELDS : room.game === 'pitch' ? PITCH_FIELDS : room.game === 'cerveau' ? CERVEAU_FIELDS : room.game === 'verite' ? AOV_FIELDS : room.game === 'quiz' ? QUIZ_FIELDS : room.game === 'foot' || room.game === 'oreillers' || room.game === 'drap' ? ARCADE_FIELDS : FIELDS);
+        const field = ({ key, label: base, step, max: cap }: (typeof FIELDS)[number]) => {
           const label = key === 'drawTime' && !rules && room.settings.mode !== 'dessin' ? 'Temps par tour (s)' : base;
           const [min, limit] = SETTINGS_LIMITS[key];
           const max = cap ?? limit;
@@ -387,10 +393,21 @@ export function Lobby() {
               )}
             </label>
           );
-        })}
-      </div>
+        };
+        return (
+          <>
+            <div className="grid grid-cols-2 gap-3">{(phone ? fields.slice(0, 2) : fields).map(field)}</div>
+            {phone && fields.length > 2 && (
+              <Fold open={more}>
+                <div className="grid grid-cols-2 gap-3 pt-3">{fields.slice(2).map(field)}</div>
+              </Fold>
+            )}
+          </>
+        );
+      })()}
       {room.game === 'quiz' && <QuizThemeField isHost={isHost} />}
       {(!rules || room.game === 'bombe' || room.game === 'interdits' || room.game === 'fredonne' || room.game === 'quiz') && (
+        <Fold open={!phone || more}>
         <div className="mt-3 text-sm">
           <span className="mb-1 block text-muted">{room.game === 'bombe' ? 'Difficulté des syllabes' : room.game === 'interdits' ? 'Mots interdits par carte (3, 4 ou 5)' : room.game === 'fredonne' ? 'Difficulté des chansons' : room.game === 'quiz' ? 'Niveau des questions' : 'Difficulté des mots'}</span>
           <div ref={level.container} role="group" aria-label="Difficulté" className="relative grid grid-cols-3 gap-1 rounded-md border border-edge p-1">
@@ -415,6 +432,7 @@ export function Lobby() {
             })}
           </div>
         </div>
+        </Fold>
       )}
       {room.game === 'cerveau' && <CerveauModes value={room.settings.cerveau} disabled={!isHost} onChange={(cerveau) => set({ cerveau })} />}
       {rules ? (
@@ -426,7 +444,7 @@ export function Lobby() {
           ))}
         </ol>
       ) : (
-      <>
+      <Fold open={!phone || more}>
       {room.settings.mode !== 'mime' && (
       <div className="mt-3 text-sm">
         <span className="mb-1 flex items-center gap-1.5 text-muted">
@@ -481,19 +499,29 @@ export function Lobby() {
           onBlur={(e) => set({ customWords: e.target.value.split(',') })}
         />
       </label>
-      <label className="mt-2 flex items-center gap-2 text-sm text-muted">
-        <input type="checkbox" disabled={!isHost} checked={room.settings.customOnly} onChange={(e) => set({ customOnly: e.target.checked })} />
+      <label className="mt-2 flex min-h-11 items-center gap-2.5 text-sm text-muted">
+        <input type="checkbox" className="size-5 accent-primary" disabled={!isHost} checked={room.settings.customOnly} onChange={(e) => set({ customOnly: e.target.checked })} />
         Uniquement mes mots
       </label>
-      </>
+      </Fold>
+      )}
+      {phone && isHost && (
+        <button type="button" className="lobby-more mt-3 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-md text-sm font-medium text-muted" aria-expanded={more} onClick={() => setMore(!more)}>
+          {more ? 'Moins de réglages' : 'Plus de réglages'}
+          <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
       )}
       {isHost ? (
-        <button ref={start} className="btn-primary mt-5 w-full py-2.5" disabled={!canStart} onClick={() => net.send({ t: 'start' })}>
+        <Dock on={phone}>
+        <button ref={start} className="btn-primary mt-5 w-full py-2.5 max-sm:mt-0 max-sm:min-h-12" disabled={!canStart} onClick={() => net.send({ t: 'start' })}>
           <span className="inline-flex items-center gap-2">
             <TremaLoader done={canStart} />
             {canStart ? 'Lancer la partie' : minPlayers > 2 ? `En attente de joueurs (${room.players.length}/${minPlayers})…` : 'En attente de joueurs…'}
           </span>
         </button>
+        </Dock>
       ) : (
         <p className="mt-5 flex items-center justify-center gap-2 text-muted">
           <TremaLoader />
@@ -506,6 +534,26 @@ export function Lobby() {
         </p>
       )}
     </div>
+  );
+}
+
+/** Bloc qui se replie en douceur (hauteur animée) ; fermé, il sort aussi du parcours au clavier. */
+function Fold({ open, children }: { open: boolean; children: ReactNode }) {
+  return (
+    <div className="lobby-fold" data-open={open || undefined} inert={!open}>
+      <div className="min-h-0">{children}</div>
+    </div>
+  );
+}
+
+/** Téléphone : le bouton quitte le bas du salon pour une barre collée au bas de l'écran. */
+function Dock({ on, children }: { on: boolean; children: ReactNode }) {
+  if (!on) return <>{children}</>;
+  return (
+    <>
+      <div className="h-20" aria-hidden />
+      {createPortal(<div className="lobby-dock">{children}</div>, document.body)}
+    </>
   );
 }
 
