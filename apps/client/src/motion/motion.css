@@ -727,3 +727,197 @@
 .tel-seen {
   animation: none;
 }
+
+/* Boîte à sons -------------------------------------------------------------------------- */
+
+/* Popover : il se déplie depuis le bouton (origine posée en JS), et se replie en partant. */
+@keyframes sb-pop-in {
+  from {
+    transform: translateY(-6px) scale(0.9);
+    opacity: 0;
+  }
+}
+@keyframes sb-pop-out {
+  to {
+    transform: translateY(-4px) scale(0.95);
+    opacity: 0;
+  }
+}
+.sb-pop {
+  transform-origin: top right;
+  animation: sb-pop-in 0.24s var(--ease-spring) backwards;
+}
+.sb-pop[data-leaving] {
+  animation: sb-pop-out 0.14s ease-in forwards;
+}
+
+/* Pads : entrée en cascade (délai posé en style), lueur dorée qui suit le pointeur (--mx/--my). */
+@keyframes sb-pad-in {
+  from {
+    transform: translateY(10px) scale(0.85);
+    opacity: 0;
+  }
+}
+.sb-pad {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  animation: sb-pad-in 0.34s var(--ease-spring) backwards;
+  transition:
+    transform 0.15s var(--ease-out),
+    border-color 0.2s,
+    box-shadow 0.2s,
+    opacity 0.2s;
+}
+.sb-pad::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.25s;
+  background: radial-gradient(110px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--color-accent) 30%, transparent), transparent 70%);
+}
+.sb-pad:hover::before,
+.sb-pad:focus-visible::before {
+  opacity: 1;
+}
+.sb-pad:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 65%, var(--color-edge));
+  box-shadow: 0 8px 20px -12px color-mix(in srgb, var(--color-accent) 80%, transparent);
+}
+.sb-pad:active {
+  transform: scale(0.94);
+}
+.sb-pad[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: progress;
+}
+.sb-pad .sb-emoji {
+  display: inline-block;
+  transition: transform 0.28s var(--ease-spring);
+}
+.sb-pad:hover .sb-emoji {
+  transform: scale(1.2) rotate(-8deg);
+}
+
+/* Onde du clic : un disque doré qui part du point touché. */
+@keyframes sb-ripple {
+  from {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.6;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+.sb-ripple {
+  position: absolute;
+  z-index: -1;
+  width: 260%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-accent) 55%, transparent) 0 35%, transparent 70%);
+  animation: sb-ripple 0.6s var(--ease-out) forwards;
+}
+
+/* Recharge après un envoi : la barre se vide en 600 ms. */
+@keyframes sb-recharge {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+.sb-recharge {
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  transform-origin: left;
+  background: var(--color-accent);
+  animation: sb-recharge 0.6s linear forwards;
+}
+
+/* Haut-parleur : les ondes rentrent dans la membrane et une croix se trace en muet. */
+.sb-speaker .sb-wave {
+  transform-box: fill-box;
+  transform-origin: left center;
+  transition:
+    opacity 0.2s,
+    transform 0.3s var(--ease-spring);
+}
+.sb-speaker .sb-wave + .sb-wave {
+  transition-delay: 0.05s;
+}
+.sb-muted .sb-wave {
+  opacity: 0;
+  transform: translateX(-3px) scale(0.4);
+}
+.sb-speaker .sb-cross {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 0.22s var(--ease-out);
+}
+.sb-muted .sb-cross {
+  stroke-dashoffset: 0;
+  transition-delay: 0.12s;
+}
+
+/* Bulle de son : elle jaillit en tournant un peu, se pose, puis s'envole et s'efface. */
+@keyframes sb-bubble {
+  0% {
+    transform: translateY(18px) scale(0.6) rotate(var(--sb-r, -8deg));
+    opacity: 0;
+  }
+  12% {
+    transform: translateY(-4px) scale(1.06) rotate(calc(var(--sb-r, -8deg) / -3));
+    opacity: 1;
+  }
+  22% {
+    transform: none;
+  }
+  78% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-36px) scale(0.94) rotate(calc(var(--sb-r, -8deg) / 2));
+    opacity: 0;
+  }
+}
+@keyframes sb-wiggle {
+  25% {
+    transform: rotate(-14deg) scale(1.2);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
+}
+.sb-bubble {
+  animation: sb-bubble 2.4s var(--ease-out) forwards;
+}
+.sb-bubble .sb-emoji {
+  display: inline-block;
+  animation: sb-wiggle 0.45s 0.18s ease-in-out 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Les bulles restent posées (le JS les retire) ; pas de lueur mouvante ni d'onde. */
+  .sb-bubble,
+  .sb-bubble .sb-emoji,
+  .sb-pad,
+  .sb-pop {
+    animation: none;
+  }
+  .sb-ripple,
+  .sb-pad::before {
+    display: none;
+  }
+  .sb-pad:hover .sb-emoji,
+  .sb-pad:active {
+    transform: none;
+  }
+}

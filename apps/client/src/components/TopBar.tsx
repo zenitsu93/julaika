@@ -3,6 +3,7 @@ import { serverNow, useGame } from '../lib/store';
 import { animate, Ticker } from '../motion';
 import { LogoMark } from './Logo';
 import { MeetButton } from './MeetButton';
+import { SoundButton } from './SoundBoard';
 
 function useCountdown(endsAt: number | null): number {
   const [now, setNow] = useState(serverNow);
@@ -59,7 +60,7 @@ export function TopBar() {
   const room = useGame((s) => s.room!);
   const left = useCountdown(room.endsAt);
   const [copied, setCopied] = useState(false);
-  const urgent = (room.phase === 'drawing' || room.phase === 'guess' || room.phase === 'draw' || room.phase === 'write' || room.phase === 'describe') && left <= 10;
+  const urgent = (room.phase === 'drawing' || room.phase === 'guess' || room.phase === 'draw' || room.phase === 'write' || room.phase === 'describe' || room.phase === 'duel') && left <= 10;
   const timer = useRef<HTMLSpanElement>(null);
 
   // Sous 10 s, la pastille bat doucement à chaque seconde.
@@ -89,7 +90,9 @@ export function TopBar() {
       <span className="text-sm text-muted">
         {room.phase === 'lobby'
           ? 'Salon'
-          : room.tel
+          : room.sourire
+            ? `Duel ${room.sourire.turn + 1}/${room.sourire.turns}`
+            : room.tel
             ? room.phase === 'album'
               ? 'Album'
               : `Étape ${room.tel.step + 1}/${room.tel.steps}`
@@ -106,6 +109,7 @@ export function TopBar() {
       </div>
       <div className="ml-auto flex items-center gap-2 sm:ml-0">
         <MeetButton />
+        <SoundButton />
         <button className="btn-ghost relative overflow-hidden px-2.5 py-1.5 font-mono" onClick={copy} title="Copier le lien d'invitation">
           {/* Le code glisse vers le haut et laisse place à une coche qui se dessine. */}
           <span key={String(copied)} className="m-rise inline-flex items-center gap-1.5" aria-live="polite">

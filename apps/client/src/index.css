@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import './motion/motion.css';
+@import './motion/sourire.css';
 
 /* Concept « Studio Pro » : outil de création épuré, le tableau d'abord.
    Tous les tons passent par ces variables : changer de concept = changer ce bloc. */
