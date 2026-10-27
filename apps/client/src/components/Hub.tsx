@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
-import { GAMES, SOON_SLOTS, matchesGame, matchesSoon, type GameId, type GameInfo } from '../lib/games';
+import { useEffect, useRef, useState, type CSSProperties, type JSX, type PointerEvent } from 'react';
+import { GAMES, SOON, matchesGame, matchesSoon, type GameId, type GameInfo, type SoonId } from '../lib/games';
 import { reducedMotion } from '../motion';
 import { LogoMark } from './Logo';
 
@@ -16,7 +16,7 @@ export function Hub({ onPick, onCode }: { onPick: (id: GameId) => void; onCode: 
   const [query, setQuery] = useState('');
   const search = useRef<HTMLInputElement>(null);
   const games = GAMES.filter((g) => matchesGame(g, query));
-  const soon = matchesSoon(query) ? SOON_SLOTS : 0;
+  const soon = SOON.filter((g) => matchesSoon(g, query));
 
   // « / » place le curseur dans la recherche, comme sur la plupart des outils.
   useEffect(() => {
@@ -81,24 +81,10 @@ export function Hub({ onPick, onCode }: { onPick: (id: GameId) => void; onCode: 
         {games.map((g, i) => (
           <GameCard key={g.id} game={g} style={after(520 + i * 60)} className={rise} onPick={() => onPick(g.id)} />
         ))}
-        {Array.from({ length: soon }, (_, i) => (
-          <div
-            key={i}
-            style={after(520 + (games.length + i) * 60)}
-            className={`flex h-96 flex-col justify-between rounded-[1.375rem] border border-dashed border-edge p-5 text-muted max-sm:h-40 ${rise}`}
-          >
-            <span className="font-mono text-xs">{String(GAMES.length + i + 1).padStart(2, '0')}</span>
-            <svg viewBox="0 0 24 24" className="mx-auto size-10 max-sm:hidden" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden>
-              <circle cx="12" cy="12" r="9" strokeDasharray="3 3" />
-              <path d="M12 8v8M8 12h8" />
-            </svg>
-            <div>
-              <p className="text-2xl font-semibold text-ink/80">Bientôt</p>
-              <p className="mt-1 text-sm">Un nouveau jeu se prépare.</p>
-            </div>
-          </div>
+        {soon.map((g, i) => (
+          <SoonCard key={g.id} game={g} style={after(520 + (games.length + i) * 60)} className={rise} />
         ))}
-        {games.length === 0 && soon === 0 && (
+        {games.length === 0 && soon.length === 0 && (
           <p className="col-span-full py-10 text-center text-muted">Aucun jeu ne s'appelle comme ça… pour l'instant.</p>
         )}
       </section>
@@ -107,7 +93,7 @@ export function Hub({ onPick, onCode }: { onPick: (id: GameId) => void; onCode: 
 }
 
 /** La carte s'incline vers la souris et un reflet suit le pointeur. */
-function tilt(e: PointerEvent<HTMLButtonElement>) {
+function tilt(e: PointerEvent<HTMLElement>) {
   if (e.pointerType !== 'mouse' || reducedMotion()) return;
   const el = e.currentTarget;
   const r = el.getBoundingClientRect();
@@ -118,7 +104,7 @@ function tilt(e: PointerEvent<HTMLButtonElement>) {
   el.style.setProperty('--gy', `${y * 100}%`);
 }
 
-const untilt = (e: PointerEvent<HTMLButtonElement>) => {
+const untilt = (e: PointerEvent<HTMLElement>) => {
   e.currentTarget.style.transform = '';
 };
 
@@ -126,6 +112,7 @@ const SKINS: Record<GameId, string> = {
   dessin: 'border-accent bg-accent text-[#18181b]',
   mime: 'border-primary bg-primary text-on-primary',
   wavelength: 'border-edge bg-surface text-ink',
+  motdujour: 'border-[#15803d] bg-[#16a34a] text-white',
 };
 
 function GameCard({ game, className, style, onPick }: { game: GameInfo; className: string; style: CSSProperties; onPick: () => void }) {
@@ -149,7 +136,7 @@ function GameCard({ game, className, style, onPick }: { game: GameInfo; classNam
             <span>{game.players}</span>
           )}
         </span>
-        <span className="hub-pop m-float">{game.id === 'dessin' ? <DrawArt /> : game.id === 'mime' ? <MimeArt /> : <WaveArt />}</span>
+        <span className="hub-pop m-float">{ART[game.id]}</span>
         <span className="hub-pop block">
           <span className="block text-4xl font-semibold tracking-[-0.04em]">{game.name}</span>
           <span className="mt-1 block text-[15px] opacity-75">{game.pitch}</span>
@@ -187,3 +174,141 @@ const WaveArt = () => (
     <circle cx="100" cy="106" r="3.5" fill="#f5b700" />
   </svg>
 );
+
+/** Le mot qui se dévoile : les cases se retournent une à une, puis tout est vert. */
+const MotArt = () => (
+  <span className="mx-auto flex justify-center gap-1.5" aria-hidden>
+    {[...'JOLIE'].map((c, i) => (
+      <span
+        key={i}
+        style={{ animationDelay: `${i * 160}ms` }}
+        className="mot-art grid size-11 place-items-center rounded-md border-2 border-white/70 text-2xl font-bold"
+      >
+        {c}
+      </span>
+    ))}
+  </span>
+);
+
+const ART: Record<GameId, JSX.Element> = { dessin: <DrawArt />, mime: <MimeArt />, wavelength: <WaveArt />, motdujour: <MotArt /> };
+
+/** Carte d'un jeu en préparation : même mise en scène, en pointillés et sans clic. */
+function SoonCard({ game, className, style }: { game: (typeof SOON)[number]; className: string; style: CSSProperties }) {
+  const index = String(GAMES.length + SOON.indexOf(game) + 1).padStart(2, '0');
+  return (
+    <div style={style} className={className}>
+      <div
+        onPointerMove={tilt}
+        onPointerLeave={untilt}
+        aria-label={`${game.name}, bientôt : ${game.pitch}`}
+        role="group"
+        className="hub-card soon-card group relative flex h-80 w-full flex-col justify-between overflow-hidden rounded-[1.375rem] border border-dashed border-edge bg-surface/60 p-5 text-muted sm:h-96"
+      >
+        <span className="hub-glare" aria-hidden />
+        <span className="hub-pop flex items-center justify-between font-mono text-xs">
+          <span className="opacity-80">{index}</span>
+          <span className="rounded-full border border-dashed border-edge px-2 py-0.5 font-sans font-medium">Bientôt</span>
+        </span>
+        <span className="hub-pop m-float text-ink/70">{SOON_ART[game.id]}</span>
+        <span className="hub-pop block">
+          <span className="block text-3xl font-semibold tracking-[-0.04em] text-ink/80">{game.name}</span>
+          <span className="mt-1 block text-[15px]">{game.pitch}</span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+const svg = (body: JSX.Element, viewBox = '0 0 200 140') => (
+  <svg viewBox={viewBox} className="mx-auto max-h-32 w-full" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    {body}
+  </svg>
+);
+
+const SOON_ART: Record<SoonId, JSX.Element> = {
+  // Une bulle de texte qui se change en gribouillis.
+  telephone: svg(
+    <>
+      <path d="M40 30h90a14 14 0 0 1 14 14v34a14 14 0 0 1-14 14H80l-22 18v-18H40a14 14 0 0 1-14-14V44a14 14 0 0 1 14-14z" strokeWidth="5" />
+      <path className="m-draw" pathLength={1} d="M48 70c10-22 22-22 28-4s18 18 26-6 16-12 24 4" stroke="#f5b700" strokeWidth="6" />
+      <path className="soon-pulse" d="M162 52l14-8M164 70h16M162 88l14 8" strokeWidth="5" />
+    </>,
+  ),
+  // Quatre têtes pareilles, une qui n'est pas comme les autres.
+  intrus: svg(
+    <>
+      {[40, 80, 120].map((x) => (
+        <g key={x}>
+          <circle cx={x} cy="58" r="15" strokeWidth="5" />
+          <path d={`M${x - 22} 112c2-20 12-28 22-28s20 8 22 28`} strokeWidth="5" />
+        </g>
+      ))}
+      <g className="soon-bob" style={{ transformOrigin: '160px 90px' }}>
+        <circle cx="160" cy="58" r="15" stroke="#f5b700" strokeWidth="5" />
+        <path d="M138 112c2-20 12-28 22-28s20 8 22 28" stroke="#f5b700" strokeWidth="5" />
+        <path d="M154 54a6 6 0 1 1 8 6v4M158 70v.5" stroke="#f5b700" strokeWidth="4" />
+      </g>
+    </>,
+  ),
+  // Un mot barré d'un trait rouge, encore et encore.
+  interdits: svg(
+    <>
+      <rect x="36" y="30" width="128" height="80" rx="14" strokeWidth="5" />
+      <path d="M58 58h84M58 82h56" strokeWidth="7" strokeOpacity=".35" />
+      <path className="m-draw" pathLength={1} d="M50 96 150 44" stroke="#dc2626" strokeWidth="7" />
+    </>,
+  ),
+  // La lettre tourne, les lignes se remplissent.
+  petitbac: svg(
+    <>
+      <g className="soon-spin" style={{ transformOrigin: '52px 70px' }}>
+        <rect x="26" y="44" width="52" height="52" rx="10" fill="#f5b700" stroke="none" />
+        <text x="52" y="83" textAnchor="middle" fontSize="34" fontWeight="700" fill="#18181b" stroke="none">
+          B
+        </text>
+      </g>
+      {[48, 72, 96].map((y, i) => (
+        <path key={y} className="m-draw" style={{ animationDelay: `${i * 300}ms` }} pathLength={1} d={`M98 ${y}h${70 - i * 12}`} strokeWidth="6" />
+      ))}
+    </>,
+  ),
+  // Des notes qui s'envolent.
+  fredonne: svg(
+    <>
+      <path d="M70 104V44l50-12v60" strokeWidth="5" />
+      <ellipse cx="60" cy="104" rx="12" ry="9" fill="currentColor" stroke="none" />
+      <ellipse cx="110" cy="92" rx="12" ry="9" fill="currentColor" stroke="none" />
+      {[0, 1, 2].map((i) => (
+        <path key={i} className="soon-note" style={{ animationDelay: `${i * 600}ms` }} d="M150 100v-18l12-4" stroke="#f5b700" strokeWidth="5" />
+      ))}
+    </>,
+  ),
+  // Un cœur qui bat.
+  connait: svg(
+    <path
+      className="soon-beat"
+      style={{ transformOrigin: '100px 72px' }}
+      d="M100 112S48 82 48 52a24 24 0 0 1 52-6 24 24 0 0 1 52 6c0 30-52 60-52 60z"
+      fill="#f5b700"
+      stroke="none"
+    />,
+  ),
+  // La grille des agents : les cases changent d'équipe.
+  agents: svg(
+    <>
+      {Array.from({ length: 9 }, (_, i) => (
+        <rect
+          key={i}
+          className="soon-flip"
+          style={{ animationDelay: `${((i * 7) % 9) * 220}ms`, transformOrigin: `${62 + (i % 3) * 30}px ${42 + Math.floor(i / 3) * 30}px` }}
+          x={50 + (i % 3) * 30}
+          y={30 + Math.floor(i / 3) * 30}
+          width="24"
+          height="24"
+          rx="5"
+          strokeWidth="3"
+        />
+      ))}
+    </>,
+  ),
+};

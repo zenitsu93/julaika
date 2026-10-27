@@ -433,3 +433,222 @@
 .w-stamp {
   animation: w-stamp 0.5s var(--ease-out) backwards;
 }
+
+/* Cartes « Bientôt » de l'accueil ------------------------------------------------------- */
+
+.soon-card .hub-pop {
+  transition: opacity 0.3s;
+}
+.soon-card:hover {
+  border-color: var(--color-muted);
+}
+@keyframes soon-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  30% {
+    transform: translateY(-8px) rotate(-6deg);
+  }
+  60% {
+    transform: translateY(0) rotate(5deg);
+  }
+}
+.soon-bob {
+  animation: soon-bob 2.4s ease-in-out infinite;
+}
+@keyframes soon-pulse {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.soon-pulse {
+  animation: soon-pulse 1.2s ease-in-out infinite;
+}
+@keyframes soon-spin {
+  0%,
+  60% {
+    transform: rotateY(0);
+  }
+  80%,
+  100% {
+    transform: rotateY(360deg);
+  }
+}
+.soon-spin {
+  transform-box: view-box;
+  animation: soon-spin 3s cubic-bezier(0.6, 0, 0.2, 1) infinite;
+}
+@keyframes soon-note {
+  0% {
+    transform: translate(0, 0) rotate(0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(26px, -70px) rotate(18deg);
+    opacity: 0;
+  }
+}
+.soon-note {
+  animation: soon-note 1.8s ease-out infinite backwards;
+}
+@keyframes soon-beat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.12);
+  }
+  30% {
+    transform: scale(0.98);
+  }
+  45% {
+    transform: scale(1.08);
+  }
+}
+.soon-beat {
+  transform-box: view-box;
+  animation: soon-beat 1.6s ease-in-out infinite;
+}
+@keyframes soon-flip {
+  0%,
+  70%,
+  100% {
+    transform: scaleX(1);
+    fill: transparent;
+  }
+  78% {
+    transform: scaleX(0);
+  }
+  86%,
+  96% {
+    transform: scaleX(1);
+    fill: #f5b700;
+  }
+}
+.soon-flip {
+  transform-box: view-box;
+  animation: soon-flip 2.4s ease-in-out infinite backwards;
+}
+
+/* Mot du jour --------------------------------------------------------------------------- */
+
+/* Carte de l'accueil : les cases se retournent une à une. */
+@keyframes mot-art {
+  0%,
+  20% {
+    transform: rotateX(0);
+    background: transparent;
+  }
+  30% {
+    transform: rotateX(90deg);
+    background: transparent;
+  }
+  31%,
+  85% {
+    background: #15803d;
+    border-color: #15803d;
+  }
+  40%,
+  85% {
+    transform: rotateX(0);
+  }
+  100% {
+    background: transparent;
+  }
+}
+.mot-art {
+  animation: mot-art 4s ease-in-out infinite backwards;
+}
+
+/* Lettre tapée : la case claque. */
+@keyframes mot-type {
+  50% {
+    transform: scale(1.12);
+  }
+}
+.mot-type {
+  animation: mot-type 0.14s ease-out;
+}
+/* Essai validé : la case se retourne et prend sa couleur à mi-course (sur la tranche). */
+@keyframes mot-flip {
+  0% {
+    transform: rotateX(0);
+  }
+  50% {
+    transform: rotateX(90deg);
+  }
+  100% {
+    transform: rotateX(0);
+  }
+}
+@keyframes mot-paint {
+  0% {
+    background-color: var(--color-surface);
+    border-color: var(--color-muted);
+    color: var(--color-ink);
+    animation-timing-function: step-end;
+  }
+  50% {
+    background-color: var(--c);
+    border-color: var(--c);
+  }
+}
+.mot-reveal {
+  animation:
+    mot-flip 0.5s ease-in-out both,
+    mot-paint 0.5s both;
+}
+/* Mot trouvé : la rangée saute, case après case. */
+@keyframes mot-hop {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-22px);
+  }
+  60% {
+    transform: translateY(2px);
+  }
+}
+.mot-hop {
+  animation: mot-hop 0.5s cubic-bezier(0.3, 0, 0.3, 1) both;
+}
+/* Touche du clavier qui reçoit sa couleur. */
+@keyframes mot-key {
+  from {
+    background-color: var(--color-edge);
+    color: var(--color-ink);
+  }
+}
+.mot-key {
+  animation: mot-key 0.3s ease-out backwards;
+}
+/* Changement de jour dans le classement : le titre glisse depuis le côté de la flèche. */
+@keyframes mot-from-left {
+  from {
+    transform: translateX(-40%);
+    opacity: 0;
+  }
+}
+@keyframes mot-from-right {
+  from {
+    transform: translateX(40%);
+    opacity: 0;
+  }
+}
+.mot-from-left {
+  animation: mot-from-left 0.28s var(--ease-out) backwards;
+}
+.mot-from-right {
+  animation: mot-from-right 0.28s var(--ease-out) backwards;
+}

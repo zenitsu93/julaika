@@ -1,4 +1,4 @@
-import { createServer } from 'node:http';
+import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize as normalizePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -6,12 +6,15 @@ import { WebSocketServer, type WebSocket } from 'ws';
 import { isRoomGame, type ClientMsg, type RoomGame } from '@julaika/shared';
 import { deepseekWords } from './deepseek';
 import { iceServersFor } from './ice';
+import { MotDuJour, isToken } from './motdujour';
 import { Room } from './room';
 
 const PORT = Number(process.env.PORT ?? 3001);
 const STATIC_DIR = process.env.STATIC_DIR ?? fileURLToPath(new URL('../../client/dist', import.meta.url));
 const rooms = new Map<string, Room>();
 const generateWords = deepseekWords();
+const mot = new MotDuJour(process.env.MOT_DATA_DIR ?? 'data/mot', Date.now, process.env.MOT_TZ || 'Europe/Paris');
+const motBuckets = new Map<string, () => boolean>();
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -32,6 +35,7 @@ const http = createServer(async (req, res) => {
     res.end(JSON.stringify({ ok: true, rooms: rooms.size }));
     return;
   }
+  if (url.pathname.startsWith('/api/mot')) return motApi(req, res, url);
   const safe = normalizePath(url.pathname).replace(/^(\.\.[/\\])+/, '');
   let file = join(STATIC_DIR, safe);
   try {
@@ -51,6 +55,55 @@ const http = createServer(async (req, res) => {
     res.writeHead(404).end('Client non buildé : lance `npm run build`.');
   }
 });
+
+/** API du mot du jour : GET /api/mot?token=&date= (état d'un jour), POST /api/mot/essai (un essai). */
+async function motApi(req: IncomingMessage, res: ServerResponse, url: URL) {
+  const send = (status: number, body: unknown) => {
+    res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+    res.end(JSON.stringify(body));
+  };
+  const ip = String(req.headers['x-forwarded-for'] ?? req.socket.remoteAddress ?? '').split(',')[0]!.trim();
+  let allow = motBuckets.get(ip);
+  if (!allow) motBuckets.set(ip, (allow = bucket(30, 2)));
+  if (!allow()) return send(429, { error: 'trop' });
+
+  if (req.method === 'GET' && url.pathname === '/api/mot') {
+    const token = url.searchParams.get('token');
+    const out = mot.state(isToken(token) ? token : null, url.searchParams.get('date') ?? undefined);
+    return typeof out === 'string' ? send(400, { error: out }) : send(200, out);
+  }
+  if (req.method === 'POST' && url.pathname === '/api/mot/essai') {
+    let body: { token?: unknown; name?: unknown; avatar?: unknown; word?: unknown };
+    try {
+      body = JSON.parse(await readBody(req, 2048));
+    } catch {
+      return send(400, { error: 'requete' });
+    }
+    if (!isToken(body.token) || typeof body.word !== 'string') return send(400, { error: 'requete' });
+    const out = mot.guess(body.token, String(body.name ?? ''), Number(body.avatar), body.word);
+    return typeof out === 'string' ? send(422, { error: out }) : send(200, out);
+  }
+  send(404, { error: 'introuvable' });
+}
+
+function readBody(req: IncomingMessage, limit: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let size = 0;
+    const chunks: Buffer[] = [];
+    req.on('data', (c: Buffer) => {
+      size += c.length;
+      if (size > limit) {
+        reject(new Error('trop gros'));
+        req.destroy();
+      } else chunks.push(c);
+    });
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    req.on('error', reject);
+  });
+}
+
+// Les seaux des visiteurs partis se vident de temps en temps.
+setInterval(() => motBuckets.clear(), 10 * 60_000).unref();
 
 const wss = new WebSocketServer({ server: http, path: '/ws', maxPayload: 64 * 1024, perMessageDeflate: false });
 
@@ -154,6 +207,14 @@ function toBytes(data: unknown): Uint8Array {
   if (data instanceof ArrayBuffer) return new Uint8Array(data);
   if (Array.isArray(data)) return new Uint8Array(Buffer.concat(data));
   return new Uint8Array(0);
+}
+
+// `docker stop` envoie SIGTERM : on écrit les classements avant de partir.
+for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+  process.on(signal, () => {
+    mot.flush();
+    process.exit(0);
+  });
 }
 
 http.listen(PORT, () => {

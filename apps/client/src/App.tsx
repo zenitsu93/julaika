@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Home, codeFromUrl } from './components/Home';
 import { Hub } from './components/Hub';
 import { Game } from './components/Game';
+import { MotDuJour } from './components/mot/MotDuJour';
 import { saveChosenGame, type GameId } from './lib/games';
 import { useGame } from './lib/store';
 
@@ -20,5 +21,7 @@ export function App() {
         onCode={() => setScreen({ game: null })}
       />
     );
+  // Le mot du jour se joue seul, sans salon : pas de pseudo à saisir avant.
+  if (screen.game === 'motdujour') return <MotDuJour onBack={() => setScreen(null)} />;
   return <Home game={screen.game} onBack={() => setScreen(null)} />;
 }

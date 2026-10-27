@@ -24,10 +24,15 @@ export function Reaction() {
     else if (phase === 'turnEnd' && before.phase === 'drawing' && !me.guessed) setKind('lose');
   }, [me?.guessed, phase, drawing, me]);
 
+  return kind ? <PencilReaction kind={kind} onDone={() => setKind(null)} /> : null;
+}
+
+/** Le crayon dessine un visage qui sourit (`win`) ou fait la moue, puis s'efface. */
+export function PencilReaction({ kind, onDone }: { kind: Kind; onDone: () => void }) {
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = root.current;
-    if (!kind || !el) return;
+    if (!el) return;
     const q = <T extends Element>(s: string) => el.querySelector<T>(s)!;
     const abort = new AbortController();
     void playReaction(
@@ -43,11 +48,11 @@ export function Reaction() {
       },
       kind === 'win',
       abort.signal,
-    ).then(() => !abort.signal.aborted && setKind(null));
+    ).then(() => !abort.signal.aborted && onDone());
     return () => abort.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind]);
 
-  if (!kind) return null;
   const win = kind === 'win';
   const line = win ? '#18181b' : '#71717a';
 
