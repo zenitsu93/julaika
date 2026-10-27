@@ -200,7 +200,8 @@ async function load(track: MusicTrack, start: number, play: boolean) {
 
 export const music = {
   setOpen(open: boolean) {
-    set({ open });
+    // Rien à écouter : l'île s'ouvre directement sur la recherche.
+    set(open && !heard() && state.view === 'now' ? { open, view: 'search' } : { open });
   },
   setView(view: MusicView) {
     set({ view, open: true });
@@ -294,7 +295,7 @@ export const music = {
   },
   listen() {
     if (!state.room) return;
-    set({ listening: true, sharing: false });
+    set({ listening: true, sharing: false, view: 'now' });
     follow(state.room, true);
   },
   stopListening: () => stopListening(true),
