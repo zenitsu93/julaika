@@ -3,7 +3,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/zenitsu93/julaika/<branche>/deploy/setup-vps.sh | DOMAIN=jeu.exemple.com bash
 set -euo pipefail
 : "${DOMAIN:?définis DOMAIN, ex. DOMAIN=jeu.exemple.com}"
-BRANCH="${BRANCH:-claude/project-thread-e1mqcj}"
+BRANCH="${BRANCH:-claude/project-thread-ojgww0}"
 DIR=/opt/julaika
 
 command -v docker >/dev/null || curl -fsSL https://get.docker.com | sh
