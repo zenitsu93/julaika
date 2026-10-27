@@ -1,23 +1,16 @@
-# Sur le VPS : DOMAIN=jeu.exemple.com docker compose up -d --build
-# Caddy obtient le certificat HTTPS tout seul et relaie les WebSockets sans config spéciale.
+# VPS de production : Caddy tourne déjà dans la pile 2nb-prospect et sert les autres sites
+# via un fichier .caddy (voir deploy/julaika.caddy). Le jeu rejoint seulement son réseau.
+name: julaika
+
 services:
   app:
     build: .
+    image: julaika:latest
+    container_name: julaika
     restart: unless-stopped
-    expose: ["3001"]
+    networks: [frontend]
 
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    depends_on: [app]
-    ports: ["80:80", "443:443", "443:443/udp"]
-    environment:
-      DOMAIN: ${DOMAIN:?définis DOMAIN, ex. jeu.exemple.com}
-    volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-
-volumes:
-  caddy_data:
-  caddy_config:
+networks:
+  frontend:
+    name: 2nb-prospect_frontend
+    external: true

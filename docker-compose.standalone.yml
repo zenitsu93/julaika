@@ -1,0 +1,23 @@
+# VPS neuf, sans autre site : DOMAIN=jeu.exemple.com docker compose -f docker-compose.standalone.yml up -d --build
+# Caddy obtient le certificat HTTPS tout seul et relaie les WebSockets sans config spéciale.
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    expose: ["3001"]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on: [app]
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      DOMAIN: ${DOMAIN:?définis DOMAIN, ex. jeu.exemple.com}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
