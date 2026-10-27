@@ -69,6 +69,13 @@ const SOURIRE_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
+// Agents secrets : les manches deviennent des grilles, et le temps vaut pour l'indice comme pour les cartes.
+const AGENTS_FIELDS: typeof FIELDS = [
+  { key: 'rounds', label: 'Grilles' },
+  { key: 'drawTime', label: 'Temps par tour (s)', step: 10 },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
 const RULES: Partial<Record<RoomGame, string[]>> = {
   wavelength: [
     'Le télépathe voit où se cache la cible entre deux extrêmes, et donne un indice.',
@@ -110,6 +117,12 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
     'Les tirages se posent côte à côte : note ceux des autres de 1 à 5 étoiles.',
   ],
 
+  agents: [
+    'À deux ou trois, mode duo : chacun voit ses agents (en or) et fait deviner l’autre, 15 agents en 9 tours, sans toucher un assassin.',
+    'À partir de quatre, deux équipes, Or contre Cacao : l’espion de chaque équipe voit la clé.',
+    'L’indice : un seul mot et un nombre. Pointez une carte, puis « Démasquer ». Un passant rend la main, l’assassin fait perdre.',
+  ],
+
   sourire: [
     'Un défenseur garde un visage de marbre pendant 30 s ; son attaquant a des bruitages, des grimaces à faire et peut déformer sa visio.',
     'Au moindre sourire, on appuie sur « Il a souri ! » (ou Espace) : plus il craque tôt, plus l’attaquant marque.',
@@ -139,7 +152,7 @@ export function Lobby() {
     <div className="panel p-5 text-left shadow-sm">
       <h2 className="mb-4 text-lg font-semibold">Réglages du salon <span className="font-mono text-muted">#{room.code}</span></h2>
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : FIELDS).map(({ key, label, step, max: cap }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'agents' ? AGENTS_FIELDS : FIELDS).map(({ key, label, step, max: cap }) => {
           const [min, limit] = SETTINGS_LIMITS[key];
           const max = cap ?? limit;
           return (

@@ -1,6 +1,7 @@
 // Contrat client <-> serveur.
 // Messages de contrôle : JSON (frames texte). Dessin : binaire (voir draw.ts).
 
+import type { AgentsState } from './agents';
 import type { BombEvent, BombState } from './bombe';
 import type { ConnaitState } from './connait';
 import type { IntrusState } from './intrus';
@@ -22,7 +23,7 @@ export const PALETTE = [
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 /** Jeux proposés : chaque salon en porte un, choisi à sa création. */
-export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire'] as const;
+export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'agents'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
@@ -37,6 +38,7 @@ export function isRoomGame(v: unknown): v is RoomGame {
  * Qui me connaît le mieux : answer (la vedette répond, les autres parient) → reveal.
  * Bombe à mots : bomb, jusqu'au dernier survivant. Photomaton : pose (consigne puis flash) → vote → reveal.
  * Pas un sourire ! : faceoff (3, 2, 1) → duel → verdict.
+ * Agents secrets : clue (l'espion donne son indice) → guess (on retourne les cartes) → reveal.
  */
 export type Phase =
   | 'lobby'
@@ -186,6 +188,8 @@ export interface RoomState {
   photo: PhotoState | null;
   /** État de Pas un sourire !, null pour les autres jeux. */
   sourire: SourireState | null;
+  /** État d'Agents secrets, null pour les autres jeux. */
+  agents: AgentsState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -251,6 +255,10 @@ export type ClientMsg =
   | { t: 'sourire'; smiled: true }
   | { t: 'sourire'; dare: true }
   | { t: 'sourire'; warp: WarpId | null }
+  | { t: 'agents'; clue: string; count: number }
+  | { t: 'agents'; point: number }
+  | { t: 'agents'; guess: number }
+  | { t: 'agents'; pass: true }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =

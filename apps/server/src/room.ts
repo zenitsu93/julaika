@@ -27,6 +27,7 @@ import {
   type ServerMsg,
   type Trap,
 } from '@julaika/shared';
+import { Agents } from './agents';
 import { Bombe } from './bombe';
 import { Connait } from './connait';
 import type { PairGenerator, WordGenerator } from './deepseek';
@@ -100,6 +101,7 @@ export class Room {
   private bac: PetitBac | null = null;
   private connait: Connait | null = null;
   private bomb: Bombe | null = null;
+  private agents: Agents | null = null;
   private photo: Photomaton | null = null;
   private sourire: Sourire | null = null;
   private choices: string[] = [];
@@ -152,6 +154,7 @@ export class Room {
     if (this.phase === 'choosing' && this.drawerId === id) this.sendTo(id, { t: 'choices', words: this.choices });
     this.tel?.onJoin(id);
     this.photo?.onJoin(id);
+    this.agents?.onJoin(id);
     this.system(`${player.name} a rejoint la partie.`);
     this.broadcastState(id);
     // Les mots sont commandés dès qu'une partie devient possible, pour être prêts au lancement.
@@ -180,7 +183,7 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire) {
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.agents) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
       this.intrus?.onLeave(id);
@@ -189,6 +192,7 @@ export class Room {
       this.bomb?.onLeave(id);
       this.photo?.onLeave(id);
       this.sourire?.onLeave(id);
+      this.agents?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -245,6 +249,9 @@ export class Room {
         break;
       case 'sourire':
         if (msg && typeof msg === 'object') this.sourire?.handle(id, msg);
+        break;
+      case 'agents':
+        if (msg && typeof msg === 'object') this.agents?.handle(id, msg);
         break;
       case 'sound':
         // Boîte à sons, dans tous les jeux : l'émetteur l'a déjà joué chez lui.
@@ -347,6 +354,7 @@ export class Room {
     if (this.game === 'bombe') return this.startBomb();
     if (this.game === 'photomaton') return this.startPhoto();
     if (this.game === 'sourire') return this.startSourire();
+    if (this.game === 'agents') return this.startAgents();
     this.usedWords.clear();
     this.nextRound();
   }
@@ -704,6 +712,30 @@ export class Room {
     this.sourire.start();
   }
 
+  private startAgents(): void {
+    this.agents?.dispose();
+    this.agents = new Agents({
+      playerIds: () => [...this.players.keys()],
+      player: (id) => this.players.get(id),
+      rounds: () => this.settings.rounds,
+      turnTime: () => this.settings.drawTime,
+      random: this.random,
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      system: (text) => this.system(text),
+      endGame: () => this.endGame(),
+    });
+    this.agents.start();
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -735,6 +767,8 @@ export class Room {
     this.photo = null;
     this.sourire?.dispose();
     this.sourire = null;
+    this.agents?.dispose();
+    this.agents = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -839,6 +873,7 @@ export class Room {
       bomb: this.bomb?.state() ?? null,
       photo: this.photo?.state() ?? null,
       sourire: this.sourire?.stateFor(id) ?? null,
+      agents: this.agents?.stateFor(id) ?? null,
     };
   }
 
@@ -882,6 +917,7 @@ export class Room {
     this.bomb?.dispose();
     this.photo?.dispose();
     this.sourire?.dispose();
+    this.agents?.dispose();
   }
 }
 

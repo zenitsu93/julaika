@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'agents';
 
 export interface GameInfo {
   id: GameId;
@@ -101,15 +101,22 @@ export const GAMES: GameInfo[] = [
     badge: 'À deux',
     keywords: ['sourire', 'rire', 'tu ris tu perds', 'serieux', 'grimace', 'visio', 'camera', 'duo', 'deux', 'sons', 'bruitages'],
   },
+  {
+    id: 'agents',
+    name: 'Agents secrets',
+    pitch: 'Un seul mot pour démasquer tous tes agents.',
+    players: 'Duo coop · ou 2 équipes',
+    badge: 'Nouveau',
+    keywords: ['agents', 'secret', 'espion', 'equipes', 'grille', 'codenames', 'indice', 'mots', 'duo', 'deux', 'coop'],
+  },
 ];
 
-export type SoonId = 'interdits' | 'fredonne' | 'agents';
+export type SoonId = 'interdits' | 'fredonne';
 
 /** Jeux en préparation, affichés en « Bientôt » après les jeux disponibles (ordre de la liste des jeux à faire). */
 export const SOON: { id: SoonId; name: string; pitch: string; keywords: string[] }[] = [
   { id: 'interdits', name: 'Mots interdits', pitch: 'Fais deviner sans dire les mots interdits.', keywords: ['interdit', 'tabou', 'visio', 'buzz'] },
   { id: 'fredonne', name: 'Fredonne !', pitch: 'Fredonne une chanson, les autres trouvent le titre.', keywords: ['fredonne', 'chanson', 'musique', 'micro', 'blind test'] },
-  { id: 'agents', name: 'Agents secrets', pitch: 'Un indice pour relier plusieurs mots de ton équipe.', keywords: ['agents', 'secret', 'equipes', 'grille', 'codenames'] },
 ];
 
 const fold = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
