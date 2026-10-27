@@ -27,3 +27,4 @@ export * from './arcade';
 export * from './foot';
 export * from './oreillers';
 export * from './drap';
+export * from './musique';

@@ -43,6 +43,8 @@ import {
   type ServerMsg,
   type Trap,
   type TurnKind,
+  cleanTrack,
+  type RoomMusic,
 } from '@julaika/shared';
 import { Agents } from './agents';
 import { Arcade } from './arcade';
@@ -180,6 +182,8 @@ export class Room {
   private pendingSnaps = new Set<string>();
   private shotCount = 0;
   private twistCount = 0;
+  /** Musique qu'un joueur partage avec le salon. */
+  private music: RoomMusic | null = null;
 
   constructor(
     code: string,
@@ -216,6 +220,7 @@ export class Room {
 
     this.sendTo(id, { t: 'welcome', selfId: id, state: this.stateFor(id), now: Date.now(), ice: this.iceServers(id) });
     for (const stroke of this.strokes) for (const packet of stroke) conn.send(packet);
+    if (this.music) this.sendTo(id, { t: 'music', music: this.music });
     if (this.phase === 'choosing' && this.drawerId === id) this.sendTo(id, { t: 'choices', words: this.choices });
     this.tel?.onJoin(id);
     this.photo?.onJoin(id);
@@ -240,6 +245,10 @@ export class Room {
     if (!player) return;
     this.players.delete(id);
     this.drawQueue = this.drawQueue.filter((p) => p !== id);
+    if (this.music?.dj === id) {
+      this.music = null;
+      this.broadcast({ t: 'music', music: null });
+    }
     if (this.players.size === 0) {
       this.clearTimers();
       this.onEmpty(this);
@@ -377,6 +386,19 @@ export class Room {
         break;
       case 'quiz':
         if (msg && typeof msg === 'object') this.quiz?.handle(id, msg);
+        break;
+      case 'music':
+        // Lecteur de musique, dans tous les jeux : le dernier qui partage prend la main.
+        if ('stop' in msg) {
+          if (this.music?.dj !== id) break;
+          this.music = null;
+        } else {
+          const track = cleanTrack(msg.track);
+          if (!track) break;
+          const pos = Number(msg.pos);
+          this.music = { dj: id, track, playing: msg.playing === true, pos: Number.isFinite(pos) ? Math.min(Math.max(pos, 0), 86_400) : 0, at: Date.now() };
+        }
+        this.broadcast({ t: 'music', music: this.music });
         break;
       case 'sound':
         // Boîte à sons, dans tous les jeux : l'émetteur l'a déjà joué chez lui.

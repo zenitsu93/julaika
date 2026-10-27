@@ -111,11 +111,13 @@ export function securityHeaders(host: string | undefined): Record<string, string
   return {
     'content-security-policy': [
       "default-src 'self'",
-      "script-src 'self'",
+      // Le lecteur de musique charge l'API du lecteur YouTube et l'affiche dans un cadre.
+      "script-src 'self' https://www.youtube.com",
+      "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
       // React pose des styles en ligne (animations, positions) : 'unsafe-inline' reste nécessaire ici.
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob:",
+      "img-src 'self' data: blob: https://i.ytimg.com",
       "media-src 'self' blob:",
       `connect-src 'self'${sockets}`,
       "worker-src 'self' blob:",

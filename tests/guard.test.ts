@@ -68,6 +68,7 @@ describe('garde-fous du serveur', () => {
     expect(h['content-security-policy']).toContain("connect-src 'self' wss://julaika.2nbdigital.com");
     expect(h['content-security-policy']).toContain("frame-ancestors 'none'");
     expect(h['permissions-policy']).toContain('camera=(self)');
+    expect(h['content-security-policy']).toContain('frame-src https://www.youtube.com');
     expect(securityHeaders('mal"formé')['content-security-policy']).toContain("connect-src 'self';");
   });
 });

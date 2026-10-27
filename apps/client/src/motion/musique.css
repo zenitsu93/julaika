@@ -1,0 +1,1012 @@
+/* Lecteur de musique « l'île » ------------------------------------------------------------------
+   Une capsule chocolat en bas à droite qui se déplie avec un ressort, comme l'île dynamique des
+   iPhone. Animations : morphose capsule ↔ carte, texte qui arrive flouté, disque qui tourne,
+   anneau de progression, égaliseur, liseré d'or pendant la lecture, onglets à ressort, pastille qui
+   s'envole vers la playlist. Tout se fige en mouvement réduit (motion.css). */
+
+.mp {
+  /* L'île garde sa nuit chocolat dans les deux thèmes. */
+  --mp-bg: #1c120d;
+  --mp-ink: #f4ead2;
+  --mp-muted: #a48e77;
+  --mp-line: rgb(242 230 179 / 0.12);
+  --mp-soft: rgb(242 230 179 / 0.07);
+  --mp-gold: #d9a441;
+  position: fixed;
+  z-index: 40;
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  width: 210px;
+  max-width: calc(100vw - 24px);
+  border-radius: 26px;
+  background: var(--mp-bg);
+  color: var(--mp-ink);
+  box-shadow:
+    0 22px 44px -20px rgb(28 18 13 / 0.75),
+    inset 0 0 0 1px var(--mp-line);
+  transform-origin: bottom right;
+  transition:
+    width 0.55s var(--ease-spring),
+    border-radius 0.5s var(--ease-out);
+  animation: mp-dock 0.6s var(--ease-spring) both;
+}
+@media (prefers-color-scheme: dark) {
+  .mp {
+    --mp-bg: #24160f;
+  }
+}
+.mp-open {
+  width: 312px;
+  border-radius: 24px;
+}
+@keyframes mp-dock {
+  from {
+    transform: translateY(20px) scale(0.85);
+    opacity: 0;
+  }
+}
+/* Liseré d'or qui fait le tour pendant la lecture. */
+@property --mp-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+.mp::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s;
+  background: conic-gradient(from var(--mp-angle), transparent 0 70%, var(--mp-gold) 86%, transparent 100%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.mp-playing::before {
+  opacity: 0.85;
+  animation: mp-beam 5s linear infinite;
+}
+@keyframes mp-beam {
+  to {
+    --mp-angle: 360deg;
+  }
+}
+/* Le cadre YouTube reste chargé derrière la pochette, invisible. */
+.mp-host {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 200px;
+  height: 200px;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+  clip-path: inset(0 round 24px);
+  z-index: -1;
+}
+.mp-host iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Texte qui arrive flouté. */
+.mp-blurin {
+  animation: mp-blurin 0.45s var(--ease-out) both;
+}
+@keyframes mp-blurin {
+  from {
+    filter: blur(6px);
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+
+/* Boutons ronds */
+.mp-ib {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--mp-ink);
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    scale 0.25s var(--ease-spring),
+    opacity 0.2s;
+}
+.mp-ib svg {
+  width: 17px;
+  height: 17px;
+}
+button.mp-ib:hover:not(:disabled) {
+  background: var(--mp-soft);
+}
+button.mp-ib:active:not(:disabled) {
+  scale: 0.86;
+}
+.mp-ib:disabled {
+  opacity: 0.3;
+}
+.mp-ib.on {
+  color: var(--mp-gold);
+}
+button.mp-pp,
+button.mp-pp:hover:not(:disabled) {
+  background: var(--color-butter);
+  color: #1c120d;
+}
+button.mp-pp:hover:not(:disabled) {
+  scale: 1.08;
+}
+.mp-pp.big {
+  width: 40px;
+  height: 40px;
+}
+.mp-pp svg {
+  width: 15px;
+  height: 15px;
+}
+.mp-pp.big svg {
+  width: 18px;
+  height: 18px;
+}
+.mp-pp path {
+  transition: d 0.3s var(--ease-out);
+}
+
+/* Égaliseur */
+.mp-eq {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 13px;
+}
+.mp-eq i {
+  width: 2.5px;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--mp-gold);
+  transform-origin: bottom;
+  transform: scaleY(0.25);
+}
+.mp-playing .mp-eq i {
+  animation: mp-eq 0.9s ease-in-out infinite;
+}
+.mp-playing .mp-eq i:nth-child(2) {
+  animation-duration: 0.7s;
+  animation-delay: -0.2s;
+}
+.mp-playing .mp-eq i:nth-child(3) {
+  animation-duration: 1.05s;
+  animation-delay: -0.5s;
+}
+@keyframes mp-eq {
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* ---- Capsule fermée ---- */
+.mp-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 7px 5px 5px;
+  animation: mp-blurin 0.35s var(--ease-out);
+}
+.mp-pill-open {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+  text-align: left;
+}
+.mp-discw {
+  position: relative;
+  flex: none;
+  width: 38px;
+  height: 38px;
+}
+.mp-disc {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background-color: var(--color-cacao-2);
+  background-size: 260% auto;
+  background-position: center;
+  animation: mp-spin 7s linear infinite paused;
+}
+.mp-disc::after {
+  content: '';
+  position: absolute;
+  inset: 40%;
+  border-radius: 50%;
+  background: var(--mp-bg);
+}
+.mp-playing .mp-disc {
+  animation-play-state: running;
+}
+@keyframes mp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.mp-ring {
+  position: absolute;
+  inset: 0;
+  rotate: -90deg;
+  pointer-events: none;
+}
+.mp-ring circle {
+  fill: none;
+  stroke-width: 2;
+}
+.mp-ring .bg {
+  stroke: var(--mp-line);
+}
+.mp-ring .fg {
+  stroke: var(--mp-gold);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.5s linear;
+}
+.mp-pill-t {
+  min-width: 0;
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Point d'or : le salon partage de la musique. */
+.mp-ping {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--mp-gold);
+  box-shadow: 0 0 0 2px var(--mp-bg);
+}
+.mp-ping.static {
+  position: relative;
+  top: auto;
+  right: auto;
+  flex: none;
+  box-shadow: none;
+}
+.mp-ping::after,
+.mp-pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: inherit;
+  animation: mp-ping 1.6s ease-out infinite;
+}
+@keyframes mp-ping {
+  to {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+/* ---- Carte ouverte ---- */
+.mp-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  animation: mp-unfold 0.45s var(--ease-out) both;
+}
+@keyframes mp-unfold {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: scale(0.96);
+  }
+}
+.mp-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.mp-cover {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--color-cacao-2);
+  animation: m-pop 0.45s var(--ease-spring);
+}
+.mp-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  scale: 1.35;
+}
+.mp-cover-empty {
+  background:
+    radial-gradient(circle, var(--mp-bg) 0 11%, var(--mp-gold) 12% 26%, transparent 27%),
+    repeating-radial-gradient(circle, #2e1d14 0 1.5px, #3a2519 1.5px 3px);
+  border-radius: 50%;
+  animation: mp-spin 9s linear infinite;
+}
+.mp-meta {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+}
+.mp-meta b {
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mp-meta > span {
+  font-size: 12px;
+  color: var(--mp-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mp-dots::after {
+  content: ' …';
+  animation: m-dots 1.2s infinite;
+}
+.mp-track {
+  position: relative;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--mp-line);
+  cursor: pointer;
+  touch-action: none;
+}
+/* Zone de clic plus haute que le trait. */
+.mp-track::before {
+  content: '';
+  position: absolute;
+  inset: -8px 0;
+}
+.mp-track.off {
+  cursor: default;
+}
+.mp-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--mp-gold);
+  transition: width 0.5s linear;
+}
+.mp-fill::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-butter);
+  translate: 0 -50%;
+  scale: 0;
+  transition: scale 0.25s var(--ease-spring);
+}
+.mp-track:not(.off):hover .mp-fill::after,
+.mp-track:focus-visible .mp-fill::after {
+  scale: 1;
+}
+.mp-times {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 5px;
+  font-size: 10.5px;
+  color: var(--mp-muted);
+  font-variant-numeric: tabular-nums;
+}
+.mp-ctrls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px;
+}
+
+/* Lignes : invitation du salon, partage */
+.mp-line {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--mp-soft);
+  font-size: 12.5px;
+  text-align: left;
+  animation: mp-blurin 0.4s var(--ease-out);
+  transition: background-color 0.3s;
+}
+.mp-line svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--mp-muted);
+}
+.mp-line.on {
+  background: color-mix(in srgb, var(--mp-gold) 16%, transparent);
+}
+.mp-line-t {
+  min-width: 0;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mp-pulse {
+  position: relative;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+.mp-switch {
+  position: relative;
+  flex: none;
+  width: 30px;
+  height: 18px;
+  border-radius: 99px;
+  background: var(--mp-line);
+  transition: background-color 0.3s;
+}
+.mp-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--mp-ink);
+  transition: translate 0.35s var(--ease-spring);
+}
+.mp-share.on .mp-switch {
+  background: var(--mp-gold);
+}
+.mp-share.on .mp-switch::after {
+  translate: 12px;
+}
+.mp-stack {
+  display: flex;
+}
+.mp-av {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-left: -6px;
+  border-radius: 50%;
+  font-size: 11px;
+  background: #3a2519;
+  border: 2px solid var(--mp-bg);
+  animation: m-pop 0.4s var(--ease-spring) backwards;
+}
+.mp-av:first-child {
+  margin-left: 0;
+}
+.mp-chipbtn {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: var(--mp-soft);
+  transition:
+    scale 0.25s var(--ease-spring),
+    background-color 0.2s;
+}
+.mp-chipbtn:hover:not(:disabled) {
+  scale: 1.06;
+}
+.mp-chipbtn.gold {
+  background: var(--color-butter);
+  color: #1c120d;
+}
+
+/* ---- Feuille : playlist et recherche ---- */
+.mp-sheet-in {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--mp-line);
+  animation: mp-blurin 0.4s var(--ease-out);
+}
+.mp-tabs {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  margin-top: 10px;
+  padding: 3px;
+  border-radius: 11px;
+  background: var(--mp-soft);
+}
+.mp-tabs button {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  padding: 6px 0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mp-muted);
+  transition: color 0.25s;
+}
+.mp-tabs button[aria-selected='true'] {
+  color: var(--mp-ink);
+}
+.mp-tab-ind {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  border-radius: 8px;
+  background: rgb(242 230 179 / 0.12);
+  transition:
+    left 0.4s var(--ease-spring),
+    width 0.4s var(--ease-spring);
+}
+.mp-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  margin-left: 5px;
+  padding: 0 4px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  background: var(--mp-gold);
+  color: #1c120d;
+}
+.mp-badge.bump {
+  animation: mp-bump 0.5s var(--ease-spring) 0.5s;
+}
+@keyframes mp-bump {
+  40% {
+    transform: scale(1.5);
+  }
+}
+.mp-sheet-body {
+  max-height: min(260px, 42vh);
+  overflow: hidden auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--mp-line) transparent;
+  margin: 0 -4px;
+  padding: 0 4px 2px;
+}
+
+/* Vide */
+.mp-empty {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 6px 0 4px;
+  text-align: center;
+}
+.mp-empty b {
+  font-size: 13.5px;
+}
+.mp-empty p {
+  margin: 0;
+  max-width: 30ch;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--mp-muted);
+}
+.mp-empty-disc {
+  display: none;
+}
+.mp-cta {
+  margin-top: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  background: var(--color-butter);
+  color: #1c120d;
+  transition: scale 0.25s var(--ease-spring);
+}
+.mp-cta:hover {
+  scale: 1.05;
+}
+
+/* Chercher */
+.mp-search {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 3px 0 10px;
+  border-radius: 12px;
+  background: #2a1b13;
+  box-shadow:
+    0 -10px 0 var(--mp-bg),
+    inset 0 0 0 1px var(--mp-line);
+  transition: box-shadow 0.25s;
+}
+.mp-search:focus-within {
+  box-shadow:
+    0 -10px 0 var(--mp-bg),
+    inset 0 0 0 1px var(--mp-gold),
+    0 0 0 3px color-mix(in srgb, var(--mp-gold) 20%, transparent);
+}
+.mp-search > svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--mp-muted);
+}
+.mp-search input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 0;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  color: var(--mp-ink);
+  outline: none;
+}
+.mp-search input::placeholder {
+  color: var(--mp-muted);
+}
+.mp-go {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--color-butter);
+  color: #1c120d;
+  transition:
+    opacity 0.2s,
+    scale 0.25s var(--ease-spring);
+}
+.mp-go:disabled {
+  opacity: 0.2;
+}
+.mp-go:not(:disabled):hover {
+  scale: 1.08;
+}
+.mp-go svg {
+  width: 14px;
+  height: 14px;
+}
+.mp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+.mp-chips button {
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  background: var(--mp-soft);
+  animation: mp-blurin 0.35s var(--ease-out) backwards;
+  transition:
+    background-color 0.2s,
+    translate 0.25s var(--ease-spring);
+}
+.mp-chips button:nth-child(2) {
+  animation-delay: 40ms;
+}
+.mp-chips button:nth-child(3) {
+  animation-delay: 80ms;
+}
+.mp-chips button:nth-child(4) {
+  animation-delay: 120ms;
+}
+.mp-chips button:nth-child(5) {
+  animation-delay: 160ms;
+}
+.mp-chips button:hover {
+  background: var(--mp-line);
+  translate: 0 -2px;
+}
+.mp-hint {
+  margin: 8px 0 2px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--mp-muted);
+}
+.mp-hint.warn {
+  color: var(--mp-gold);
+  animation: m-wiggle 0.4s;
+}
+.mp-list {
+  display: grid;
+  gap: 1px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.mp-skel {
+  height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--mp-soft) 0 40%, var(--mp-line) 50%, var(--mp-soft) 60%) 0 0 / 300% 100%;
+  animation: mp-shimmer 1.1s linear infinite;
+}
+@keyframes mp-shimmer {
+  to {
+    background-position: -150% 0;
+  }
+}
+.mp-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 10px;
+  transition: background-color 0.2s;
+  animation: mp-blurin 0.4s var(--ease-out) backwards;
+}
+.mp-row:hover {
+  background: var(--mp-soft);
+}
+.mp-row.cur .mp-row-m b {
+  color: var(--mp-gold);
+}
+.mp-row.out {
+  animation: mp-out 0.28s var(--ease-out) forwards;
+}
+@keyframes mp-out {
+  to {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translateX(24px);
+  }
+}
+.mp-row-play {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  flex: 1;
+  text-align: left;
+}
+.mp-th-wrap {
+  position: relative;
+  flex: none;
+}
+.mp-th {
+  display: block;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--mp-soft);
+}
+.mp-th-eq {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: rgb(28 18 13 / 0.6);
+}
+.mp-row-m {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+}
+.mp-row-m b {
+  font-size: 12.5px;
+  font-weight: 600;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.mp-row-m span {
+  font-size: 11px;
+  color: var(--mp-muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.mp-dur {
+  font-size: 11px;
+  color: var(--mp-muted);
+  font-variant-numeric: tabular-nums;
+}
+.mp-row-act {
+  width: 26px;
+  height: 26px;
+  opacity: 0;
+}
+.mp-row-act svg {
+  width: 13px;
+  height: 13px;
+}
+.mp-row-act.mp-gone {
+  visibility: hidden;
+}
+.mp-row:hover .mp-row-act,
+.mp-row-act:focus-visible {
+  opacity: 1;
+}
+@media (hover: none) {
+  .mp-row-act {
+    opacity: 0.6;
+  }
+}
+.mp-add {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--mp-soft);
+  transition:
+    rotate 0.45s var(--ease-spring),
+    background-color 0.25s,
+    color 0.25s;
+}
+.mp-add svg {
+  width: 13px;
+  height: 13px;
+}
+.mp-add:hover:not(:disabled) {
+  background: var(--mp-line);
+  color: var(--mp-gold);
+}
+.mp-add.done {
+  rotate: 360deg;
+  background: var(--mp-gold);
+  color: #1c120d;
+}
+.mp-fly {
+  position: fixed;
+  z-index: 70;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-gold);
+  box-shadow: 0 0 14px var(--color-gold);
+  pointer-events: none;
+}
+.mp-plcard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--mp-soft);
+  font-size: 12.5px;
+  animation: mp-blurin 0.4s var(--ease-out);
+}
+.mp-invite-txt {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+}
+.mp-invite-txt small {
+  font-size: 11px;
+  color: var(--mp-muted);
+}
+.mp-mini-btn {
+  flex: none;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: var(--color-butter);
+  color: #1c120d;
+  transition: scale 0.25s var(--ease-spring);
+}
+.mp-mini-btn:hover:not(:disabled) {
+  scale: 1.05;
+}
+.mp-mini-btn.done {
+  background: var(--mp-gold);
+  animation: m-pop 0.35s var(--ease-spring);
+}
+.mp-plstack {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 34px;
+}
+.mp-plstack img {
+  position: absolute;
+  top: 0;
+  left: calc(var(--i) * 5px);
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+  object-fit: cover;
+  border: 2px solid var(--mp-bg);
+  rotate: calc((var(--i) - 1) * 6deg);
+}
+.mp-qhead {
+  display: flex;
+  justify-content: flex-end;
+  font-size: 11.5px;
+  color: var(--mp-muted);
+}
+.mp-qhead b {
+  display: none;
+}
+.mp-clear {
+  margin: 6px 0 2px 4px;
+  font-size: 11.5px;
+  color: var(--mp-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.mp-clear:hover {
+  color: #f87171;
+}
+
+/* Message passager, au-dessus de l'île */
+.mp-notice {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  width: max-content;
+  max-width: min(300px, calc(100vw - 32px));
+  padding: 8px 13px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--mp-bg);
+  color: var(--mp-ink);
+  box-shadow:
+    0 12px 30px -14px rgb(28 18 13 / 0.7),
+    inset 0 0 0 1px var(--mp-line);
+  animation:
+    mp-blurin 0.4s var(--ease-out),
+    m-fade 0.4s ease-in 3.8s reverse forwards;
+}
+
+/* Dans un salon sur grand écran, l'île passe à gauche : le chat et sa saisie restent libres. */
+@media (min-width: 1024px) {
+  .mp-salon {
+    right: auto;
+    left: calc(16px + env(safe-area-inset-left, 0px));
+    transform-origin: bottom left;
+  }
+  .mp-salon .mp-notice {
+    right: auto;
+    left: 0;
+  }
+  body:has(.mp-salon) .snd-toasts {
+    bottom: 76px;
+  }
+  body:has(.mp-salon.mp-open) .snd-toasts {
+    left: 344px;
+  }
+}
+/* Sur téléphone, la capsule se réduit au disque et au bouton. */
+@media (max-width: 640px) {
+  .mp-mini {
+    width: auto;
+  }
+  .mp-mini .mp-pill-t {
+    display: none;
+  }
+  .mp-mini .mp-pill-open {
+    flex: none;
+  }
+}

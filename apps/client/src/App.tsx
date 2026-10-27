@@ -3,6 +3,7 @@ import { Home, codeFromUrl } from './components/Home';
 import { Hub } from './components/Hub';
 import { Game } from './components/Game';
 import { MotDuJour } from './components/mot/MotDuJour';
+import { MusicPlayer } from './components/MusicPlayer';
 import { SoundToasts } from './components/SoundBoard';
 import { saveChosenGame, type GameId } from './lib/games';
 import { useGame } from './lib/store';
@@ -19,6 +20,8 @@ export function App() {
       <div key={page} className="page-in h-full">
         <Page online={online} screen={screen} setScreen={setScreen} />
       </div>
+      {/* Hors de la page : la musique continue quand on change d'écran. */}
+      <MusicPlayer />
     </>
   );
 }
