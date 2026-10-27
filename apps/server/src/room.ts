@@ -14,6 +14,7 @@ import {
   checkGuess,
   decodeDraw,
   isCerveauMode,
+  isAovLevel,
   isDifficulty,
   isGameMode,
   isPhotoDataUrl,
@@ -22,6 +23,8 @@ import {
   maskWord,
   parseMeetUrl,
   normalize,
+  type AovHeat,
+  type AovKind,
   type ChatLine,
   type ClientMsg,
   type Difficulty,
@@ -45,7 +48,7 @@ import { Cerveau } from './cerveau';
 import { Connait } from './connait';
 import { Flash } from './flash';
 import { Fredonne } from './fredonne';
-import type { PairGenerator, WordGenerator } from './deepseek';
+import type { DareGenerator, PairGenerator, WordGenerator } from './deepseek';
 import { Interdits } from './interdits';
 import { Intrus } from './intrus';
 import { MotAMot } from './motamot';
@@ -56,6 +59,7 @@ import { Pitch } from './pitch';
 import { Sourire } from './sourire';
 import { BrasDeFer } from './brasdefer';
 import { Telephone } from './telephone';
+import { ActionVerite } from './verite';
 import { Wavelength } from './wavelength';
 import { MIME_FR, WORDS_FR } from './words';
 
@@ -135,6 +139,15 @@ export class Room {
   private alibi: Alibi | null = null;
   private pitch: Pitch | null = null;
   private cerveau: Cerveau | null = null;
+  private aov: ActionVerite | null = null;
+  // Cartes d'Action ou vérité inventées par l'IA, par niveau ; chacune ne sert qu'une fois.
+  private dares: Record<AovHeat, Record<AovKind, string[]>> = {
+    lite: { action: [], verite: [] },
+    complice: { action: [], verite: [] },
+    spicy: { action: [], verite: [] },
+  };
+  private daring = new Set<AovHeat>();
+  private daresSeen: string[] = [];
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -163,6 +176,7 @@ export class Room {
     private readonly iceServers: (playerId: string) => IceServer[] = () => [],
     private readonly generateWords: WordGenerator | null = null,
     private readonly generatePairs: PairGenerator | null = null,
+    private readonly generateDares: DareGenerator | null = null,
   ) {
     this.code = code;
   }
@@ -202,6 +216,7 @@ export class Room {
     if (this.players.size >= 2) {
       this.refillWords();
       this.refillPairs();
+      this.refillDares();
     }
     return id;
   }
@@ -224,7 +239,7 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.bras || this.flash || this.cadavre || this.interdits || this.mot || this.agents || this.fred || this.alibi || this.pitch || this.cerveau) {
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.bras || this.flash || this.cadavre || this.interdits || this.mot || this.agents || this.fred || this.alibi || this.pitch || this.cerveau || this.aov) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
       this.intrus?.onLeave(id);
@@ -243,6 +258,7 @@ export class Room {
       this.alibi?.onLeave(id);
       this.pitch?.onLeave(id);
       this.cerveau?.onLeave(id);
+      this.aov?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -264,7 +280,10 @@ export class Room {
         if (id === this.hostId && this.phase === 'lobby') {
           this.settings = mergeSettings(this.settings, msg.settings);
           this.broadcastState();
-          if (this.players.size >= 2) this.refillWords();
+          if (this.players.size >= 2) {
+            this.refillWords();
+            this.refillDares();
+          }
         }
         break;
       case 'start':
@@ -299,6 +318,9 @@ export class Room {
         break;
       case 'sourire':
         if (msg && typeof msg === 'object') this.sourire?.handle(id, msg);
+        break;
+      case 'aov':
+        if (msg && typeof msg === 'object') this.aov?.handle(id, msg);
         break;
       case 'mimeShot':
         this.mimeShot(id, msg.finder, msg.image);
@@ -453,6 +475,7 @@ export class Room {
     if (this.game === 'alibi') return this.startAlibi();
     if (this.game === 'pitch') return this.startPitch();
     if (this.game === 'cerveau') return this.startCerveau();
+    if (this.game === 'verite') return this.startAov();
     this.usedWords.clear();
     this.shotCount = 0;
     this.nextRound();
@@ -1113,6 +1136,58 @@ export class Room {
     this.cerveau.start();
   }
 
+  private startAov(): void {
+    this.aov?.dispose();
+    this.aov = new ActionVerite({
+      playerIds: () => [...this.players.keys()],
+      player: (id) => this.players.get(id),
+      hostId: () => this.hostId,
+      rounds: () => this.settings.rounds,
+      level: () => this.settings.aovLevel,
+      dareTime: () => this.settings.drawTime,
+      random: this.random,
+      aiCard: (heat, kind) => {
+        const card = this.dares[heat][kind].shift() ?? null;
+        this.refillDares();
+        return card;
+      },
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      system: (text) => this.system(text),
+      endGame: () => this.endGame(),
+    });
+    this.aov.start();
+  }
+
+  /** Commande des cartes à l'IA pour chaque niveau que le réglage peut tirer, quand le stock baisse. */
+  private refillDares(): void {
+    if (this.game !== 'verite' || !this.generateDares) return;
+    const level = this.settings.aovLevel;
+    const heats: AovHeat[] = level === 'crescendo' ? ['lite', 'complice', 'spicy'] : [level];
+    for (const heat of heats) {
+      const stock = this.dares[heat];
+      if (this.daring.has(heat) || Math.min(stock.action.length, stock.verite.length) >= 3) continue;
+      this.daring.add(heat);
+      this.generateDares(heat, 8, [...stock.action, ...stock.verite, ...this.daresSeen].slice(-AVOID_MAX))
+        .then((cards) => {
+          for (const kind of ['action', 'verite'] as const) {
+            stock[kind] = [...stock[kind], ...cards[kind]];
+            this.daresSeen = [...this.daresSeen, ...cards[kind]].slice(-AVOID_MAX);
+          }
+        })
+        .catch(() => {}) // les cartes écrites à la main prennent le relais
+        .finally(() => this.daring.delete(heat));
+    }
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -1167,6 +1242,8 @@ export class Room {
     this.pitch = null;
     this.cerveau?.dispose();
     this.cerveau = null;
+    this.aov?.dispose();
+    this.aov = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -1296,6 +1373,7 @@ export class Room {
       alibi: this.alibi?.stateFor(id) ?? null,
       pitch: this.pitch?.stateFor() ?? null,
       cerveau: this.cerveau?.stateFor(id) ?? null,
+      aov: this.aov?.state() ?? null,
     };
   }
 
@@ -1349,6 +1427,7 @@ export class Room {
     this.alibi?.dispose();
     this.pitch?.dispose();
     this.cerveau?.dispose();
+    this.aov?.dispose();
   }
 }
 
@@ -1375,5 +1454,6 @@ function mergeSettings(cur: RoomSettings, patch: Partial<RoomSettings>): RoomSet
   if (isTrapMode(patch.traps)) next.traps = patch.traps;
   if (typeof patch.twists === 'boolean') next.twists = patch.twists;
   if (isCerveauMode(patch.cerveau)) next.cerveau = patch.cerveau;
+  if (isAovLevel(patch.aovLevel)) next.aovLevel = patch.aovLevel;
   return next;
 }

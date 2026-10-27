@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash' | 'cadavre' | 'interdits' | 'motamot' | 'agents' | 'fredonne' | 'alibi' | 'pitch' | 'cerveau';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash' | 'cadavre' | 'interdits' | 'motamot' | 'agents' | 'fredonne' | 'alibi' | 'pitch' | 'cerveau' | 'verite';
 
 export interface GameInfo {
   id: GameId;
@@ -180,6 +180,14 @@ export const GAMES: GameInfo[] = [
     players: 'À deux ou plus · micro',
     badge: 'À deux',
     keywords: ['cerveau', 'coupe', 'split', 'brain', 'dessin', 'dessiner', 'cooperatif', 'coop', 'duo', 'deux', 'couple', 'guide', 'voix', 'micro', 'moitie', 'droites', 'courbes'],
+  },
+  {
+    id: 'verite',
+    name: 'Action ou vérité',
+    pitch: 'La bouteille tourne : Lite, Complice ou Spicy ?',
+    players: 'À deux ou plus · visio',
+    badge: 'Nouveau',
+    keywords: ['action', 'verite', 'action ou verite', 'bouteille', 'defi', 'couple', 'duo', 'deux', 'spicy', 'complice', 'visio', 'soiree'],
   },
 ];
 

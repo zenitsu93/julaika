@@ -6,6 +6,7 @@ import { CerveauModes } from './cerveau/CerveauModes';
 import { useGame } from '../lib/store';
 import { bump, Ticker, useIndicator } from '../motion';
 import { Planche } from './mime/Planche';
+import { AovLevelPicker } from './verite/AovBoard';
 
 const FIELDS: { key: keyof typeof SETTINGS_LIMITS; label: string; step?: number; max?: number }[] = [
   { key: 'rounds', label: 'Manches' },
@@ -141,6 +142,13 @@ const CERVEAU_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
+// Action ou vérité : chacun est désigné `rounds` fois, le temps est celui du défi.
+const AOV_FIELDS: typeof FIELDS = [
+  { key: 'rounds', label: 'Tours par joueur' },
+  { key: 'drawTime', label: 'Temps par défi (s)', step: 10 },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
 const RULES: Partial<Record<RoomGame, string[]>> = {
   wavelength: [
     'Le télépathe voit où se cache la cible entre deux extrêmes, et donne un indice.',
@@ -247,6 +255,12 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
     'Moitié chacun : chacun ne voit que sa moitié du modèle et dessine de son côté. Droites contre courbes : l’un n’a que la règle, l’autre que la main levée.',
     'Le modèle se pose sur le dessin : plus ça se ressemble, plus votre complicité grimpe. Les rôles tournent à chaque dessin.',
   ],
+
+  verite: [
+    'La bouteille tourne et désigne un joueur : Action ou Vérité ?',
+    'Il relève la carte devant sa caméra. Deux jokers « je passe » par partie pour changer de carte.',
+    'Les autres jugent : « Validé » rapporte des points, « Dégonflé »… rien du tout.',
+  ],
 };
 
 export function Lobby() {
@@ -314,8 +328,9 @@ export function Lobby() {
         )}
       </div>
       )}
+      {room.game === 'verite' && <AovLevelPicker isHost={isHost} />}
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'brasdefer' ? BRAS_FIELDS : room.game === 'flash' ? FLASH_FIELDS : room.game === 'cadavre' ? CAD_FIELDS : room.game === 'interdits' ? INTERDITS_FIELDS : room.game === 'motamot' ? STORY_FIELDS : room.game === 'agents' ? AGENTS_FIELDS : room.game === 'fredonne' ? FRED_FIELDS : room.game === 'alibi' ? ALIBI_FIELDS : room.game === 'pitch' ? PITCH_FIELDS : room.game === 'cerveau' ? CERVEAU_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'brasdefer' ? BRAS_FIELDS : room.game === 'flash' ? FLASH_FIELDS : room.game === 'cadavre' ? CAD_FIELDS : room.game === 'interdits' ? INTERDITS_FIELDS : room.game === 'motamot' ? STORY_FIELDS : room.game === 'agents' ? AGENTS_FIELDS : room.game === 'fredonne' ? FRED_FIELDS : room.game === 'alibi' ? ALIBI_FIELDS : room.game === 'pitch' ? PITCH_FIELDS : room.game === 'cerveau' ? CERVEAU_FIELDS : room.game === 'verite' ? AOV_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
           const label = key === 'drawTime' && !rules && room.settings.mode !== 'dessin' ? 'Temps par tour (s)' : base;
           const [min, limit] = SETTINGS_LIMITS[key];
           const max = cap ?? limit;

@@ -60,7 +60,7 @@ export function TopBar() {
   const room = useGame((s) => s.room!);
   const left = useCountdown(room.endsAt);
   const [copied, setCopied] = useState(false);
-  const urgent = (room.phase === 'drawing' || room.phase === 'guess' || room.phase === 'draw' || room.phase === 'write' || room.phase === 'describe' || room.phase === 'clue' || room.phase === 'vote' || room.phase === 'steal' || room.phase === 'fill' || room.phase === 'answer' || room.phase === 'duel') && left <= 10;
+  const urgent = (room.phase === 'drawing' || room.phase === 'guess' || room.phase === 'draw' || room.phase === 'write' || room.phase === 'describe' || room.phase === 'clue' || room.phase === 'vote' || room.phase === 'steal' || room.phase === 'fill' || room.phase === 'answer' || room.phase === 'duel' || room.phase === 'pick' || room.phase === 'dare') && left <= 10;
   const timer = useRef<HTMLSpanElement>(null);
 
   // Sous 10 s, la pastille bat doucement à chaque seconde.
@@ -100,6 +100,8 @@ export function TopBar() {
               : `Histoire ${room.motamot.story}/${room.motamot.stories}`
           : room.pitch
             ? `Pitch ${room.pitch.turn + 1}/${room.pitch.turns}`
+          : room.aov
+            ? `Tour ${room.aov.turn}/${room.aov.turns}`
           : room.sourire
             ? `Duel ${room.sourire.turn + 1}/${room.sourire.turns}`
           : room.bras

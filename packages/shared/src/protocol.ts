@@ -19,6 +19,7 @@ import type { BacState } from './petitbac';
 import type { PhotoShot, PhotoState } from './photomaton';
 import type { PitchState } from './pitch';
 import type { TelChain, TelEntry, TelState } from './telephone';
+import type { AovKind, AovLevel, AovState } from './verite';
 import type { SoundId, SourireState, WarpId } from './sourire';
 import type { WaveState } from './wavelength';
 
@@ -34,7 +35,7 @@ export const PALETTE = [
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 /** Jeux proposés : chaque salon en porte un, choisi à sa création. */
-export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre', 'interdits', 'motamot', 'agents', 'fredonne', 'alibi', 'pitch', 'cerveau'] as const;
+export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre', 'interdits', 'motamot', 'agents', 'fredonne', 'alibi', 'pitch', 'cerveau', 'verite'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
@@ -54,6 +55,7 @@ export function isRoomGame(v: unknown): v is RoomGame {
  * Agents secrets : clue (l'espion donne son indice) → guess (on retourne les cartes) → reveal. Fredonne ! : pick (le chanteur choisit) → hum → reveal.
  * L'Alibi : plot (les complices se concertent) → trial (les pièces tombent) → vote (le jury) → verdict.
  * Pitch saboté : brief (le produit) → pitch → vote (les offres) → verdict. Cerveau coupé : draw → reveal → … → album.
+ * Action ou vérité : spin (la bouteille) → pick (action ou vérité) → dare (la carte) → verdict.
  */
 export type Phase =
   | 'lobby'
@@ -84,6 +86,9 @@ export type Phase =
   | 'trial'
   | 'brief'
   | 'pitch'
+  | 'spin'
+  | 'pick'
+  | 'dare'
   | 'gameEnd';
 
 /** Difficulté des mots proposés : sert au tirage dans les listes intégrées et à la génération par IA. */
@@ -145,6 +150,8 @@ export interface RoomSettings {
   twists: boolean;
   /** Cerveau coupé : guide à la voix, moitié chacun, droites contre courbes, ou les trois. */
   cerveau: CerveauMode;
+  /** Action ou vérité : niveau des cartes. */
+  aovLevel: AovLevel;
 }
 
 export const DEFAULT_SETTINGS: RoomSettings = {
@@ -160,6 +167,7 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   traps: 'jamais',
   twists: true,
   cerveau: 'mixte',
+  aovLevel: 'lite',
 };
 
 export const SETTINGS_LIMITS = {
@@ -254,6 +262,8 @@ export interface RoomState {
   pitch: PitchState | null;
   /** État du Cerveau coupé vu par ce joueur (modèle caché à l'artiste guidé), null sinon. */
   cerveau: CerveauState | null;
+  /** État d'Action ou vérité, null pour les autres jeux. */
+  aov: AovState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -357,6 +367,10 @@ export type ClientMsg =
   | { t: 'pitch'; reroll: true }
   | { t: 'cerveau'; done: boolean }
   | { t: 'cerveau'; next: true }
+  | { t: 'aov'; spin: true }
+  | { t: 'aov'; choose: AovKind }
+  | { t: 'aov'; pass: true }
+  | { t: 'aov'; vote: boolean }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =

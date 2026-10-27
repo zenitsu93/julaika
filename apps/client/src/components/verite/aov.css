@@ -1,0 +1,322 @@
+/* Action ou vérité : bouteille, cartes Action (or) et Vérité (cacao), chaleur des niveaux.
+   Préfixe « aov- » pour ne rien croiser. */
+
+/* Indicateur du niveau Spicy / Crescendo : un dégradé qui chauffe. */
+.aov-hot {
+  background: linear-gradient(100deg, #b45309, #be123c 60%, #9d174d);
+  background-size: 200% 100%;
+  animation: aov-heat-flow 3s ease-in-out infinite alternate;
+}
+@keyframes aov-heat-flow {
+  to {
+    background-position: 100% 0;
+  }
+}
+@keyframes aov-jump {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  40% {
+    transform: translateY(-5px) scale(1.25) rotate(-8deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+.aov-jump {
+  animation: aov-jump 0.45s var(--ease-out);
+}
+
+/* Jokers : deux petites cartes ; celle qu'on a jouée se retourne et pâlit. */
+.aov-joker {
+  display: inline-block;
+  width: 7px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--color-gold);
+  transition:
+    transform 0.4s var(--ease-out),
+    opacity 0.4s;
+}
+.aov-joker-used {
+  transform: rotateY(180deg) scale(0.8);
+  opacity: 0.25;
+}
+
+/* Pastilles de progression : la teinte du niveau du tour réussi. */
+.aov-dot-lite {
+  background: var(--color-gold);
+}
+.aov-dot-complice {
+  background: #db2777;
+}
+.aov-dot-spicy {
+  background: #dc2626;
+}
+
+/* Badge du niveau du tour. */
+.aov-badge-lite {
+  background: color-mix(in srgb, var(--color-gold) 25%, transparent);
+  color: var(--color-ink);
+}
+.aov-badge-complice {
+  background: color-mix(in srgb, #db2777 18%, transparent);
+  color: #be185d;
+}
+.aov-badge-spicy {
+  background: linear-gradient(100deg, #b45309, #be123c);
+  color: #fff;
+  box-shadow: 0 0 18px -4px #be123c;
+}
+
+/* La table : un tapis de feutre chocolat, avec un rayon de lumière qui tourne doucement. */
+@property --aov-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes aov-turn {
+  to {
+    --aov-angle: 360deg;
+  }
+}
+.aov-table {
+  background:
+    conic-gradient(from var(--aov-angle), transparent 0 70%, color-mix(in srgb, var(--color-gold) 22%, transparent) 85%, transparent),
+    radial-gradient(circle, color-mix(in srgb, var(--color-cacao-2) 22%, transparent), color-mix(in srgb, var(--color-cacao) 10%, transparent) 70%);
+  box-shadow: inset 0 0 0 1px var(--color-edge);
+  animation: aov-turn 9s linear infinite;
+}
+
+/* En attente du lancer : la bouteille frémit, comme poussée du doigt. */
+@keyframes aov-wobble {
+  0%,
+  100% {
+    rotate: -4deg;
+  }
+  50% {
+    rotate: 4deg;
+  }
+}
+.aov-wobble {
+  animation: aov-wobble 1.6s ease-in-out infinite;
+}
+.aov-idle {
+  animation: aov-idle 6s cubic-bezier(0.5, 0, 0.3, 1) infinite;
+}
+@keyframes aov-idle {
+  0% {
+    transform: rotate(0);
+  }
+  60%,
+  100% {
+    transform: rotate(1080deg);
+  }
+}
+
+/* La place désignée : un anneau doré qui pulse. */
+@keyframes aov-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-gold) 75%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 16px transparent;
+  }
+}
+.aov-chosen {
+  outline: 3px solid var(--color-gold);
+  animation: aov-ring 1.1s ease-out infinite;
+}
+
+/* Les deux cartes du choix. */
+.aov-action {
+  background:
+    radial-gradient(14rem circle at var(--ax, 50%) var(--ay, 30%), rgb(255 255 255 / 0.45), transparent 60%),
+    linear-gradient(160deg, #f2d27a, var(--color-gold) 55%, #b07d2c);
+  color: #2a1a12;
+}
+.aov-verite {
+  background:
+    radial-gradient(14rem circle at var(--ax, 50%) var(--ay, 30%), rgb(242 230 179 / 0.18), transparent 60%),
+    linear-gradient(160deg, #7a4e36, #4b2e21 60%, #2a1a12);
+  color: #f2e6b3;
+}
+.aov-choice {
+  box-shadow: 0 18px 40px -22px rgb(42 26 18 / 0.7);
+  transition:
+    transform 0.25s var(--ease-out),
+    box-shadow 0.25s;
+  will-change: transform;
+}
+.aov-choice:enabled:hover {
+  box-shadow: 0 26px 50px -20px rgb(42 26 18 / 0.75);
+}
+.aov-choice:enabled:hover .aov-choice-icon {
+  animation: aov-jump 0.5s var(--ease-out);
+}
+/* Chez les autres : les deux cartes se balancent, l'une après l'autre, comme un doigt qui hésite. */
+@keyframes aov-hesitate {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-8px) rotate(-1.5deg);
+  }
+  50% {
+    transform: translateY(0);
+  }
+}
+.aov-waiting {
+  animation:
+    m-rise 0.26s var(--ease-out) backwards,
+    aov-hesitate 2.4s ease-in-out 0.5s infinite;
+}
+.aov-waiting:nth-child(2) {
+  animation-delay: 0s, 1.7s;
+}
+
+/* La carte du défi : elle arrive de dos et se retourne. */
+@keyframes aov-flip {
+  0% {
+    transform: perspective(900px) translateY(30px) rotateY(180deg) scale(0.85);
+    opacity: 0;
+  }
+  45% {
+    opacity: 1;
+  }
+  100% {
+    transform: perspective(900px) rotateY(0) scale(1);
+  }
+}
+.aov-card {
+  box-shadow: 0 24px 60px -28px rgb(42 26 18 / 0.75);
+  animation: aov-flip 0.8s cubic-bezier(0.2, 0.9, 0.25, 1.15) backwards;
+}
+/* Spicy : une lueur rouge qui chauffe autour de la carte. */
+@keyframes aov-glow {
+  from {
+    box-shadow:
+      0 0 0 2px #be123c,
+      0 0 26px -8px #be123c;
+  }
+  to {
+    box-shadow:
+      0 0 0 2px #f59e0b,
+      0 0 46px -4px #be123c;
+  }
+}
+.aov-card.aov-heat-spicy {
+  animation:
+    aov-flip 0.8s cubic-bezier(0.2, 0.9, 0.25, 1.15) backwards,
+    aov-glow 1.6s ease-in-out 0.8s infinite alternate;
+}
+.aov-heat-complice::after {
+  content: '♥';
+  position: absolute;
+  right: 1rem;
+  bottom: 0.6rem;
+  font-size: 1.4rem;
+  opacity: 0.35;
+  animation: aov-beat 1.2s ease-in-out infinite;
+}
+@keyframes aov-beat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.3);
+  }
+}
+.aov-ai {
+  background: rgb(255 255 255 / 0.2);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.35);
+}
+
+/* Le tampon du verdict, qui claque sur la carte. */
+@keyframes aov-stamp {
+  0% {
+    transform: translate(-50%, -50%) scale(2.4) rotate(-14deg);
+    opacity: 0;
+  }
+  60% {
+    transform: translate(-50%, -50%) scale(0.92) rotate(-8deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1) rotate(-9deg);
+  }
+}
+.aov-stamp {
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  transform: translate(-50%, -50%) rotate(-9deg);
+  white-space: nowrap;
+  animation: aov-stamp 0.5s var(--ease-out) backwards;
+}
+
+@keyframes aov-deplete {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+.aov-deplete {
+  transform-origin: left;
+  animation: aov-deplete linear forwards;
+}
+
+/* Carte de l'accueil : la bouteille tourne, ralentit, et désigne une carte qui se soulève. */
+@keyframes aov-art-spin {
+  0% {
+    transform: rotate(0);
+  }
+  45%,
+  60% {
+    transform: rotate(1170deg);
+  }
+  100% {
+    transform: rotate(1440deg);
+  }
+}
+.aov-art-bottle {
+  transform-box: view-box;
+  transform-origin: 110px 70px;
+  animation: aov-art-spin 5s cubic-bezier(0.3, 0, 0.2, 1) infinite;
+}
+@keyframes aov-art-pick {
+  0%,
+  42%,
+  64%,
+  100% {
+    transform: none;
+  }
+  48%,
+  58% {
+    transform: translateY(-8px) rotate(4deg);
+  }
+}
+.aov-art-right {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: aov-art-pick 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aov-hot,
+  .aov-table,
+  .aov-wobble,
+  .aov-idle,
+  .aov-chosen,
+  .aov-waiting,
+  .aov-card,
+  .aov-card.aov-heat-spicy,
+  .aov-heat-complice::after,
+  .aov-stamp,
+  .aov-art-bottle,
+  .aov-art-right {
+    animation: none;
+  }
+}
