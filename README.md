@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/brand/cover.png" alt="julaika : dessine, devine, marque des points" width="100%" />
+  <img src="docs/brand/cover.png" alt="julaïka : dessine, devine, marque des points" width="100%" />
 </p>
 
 <p align="center">
@@ -108,6 +108,8 @@ VPS neuf sans autre site : `DOMAIN=jeu.exemple.com docker compose -f docker-comp
 (Caddy inclus, HTTPS automatique). Avec nginx à la place : `deploy/nginx.conf`.
 
 ## Identité
+
+Le nom s'écrit **julaïka**, avec un i tréma. Sans accent (`julaika`), il reste réservé au code, aux paquets, aux clés et au domaine.
 
 Le logo « crayon-J » : un crayon forme la barre du J, et le trait qu'il vient de tracer en dessine la boucle.
 Les fichiers sont dans [`docs/brand`](docs/brand) : `logo.svg` (fond clair), `logo-dark.svg` (fond sombre),

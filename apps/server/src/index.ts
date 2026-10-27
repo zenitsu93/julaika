@@ -150,4 +150,4 @@ function toBytes(data: unknown): Uint8Array {
   return new Uint8Array(0);
 }
 
-http.listen(PORT, () => console.log(`julaika : http://localhost:${PORT}`));
+http.listen(PORT, () => console.log(`julaïka : http://localhost:${PORT}`));

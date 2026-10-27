@@ -36,7 +36,7 @@ export function Home() {
         <div className="mb-6 flex items-center gap-3">
           <LogoMark className="h-12 w-auto" />
           <div>
-            <h1 className="text-3xl font-semibold leading-tight tracking-[-0.055em]">julaika</h1>
+            <h1 className="text-3xl font-semibold leading-tight tracking-[-0.04em]">julaïka</h1>
             <p className="text-sm text-muted">Dessine, devine, marque des points.</p>
           </div>
         </div>
