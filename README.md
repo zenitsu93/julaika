@@ -47,3 +47,17 @@ lettre près affiche « tu chauffes ». Ceux qui ont trouvé discutent entre eux
 
 Concept « Néon Arcade ». Les couleurs sont des variables dans `apps/client/src/index.css` (`@theme`) :
 changer de concept se fait essentiellement là.
+
+## Déployer sur un VPS
+
+Prérequis : un VPS Ubuntu/Debian, un (sous-)domaine dont l'enregistrement A pointe vers son IP.
+
+```bash
+# sur le VPS, en root
+DOMAIN=jeu.exemple.com bash deploy/setup-vps.sh
+```
+
+Le script installe Docker, clone le dépôt dans `/opt/julaika` et lance `docker compose` :
+le conteneur du jeu (client + WebSocket sur un seul port) derrière Caddy, qui gère HTTPS
+(Let's Encrypt) et les WebSockets. Mettre à jour : relancer le même script.
+Si nginx tourne déjà sur le VPS, voir `deploy/nginx.conf`.
