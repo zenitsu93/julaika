@@ -2,6 +2,7 @@ import { ALIBI_MIN_PLAYERS, BOMB_MAX_LIVES, INTRUS_MIN_PLAYERS, SETTINGS_LIMITS,
 import { useEffect, useRef } from 'react';
 import { net } from '../lib/net';
 import { TRAP_INFO, TRAP_MODE_LABELS } from '../lib/traps';
+import { CerveauModes } from './cerveau/CerveauModes';
 import { useGame } from '../lib/store';
 import { bump, Ticker, useIndicator } from '../motion';
 import { Planche } from './mime/Planche';
@@ -133,6 +134,13 @@ const PITCH_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
+// Cerveau coupé : chacun mène le binôme une fois par manche.
+const CERVEAU_FIELDS: typeof FIELDS = [
+  { key: 'rounds', label: 'Manches' },
+  { key: 'drawTime', label: 'Temps par dessin (s)', step: 10 },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
 const RULES: Partial<Record<RoomGame, string[]>> = {
   wavelength: [
     'Le télépathe voit où se cache la cible entre deux extrêmes, et donne un indice.',
@@ -233,6 +241,12 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
     'Pendant ce temps, les investisseurs lui envoient des diapos absurdes en plein écran et des bruitages. Il doit improviser avec !',
     'Puis chacun dit combien il investit, de « Pas un centime » à « Je mets tout ! ». On inverse les rôles.',
   ],
+
+  cerveau: [
+    'À deux, un seul dessin. Guide : l’un voit le modèle et le décrit à voix haute, l’autre dessine sans le voir.',
+    'Moitié chacun : chacun ne voit que sa moitié du modèle et dessine de son côté. Droites contre courbes : l’un n’a que la règle, l’autre que la main levée.',
+    'Le modèle se pose sur le dessin : plus ça se ressemble, plus votre complicité grimpe. Les rôles tournent à chaque dessin.',
+  ],
 };
 
 export function Lobby() {
@@ -301,7 +315,7 @@ export function Lobby() {
       </div>
       )}
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'brasdefer' ? BRAS_FIELDS : room.game === 'flash' ? FLASH_FIELDS : room.game === 'cadavre' ? CAD_FIELDS : room.game === 'interdits' ? INTERDITS_FIELDS : room.game === 'motamot' ? STORY_FIELDS : room.game === 'agents' ? AGENTS_FIELDS : room.game === 'fredonne' ? FRED_FIELDS : room.game === 'alibi' ? ALIBI_FIELDS : room.game === 'pitch' ? PITCH_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'brasdefer' ? BRAS_FIELDS : room.game === 'flash' ? FLASH_FIELDS : room.game === 'cadavre' ? CAD_FIELDS : room.game === 'interdits' ? INTERDITS_FIELDS : room.game === 'motamot' ? STORY_FIELDS : room.game === 'agents' ? AGENTS_FIELDS : room.game === 'fredonne' ? FRED_FIELDS : room.game === 'alibi' ? ALIBI_FIELDS : room.game === 'pitch' ? PITCH_FIELDS : room.game === 'cerveau' ? CERVEAU_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
           const label = key === 'drawTime' && !rules && room.settings.mode !== 'dessin' ? 'Temps par tour (s)' : base;
           const [min, limit] = SETTINGS_LIMITS[key];
           const max = cap ?? limit;
@@ -355,6 +369,7 @@ export function Lobby() {
           </div>
         </div>
       )}
+      {room.game === 'cerveau' && <CerveauModes value={room.settings.cerveau} disabled={!isHost} onChange={(cerveau) => set({ cerveau })} />}
       {rules ? (
         <ol className="mt-4 space-y-1.5 text-sm text-muted">
           {rules.map((rule, i) => (

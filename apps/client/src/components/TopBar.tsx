@@ -112,6 +112,10 @@ export function TopBar() {
             ? `Tour ${room.interdits.turn + 1}/${room.interdits.turns}`
           : room.alibi
             ? `Affaire ${room.alibi.case + 1}/${room.alibi.cases}`
+          : room.cerveau
+            ? room.phase === 'album'
+              ? 'Album'
+              : `Dessin ${room.cerveau.turn + 1}/${room.cerveau.turns}`
             : room.tel
             ? room.phase === 'album'
               ? 'Album'

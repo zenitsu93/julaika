@@ -7,6 +7,7 @@ import type { BombEvent, BombState } from './bombe';
 import type { BrasState } from './brasdefer';
 import type { CadavreState, Creature } from './cadavre';
 import type { DrawPacket } from './draw';
+import type { CerveauMode, CerveauState } from './cerveau';
 import type { ConnaitState } from './connait';
 import type { FlashSketch, FlashState } from './flash';
 import type { InterditsState } from './interdits';
@@ -33,7 +34,7 @@ export const PALETTE = [
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 /** Jeux proposés : chaque salon en porte un, choisi à sa création. */
-export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre', 'interdits', 'motamot', 'agents', 'fredonne', 'alibi', 'pitch'] as const;
+export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre', 'interdits', 'motamot', 'agents', 'fredonne', 'alibi', 'pitch', 'cerveau'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
@@ -52,7 +53,7 @@ export function isRoomGame(v: unknown): v is RoomGame {
  * Mots interdits : faceoff (qui fait deviner) → explain (les cartes défilent) → verdict. Mot à mot : write (un mot chacun) → album (lecture).
  * Agents secrets : clue (l'espion donne son indice) → guess (on retourne les cartes) → reveal. Fredonne ! : pick (le chanteur choisit) → hum → reveal.
  * L'Alibi : plot (les complices se concertent) → trial (les pièces tombent) → vote (le jury) → verdict.
- * Pitch saboté : brief (le produit) → pitch → vote (les offres) → verdict.
+ * Pitch saboté : brief (le produit) → pitch → vote (les offres) → verdict. Cerveau coupé : draw → reveal → … → album.
  */
 export type Phase =
   | 'lobby'
@@ -142,6 +143,8 @@ export interface RoomSettings {
   traps: TrapMode;
   /** Mime : une consigne surprise toutes les 20 s (au ralenti, comme un robot…). */
   twists: boolean;
+  /** Cerveau coupé : guide à la voix, moitié chacun, droites contre courbes, ou les trois. */
+  cerveau: CerveauMode;
 }
 
 export const DEFAULT_SETTINGS: RoomSettings = {
@@ -156,6 +159,7 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   customOnly: false,
   traps: 'jamais',
   twists: true,
+  cerveau: 'mixte',
 };
 
 export const SETTINGS_LIMITS = {
@@ -248,6 +252,8 @@ export interface RoomState {
   alibi: AlibiState | null;
   /** État du Pitch saboté, null pour les autres jeux. */
   pitch: PitchState | null;
+  /** État du Cerveau coupé vu par ce joueur (modèle caché à l'artiste guidé), null sinon. */
+  cerveau: CerveauState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -349,6 +355,8 @@ export type ClientMsg =
   | { t: 'pitch'; rate: number }
   | { t: 'pitch'; done: true }
   | { t: 'pitch'; reroll: true }
+  | { t: 'cerveau'; done: boolean }
+  | { t: 'cerveau'; next: true }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =
@@ -387,5 +395,7 @@ export type ServerMsg =
   | { t: 'creatures'; creatures: Creature[] }
   /** Mot à mot : ce que tape celui dont c'est le tour, lettre à lettre. */
   | { t: 'storyTyping'; by: string; text: string }
+  /** Cerveau coupé : un des deux calques du dessin annulé ou effacé par son dessinateur. */
+  | { t: 'cerveauInk'; layer: number; op: 'undo' | 'clear' }
   | { t: 'pong'; at: number; now: number }
   | { t: 'error'; message: string };

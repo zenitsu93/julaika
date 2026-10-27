@@ -1,5 +1,6 @@
 // Protocole binaire du dessin.
-// En-tête 4 octets : [op, couleur, taille, 0] puis des paires (x, y) en Uint16 little-endian.
+// En-tête 4 octets : [op, couleur, taille, calque] puis des paires (x, y) en Uint16 little-endian.
+// Calque 0 : le tableau commun ; le Cerveau coupé y met 1 ou 2, posé par le serveur au relais.
 // Un trait de 60 points pèse ~244 octets, contre ~1,5 Ko en JSON.
 
 import { CANVAS_H, CANVAS_W } from './protocol';

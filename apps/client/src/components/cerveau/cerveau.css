@@ -1,0 +1,341 @@
+/* Cerveau coupé : deux moitiés qui se cherchent, un modèle qui se dessine, un score qui grimpe. */
+
+/* ---- Carte de l'accueil -------------------------------------------------------- */
+
+/* Chaque crayon trace sa moitié de maison, puis les deux se rejoignent au faîte. */
+@keyframes cv-art-trace {
+  0%,
+  8% {
+    stroke-dashoffset: 1;
+  }
+  55%,
+  86% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 1;
+  }
+}
+.cv-art-left,
+.cv-art-right {
+  stroke-dasharray: 1;
+  animation: cv-art-trace 4.2s cubic-bezier(0.6, 0, 0.2, 1) infinite;
+}
+.cv-art-right {
+  animation-delay: 0.25s;
+}
+@keyframes cv-art-pen-l {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0);
+  }
+  30% {
+    transform: translate(22px, -46px) rotate(-6deg);
+  }
+  55% {
+    transform: translate(40px, -10px) rotate(4deg);
+  }
+}
+@keyframes cv-art-pen-r {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0);
+  }
+  30% {
+    transform: translate(-22px, -46px) rotate(6deg);
+  }
+  55% {
+    transform: translate(-40px, -10px) rotate(-4deg);
+  }
+}
+.cv-art-pen-l {
+  animation: cv-art-pen-l 4.2s var(--ease-out) infinite;
+}
+.cv-art-pen-r {
+  animation: cv-art-pen-r 4.2s var(--ease-out) 0.25s infinite;
+}
+/* L'étincelle du « déclic » quand les deux moitiés se touchent. */
+@keyframes cv-art-spark {
+  0%,
+  48%,
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  58% {
+    transform: scale(1.8);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+}
+.cv-art-spark {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cv-art-spark 4.2s var(--ease-spring) infinite;
+}
+@keyframes cv-art-seam {
+  to {
+    stroke-dashoffset: -22;
+  }
+}
+.cv-art-seam {
+  animation: cv-art-seam 1.6s linear infinite;
+}
+
+/* ---- Salon --------------------------------------------------------------------- */
+
+/* Derrière les réglages, deux hémisphères qui s'approchent et s'éloignent. */
+@keyframes cv-tease-l {
+  50% {
+    transform: translateX(-10px) rotate(-3deg);
+  }
+}
+@keyframes cv-tease-r {
+  50% {
+    transform: translateX(10px) rotate(3deg);
+  }
+}
+.cv-tease-l,
+.cv-tease-r {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.cv-tease-l {
+  animation: cv-tease-l 3.6s ease-in-out infinite;
+}
+.cv-tease-r {
+  animation: cv-tease-r 3.6s ease-in-out infinite;
+}
+
+/* L'icône du mode choisi fait un petit tour sur elle-même. */
+@keyframes cv-mode-icon {
+  from {
+    transform: rotate(-180deg) scale(0.4);
+  }
+}
+.cv-mode-icon {
+  display: inline-block;
+  animation: cv-mode-icon 0.45s var(--ease-spring);
+}
+
+/* ---- Binôme -------------------------------------------------------------------- */
+
+/* Le fil entre les deux membres du binôme coule doucement. */
+@keyframes cv-link {
+  to {
+    stroke-dashoffset: -14;
+  }
+}
+.cv-link path {
+  animation: cv-link 0.9s linear infinite;
+}
+/* Celui qui parle s'entoure d'un halo doré. */
+.cv-speaking {
+  box-shadow:
+    0 0 0 2px var(--color-gold),
+    0 0 18px -2px color-mix(in oklab, var(--color-gold) 70%, transparent);
+  transition: box-shadow 0.2s;
+}
+.cv-bond {
+  transition: width 0.9s var(--ease-out);
+}
+
+/* ---- Briefing ------------------------------------------------------------------ */
+
+@keyframes cv-brief {
+  from {
+    transform: perspective(700px) rotateX(24deg) translateY(30px) scale(0.92);
+    opacity: 0;
+  }
+}
+.cv-brief {
+  animation: cv-brief 0.55s var(--ease-spring) backwards;
+}
+@keyframes cv-count {
+  from {
+    transform: scale(2.2);
+    opacity: 0;
+    filter: blur(6px);
+  }
+  60% {
+    transform: scale(0.94);
+    opacity: 1;
+    filter: none;
+  }
+}
+.cv-count {
+  animation: cv-count 0.5s var(--ease-out);
+}
+
+/* ---- Modèle -------------------------------------------------------------------- */
+
+/* Chaque tracé du modèle se dessine à son tour. */
+@keyframes cv-path {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+.cv-path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: cv-path 0.9s cubic-bezier(0.6, 0, 0.2, 1) backwards;
+}
+.cv-model {
+  animation: tel-card 0.55s var(--ease-out) backwards;
+}
+/* Le nom du modèle, flouté tant qu'on ne le survole pas : le guide ne doit pas le lire à voix haute par réflexe. */
+.cv-secret {
+  filter: blur(5px);
+  transition: filter 0.3s;
+  cursor: help;
+}
+.cv-secret:hover {
+  filter: none;
+}
+
+/* L'artiste guidé : l'oreille s'allume quand le guide parle. */
+.cv-ear-wave {
+  opacity: 0.15;
+  transition: opacity 0.25s;
+}
+.cv-ear.is-on {
+  border-color: var(--color-gold);
+  border-style: solid;
+}
+.cv-ear.is-on .cv-ear-wave {
+  opacity: 1;
+  animation: tel-wave 0.9s ease-in-out infinite;
+}
+.cv-ear.is-on .cv-ear-wave-2 {
+  animation-delay: 0.15s;
+}
+
+/* ---- Tableau ------------------------------------------------------------------- */
+
+.cv-sheet {
+  animation: tel-sheet 0.45s 0.15s var(--ease-spring) backwards;
+  transition: box-shadow 0.5s;
+}
+/* Moitié chacun : l'autre côté est voilé, on y voit le trait du binôme sans pouvoir y dessiner. */
+.cv-off {
+  background: repeating-linear-gradient(45deg, rgb(75 46 33 / 0.06) 0 10px, transparent 10px 20px);
+  backdrop-filter: saturate(0.7);
+}
+@keyframes cv-seam {
+  50% {
+    opacity: 0.35;
+  }
+}
+.cv-seam {
+  animation: cv-seam 2.4s ease-in-out infinite;
+}
+
+/* Révélation : le tableau s'illumine, le modèle doré se pose par-dessus. */
+.cv-sheet.is-reveal {
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--color-gold) 60%, transparent),
+    0 24px 60px -30px rgb(40 20 10 / 0.6);
+}
+.cv-overlay {
+  pointer-events: none;
+  opacity: 0.85;
+  mix-blend-mode: multiply;
+}
+@keyframes cv-score {
+  from {
+    transform: translateY(24px) scale(0.6) rotate(-8deg);
+    opacity: 0;
+  }
+}
+.cv-score {
+  animation: cv-score 0.6s 0.8s var(--ease-spring) backwards;
+}
+
+/* ---- Verdict ------------------------------------------------------------------- */
+
+.cv-verdict {
+  animation: m-rise 0.4s var(--ease-out) backwards;
+}
+@keyframes cv-verdict-title {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+    letter-spacing: 0.3em;
+  }
+}
+.cv-verdict-title {
+  animation: cv-verdict-title 0.6s 1.9s var(--ease-spring) backwards;
+}
+@keyframes cv-fill {
+  from {
+    width: 0;
+  }
+}
+.cv-fill {
+  animation: cv-fill 1.1s 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+@keyframes cv-timer {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+.cv-timer {
+  animation: cv-timer linear forwards;
+}
+
+/* ---- Album --------------------------------------------------------------------- */
+
+@keyframes cv-page {
+  from {
+    transform: translateY(-40px) rotate(calc(var(--tilt) * 4)) scale(1.08);
+    opacity: 0;
+  }
+}
+.cv-page {
+  animation: cv-page 0.6s var(--ease-spring) backwards;
+}
+.cv-page .pola {
+  --tilt: inherit;
+}
+/* Le modèle en filigrane : au survol, il se redessine sur le dessin. */
+.cv-page-model {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.cv-page-model .cv-path {
+  animation: none;
+}
+.cv-page:hover .cv-page-model,
+.cv-page:focus-within .cv-page-model {
+  opacity: 1;
+}
+.cv-page:hover .cv-page-model .cv-path {
+  animation: cv-path 0.8s cubic-bezier(0.6, 0, 0.2, 1) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cv-art-left,
+  .cv-art-right,
+  .cv-art-pen-l,
+  .cv-art-pen-r,
+  .cv-art-spark,
+  .cv-art-seam,
+  .cv-tease-l,
+  .cv-tease-r,
+  .cv-link path,
+  .cv-seam,
+  .cv-ear.is-on .cv-ear-wave,
+  .cv-path,
+  .cv-page:hover .cv-page-model .cv-path {
+    animation: none;
+  }
+  .cv-art-spark {
+    opacity: 0;
+  }
+}

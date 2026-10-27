@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash' | 'cadavre' | 'interdits' | 'motamot' | 'agents' | 'fredonne' | 'alibi' | 'pitch';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash' | 'cadavre' | 'interdits' | 'motamot' | 'agents' | 'fredonne' | 'alibi' | 'pitch' | 'cerveau';
 
 export interface GameInfo {
   id: GameId;
@@ -172,6 +172,14 @@ export const GAMES: GameInfo[] = [
     players: 'À deux ou plus · visio',
     badge: 'À deux',
     keywords: ['pitch', 'sabote', 'startup', 'vendre', 'produit', 'diapo', 'diapos', 'impro', 'investisseur', 'visio', 'duo', 'deux', 'sons', 'bruitages'],
+  },
+  {
+    id: 'cerveau',
+    name: 'Cerveau coupé',
+    pitch: 'Un seul dessin à deux : l’un voit le modèle, l’autre tient le crayon.',
+    players: 'À deux ou plus · micro',
+    badge: 'À deux',
+    keywords: ['cerveau', 'coupe', 'split', 'brain', 'dessin', 'dessiner', 'cooperatif', 'coop', 'duo', 'deux', 'couple', 'guide', 'voix', 'micro', 'moitie', 'droites', 'courbes'],
   },
 ];
 

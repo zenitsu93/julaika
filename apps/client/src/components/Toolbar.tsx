@@ -13,7 +13,7 @@ const TOOLS: { id: Tool; label: string; icon: string; key: string }[] = [
 
 /** Dock flottant (pattern « Dock » de 21st.dev), qui monte quand vient ton tour. Raccourcis : B, E, F, Ctrl+Z. */
 /** `colors` : seules ces couleurs de la palette sont proposées (Flash : trois par image). */
-export function Toolbar({ pen, trap = null, colors }: { pen: Pen; trap?: Trap | null; colors?: readonly number[] }) {
+export function Toolbar({ pen, trap = null, colors, tools: allowed }: { pen: Pen; trap?: Trap | null; colors?: readonly number[]; tools?: Tool[] }) {
   const [, force] = useState(0);
   const update = (fn: () => void) => {
     fn();
@@ -36,7 +36,8 @@ export function Toolbar({ pen, trap = null, colors }: { pen: Pen; trap?: Trap | 
   const shown = colors ?? PALETTE.map((_, i) => i);
   const colorRing = useIndicator(shown.indexOf(activeColor));
   const sizeRing = useIndicator(pen.sizeIndex);
-  const toolRing = useIndicator(TOOLS.findIndex((t) => t.id === pen.tool));
+  const shownTools = allowed ? TOOLS.filter((t) => allowed.includes(t.id)) : TOOLS;
+  const toolRing = useIndicator(shownTools.findIndex((t) => t.id === pen.tool));
 
   // Effet « dock » discret, à la souris seulement : l'outil survolé grossit, ses voisins un peu.
   const tools = useRef<HTMLDivElement>(null);
@@ -58,7 +59,7 @@ export function Toolbar({ pen, trap = null, colors }: { pen: Pen; trap?: Trap | 
         undo();
         return;
       }
-      const tool = TOOLS.find((t) => t.key === e.key.toLowerCase());
+      const tool = shownTools.find((t) => t.key === e.key.toLowerCase());
       if (tool) update(() => (pen.tool = tool.id));
     };
     window.addEventListener('keydown', onKey);
@@ -115,7 +116,7 @@ export function Toolbar({ pen, trap = null, colors }: { pen: Pen; trap?: Trap | 
           onPointerLeave={settle}
         >
           <span ref={toolRing.indicator} className={ring} />
-          {TOOLS.map((t) => (
+          {shownTools.map((t) => (
             <button
               key={t.id}
               title={t.label}

@@ -13,6 +13,7 @@ import {
   TRAP_COLORS,
   checkGuess,
   decodeDraw,
+  isCerveauMode,
   isDifficulty,
   isGameMode,
   isPhotoDataUrl,
@@ -40,6 +41,7 @@ import { Agents } from './agents';
 import { Alibi } from './alibi';
 import { Bombe } from './bombe';
 import { Cadavre } from './cadavre';
+import { Cerveau } from './cerveau';
 import { Connait } from './connait';
 import { Flash } from './flash';
 import { Fredonne } from './fredonne';
@@ -132,6 +134,7 @@ export class Room {
   private fred: Fredonne | null = null;
   private alibi: Alibi | null = null;
   private pitch: Pitch | null = null;
+  private cerveau: Cerveau | null = null;
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -192,6 +195,7 @@ export class Room {
     this.flash?.onJoin(id);
     this.cadavre?.onJoin(id);
     this.agents?.onJoin(id);
+    this.cerveau?.onJoin(id);
     this.system(`${player.name} a rejoint la partie.`);
     this.broadcastState(id);
     // Les mots sont commandés dès qu'une partie devient possible, pour être prêts au lancement.
@@ -220,7 +224,7 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.bras || this.flash || this.cadavre || this.interdits || this.mot || this.agents || this.fred || this.alibi || this.pitch) {
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.bras || this.flash || this.cadavre || this.interdits || this.mot || this.agents || this.fred || this.alibi || this.pitch || this.cerveau) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
       this.intrus?.onLeave(id);
@@ -238,6 +242,7 @@ export class Room {
       this.fred?.onLeave(id);
       this.alibi?.onLeave(id);
       this.pitch?.onLeave(id);
+      this.cerveau?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -325,6 +330,9 @@ export class Room {
       case 'pitch':
         if (msg && typeof msg === 'object') this.pitch?.handle(id, msg);
         break;
+      case 'cerveau':
+        if (msg && typeof msg === 'object') this.cerveau?.handle(id, msg);
+        break;
       case 'sound':
         // Boîte à sons, dans tous les jeux : l'émetteur l'a déjà joué chez lui.
         if (isSoundId(msg.id)) this.broadcast({ t: 'sound', id: msg.id, by: id }, id);
@@ -333,6 +341,7 @@ export class Room {
         if (this.tel) this.tel.clear(id);
         else if (this.flash) this.flash.clear(id);
         else if (this.cadavre) this.cadavre.clear(id);
+        else if (this.cerveau) this.cerveau.clear(id);
         else if (this.isDrawing(id)) {
           this.strokes = [];
           this.strokeBytes = 0;
@@ -343,6 +352,7 @@ export class Room {
         if (this.tel) this.tel.undo(id);
         else if (this.flash) this.flash.undo(id);
         else if (this.cadavre) this.cadavre.undo(id);
+        else if (this.cerveau) this.cerveau.undo(id);
         else if (this.isDrawing(id) && this.strokes.length) {
           const removed = this.strokes.pop()!;
           this.strokeBytes -= removed.reduce((n, p) => n + p.byteLength, 0);
@@ -393,6 +403,7 @@ export class Room {
     if (this.tel) return this.tel.draw(id, data);
     if (this.flash) return this.flash.draw(id, data);
     if (this.cadavre) return this.cadavre.draw(id, data);
+    if (this.cerveau) return this.cerveau.draw(id, data);
     if (!this.isDrawing(id)) return;
     const packet = decodeDraw(data);
     if (!packet) return;
@@ -441,6 +452,7 @@ export class Room {
     if (this.game === 'fredonne') return this.startFred();
     if (this.game === 'alibi') return this.startAlibi();
     if (this.game === 'pitch') return this.startPitch();
+    if (this.game === 'cerveau') return this.startCerveau();
     this.usedWords.clear();
     this.shotCount = 0;
     this.nextRound();
@@ -1071,6 +1083,36 @@ export class Room {
     this.pitch.start();
   }
 
+  private startCerveau(): void {
+    this.cerveau?.dispose();
+    this.cerveau = new Cerveau({
+      playerIds: () => [...this.players.keys()],
+      isHost: (id) => id === this.hostId,
+      rounds: () => this.settings.rounds,
+      drawTime: () => this.settings.drawTime,
+      mode: () => this.settings.cerveau,
+      random: this.random,
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      broadcast: (msg, except) => this.broadcast(msg, except),
+      relay: (data, except) => {
+        for (const [pid, p] of this.players) if (pid !== except) p.conn.send(data);
+      },
+      sendRaw: (to, data) => this.players.get(to)?.conn.send(data),
+      system: (text) => this.system(text),
+      toLobby: () => this.toLobby(),
+    });
+    this.cerveau.start();
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -1123,6 +1165,8 @@ export class Room {
     this.alibi = null;
     this.pitch?.dispose();
     this.pitch = null;
+    this.cerveau?.dispose();
+    this.cerveau = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -1251,6 +1295,7 @@ export class Room {
       fred: this.fred?.stateFor(id) ?? null,
       alibi: this.alibi?.stateFor(id) ?? null,
       pitch: this.pitch?.stateFor() ?? null,
+      cerveau: this.cerveau?.stateFor(id) ?? null,
     };
   }
 
@@ -1303,6 +1348,7 @@ export class Room {
     this.fred?.dispose();
     this.alibi?.dispose();
     this.pitch?.dispose();
+    this.cerveau?.dispose();
   }
 }
 
@@ -1328,5 +1374,6 @@ function mergeSettings(cur: RoomSettings, patch: Partial<RoomSettings>): RoomSet
   if (isGameMode(patch.mode)) next.mode = patch.mode;
   if (isTrapMode(patch.traps)) next.traps = patch.traps;
   if (typeof patch.twists === 'boolean') next.twists = patch.twists;
+  if (isCerveauMode(patch.cerveau)) next.cerveau = patch.cerveau;
   return next;
 }

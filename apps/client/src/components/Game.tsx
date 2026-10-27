@@ -9,6 +9,7 @@ import { CadBoard } from './cadavre/CadBoard';
 import { Chat } from './Chat';
 import { InterditsBoard } from './interdits/InterditsBoard';
 import { IntrusBoard } from './intrus/IntrusBoard';
+import { CerveauBoard } from './cerveau/CerveauBoard';
 import { ConnaitBoard } from './connait/ConnaitBoard';
 import { FlashBoard } from './flash/FlashBoard';
 import { StoryBoard } from './motamot/StoryBoard';
@@ -27,7 +28,7 @@ export function Game() {
     <div className="mx-auto flex min-h-full max-w-[1400px] flex-col gap-3 p-3">
       <TopBar />
       <div className="grid flex-1 gap-3 lg:grid-cols-[1fr_20rem]">
-        {game === 'wavelength' ? <WaveBoard /> : game === 'telephone' ? <TelBoard /> : game === 'intrus' ? <IntrusBoard /> : game === 'petitbac' ? <BacBoard /> : game === 'connait' ? <ConnaitBoard /> : game === 'bombe' ? <BombBoard /> : game === 'photomaton' ? <PhotoBoard /> : game === 'sourire' ? <SourireBoard /> : game === 'brasdefer' ? <BrasBoard /> : game === 'flash' ? <FlashBoard /> : game === 'cadavre' ? <CadBoard /> : game === 'interdits' ? <InterditsBoard /> : game === 'motamot' ? <StoryBoard /> : game === 'agents' ? <AgentsBoard /> : game === 'fredonne' ? <FredBoard /> : game === 'alibi' ? <AlibiBoard /> : game === 'pitch' ? <PitchBoard /> : <Board />}
+        {game === 'wavelength' ? <WaveBoard /> : game === 'telephone' ? <TelBoard /> : game === 'intrus' ? <IntrusBoard /> : game === 'petitbac' ? <BacBoard /> : game === 'connait' ? <ConnaitBoard /> : game === 'bombe' ? <BombBoard /> : game === 'photomaton' ? <PhotoBoard /> : game === 'sourire' ? <SourireBoard /> : game === 'brasdefer' ? <BrasBoard /> : game === 'flash' ? <FlashBoard /> : game === 'cadavre' ? <CadBoard /> : game === 'interdits' ? <InterditsBoard /> : game === 'motamot' ? <StoryBoard /> : game === 'agents' ? <AgentsBoard /> : game === 'fredonne' ? <FredBoard /> : game === 'alibi' ? <AlibiBoard /> : game === 'pitch' ? <PitchBoard /> : game === 'cerveau' ? <CerveauBoard /> : <Board />}
         <Chat />
       </div>
     </div>

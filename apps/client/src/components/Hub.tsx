@@ -5,6 +5,7 @@ import { AlibiArt } from './alibi/AlibiArt';
 import { BombGlyph } from './bombe/BombGlyph';
 import { BrasGlyph } from './bras/BrasGlyph';
 import { CadArt } from './cadavre/CadArt';
+import { CerveauArt } from './cerveau/CerveauArt';
 import { ConnaitArt } from './connait/ConnaitArt';
 import { FlashArt } from './flash/FlashArt';
 import { LogoMark } from './Logo';
@@ -394,6 +395,7 @@ const ART: Record<GameId, JSX.Element> = {
   fredonne: <FredArt />,
   alibi: <AlibiArt />,
   pitch: <PitchArt />,
+  cerveau: <CerveauArt />,
 };
 
 /** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */
