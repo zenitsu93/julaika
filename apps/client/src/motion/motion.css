@@ -1970,6 +1970,8 @@
   .q-door-big .q-leaf {
     animation: none;
     transform: perspective(60px) rotateY(-48deg);
+  }
+}
 
 /* ---- Reconnexion et invitation ------------------------------------------------ */
 
