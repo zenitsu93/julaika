@@ -5,6 +5,7 @@ import { animate, Ticker } from '../motion';
 import { Wordmark } from './Logo';
 import { MeetButton } from './MeetButton';
 import { QuitButton } from './QuitButton';
+import { SwitchButton } from './GamePicker';
 import { SoundButton } from './SoundBoard';
 
 function useCountdown(endsAt: number | null): number {
@@ -58,7 +59,7 @@ function Hint({ text }: { text: string }) {
   );
 }
 
-export function TopBar({ onQuit }: { onQuit: () => void }) {
+export function TopBar({ onQuit, onSwitch }: { onQuit: () => void; onSwitch?: () => void }) {
   const room = useGame((s) => s.room!);
   const left = useCountdown(room.endsAt);
   const [copied, setCopied] = useState(false);
@@ -158,6 +159,8 @@ export function TopBar({ onQuit }: { onQuit: () => void }) {
             )}
           </span>
         </button>
+        {/* Au salon, le choix du jeu est dans les réglages ; en partie, l'hôte peut en changer d'ici. */}
+        {onSwitch && room.phase !== 'lobby' && <SwitchButton onClick={onSwitch} label="Jeu" className="m-pop" />}
         <QuitButton onAsk={onQuit} />
       </div>
     </header>

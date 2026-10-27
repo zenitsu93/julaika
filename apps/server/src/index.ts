@@ -320,7 +320,11 @@ function createRoom(game: RoomGame, mode: GameMode): Room {
   // La carte « Mime » de l'accueil ouvre un salon de dessin réglé en mime.
   if (game === 'dessin') room.settings = { ...room.settings, mode };
   rooms.set(code, room);
-  if (game === 'bombe') setImmediate(warmDictionary);
+  // La Bombe charge son dictionnaire à l'avance, à la création comme quand l'hôte passe dessus.
+  room.onGame = (g) => {
+    if (g === 'bombe') setImmediate(warmDictionary);
+  };
+  room.onGame(game);
   return room;
 }
 

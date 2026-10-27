@@ -418,3 +418,75 @@ describe('Room : reprise en plein Téléphone dessiné', () => {
     expect(back.last('welcome')!.state.tel).not.toBeNull();
   });
 });
+
+describe('Room : changer de jeu sans quitter le salon', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("l'hôte change de jeu au salon : mêmes joueurs, même code, visio et musique gardées", () => {
+    const { room, conns, ids } = setup(3);
+    room.handle(ids[0]!, { t: 'meet', url: 'https://meet.google.com/abc-defg-hij' });
+    room.handle(ids[1]!, { t: 'call', inCall: true, cam: true, mic: true });
+    room.handle(ids[1]!, { t: 'music', track: { id: 'dQw4w9WgXcQ', title: 'Chanson', artist: 'Artiste', dur: 200 }, playing: true, pos: 12 });
+    const music = conns[2]!.last('music')!.music;
+    expect(music?.dj).toBe(ids[1]);
+    room.handle(ids[0]!, { t: 'game', game: 'bombe' });
+    const state = conns[2]!.last('state')!.state;
+    expect(state).toMatchObject({ code: 'TEST', game: 'bombe', phase: 'lobby', meetUrl: 'https://meet.google.com/abc-defg-hij' });
+    expect(state.players.map((p) => p.id)).toEqual(ids);
+    expect(state.players.find((p) => p.id === ids[1])!.inCall).toBe(true);
+    expect(conns[2]!.last('music')!.music).toEqual(music);
+    expect(conns[2]!.json.some((m) => m.t === 'chat' && m.line.text.includes('Bombe à mots'))).toBe(true);
+    room.handle(ids[0]!, { t: 'start' });
+    expect(room.phase).toBe('bomb');
+  });
+
+  it('seul l’hôte change de jeu, et un jeu inconnu est ignoré', () => {
+    const { room, ids } = setup(2);
+    room.handle(ids[1]!, { t: 'game', game: 'quiz' });
+    expect(room.game).toBe('dessin');
+    room.handle(ids[0]!, { t: 'game', game: 'tetris' as never });
+    expect(room.game).toBe('dessin');
+  });
+
+  it('la carte Mime règle le Dessin en mime', () => {
+    const { room, ids } = setup(2);
+    room.handle(ids[0]!, { t: 'game', game: 'quiz' });
+    room.handle(ids[0]!, { t: 'game', game: 'dessin', mode: 'mime' });
+    expect(room.game).toBe('dessin');
+    expect(room.settings.mode).toBe('mime');
+  });
+
+  it('en pleine partie, changer de jeu arrête la partie et ramène tout le monde au salon', () => {
+    const { room, conns, ids } = setup(3);
+    room.handle(ids[0]!, { t: 'start' });
+    expect(room.phase).toBe('choosing');
+    room.handle(ids[0]!, { t: 'game', game: 'petitbac' });
+    expect(room.phase).toBe('lobby');
+    expect(room.game).toBe('petitbac');
+    expect(room.drawerId).toBeNull();
+    expect(conns[1]!.json.some((m) => m.t === 'chat' && m.line.text.includes('a arrêté la partie'))).toBe(true);
+    // Le minuteur du tour arrêté ne relance rien.
+    vi.advanceTimersByTime(CHOOSE_TIME * 1000 * 2);
+    expect(room.phase).toBe('lobby');
+  });
+
+  it('sur le podium, rechoisir le même jeu revient au salon sans attendre', () => {
+    const { room, ids } = setup(2);
+    room.handle(ids[0]!, { t: 'game', game: 'connait' });
+    room.handle(ids[0]!, { t: 'start' });
+    expect(room.phase).not.toBe('lobby');
+    room.handle(ids[0]!, { t: 'game', game: 'connait' });
+    expect(room.phase).toBe('lobby');
+    expect(room.game).toBe('connait');
+  });
+
+  it('les places gardées survivent au changement de jeu', () => {
+    const { room, conns, ids } = setup(2);
+    room.disconnect(ids[1]!, conns[1]!);
+    room.handle(ids[0]!, { t: 'game', game: 'wavelength' });
+    const back = new FakeConn();
+    expect(room.resume(conns[1]!.last('welcome')!.seat, back)).toBe(ids[1]);
+    expect(back.last('welcome')!.state.game).toBe('wavelength');
+  });
+});
