@@ -4,6 +4,7 @@ import { serverNow, useGame } from '../lib/store';
 import { animate, Ticker } from '../motion';
 import { Wordmark } from './Logo';
 import { MeetButton } from './MeetButton';
+import { MusicDock } from './MusicPlayer';
 import { QuitButton } from './QuitButton';
 import { SwitchButton } from './GamePicker';
 import { SoundButton } from './SoundBoard';
@@ -78,7 +79,7 @@ export function TopBar({ onQuit, onSwitch }: { onQuit: () => void; onSwitch?: ()
   };
 
   return (
-    <header className="panel flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
+    <header className="panel flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2 sm:gap-x-3">
       <span
         ref={timer}
         className={`rounded-md px-2 py-1 font-mono text-sm font-bold tabular-nums transition-colors duration-300 ${urgent ? 'bg-bad text-white' : 'bg-primary text-on-primary'}`}
@@ -89,7 +90,7 @@ export function TopBar({ onQuit, onSwitch }: { onQuit: () => void; onSwitch?: ()
       <span className="hidden items-center gap-1.5 sm:flex">
         <Wordmark className="h-7 w-auto" />
       </span>
-      <span className="text-sm text-muted">
+      <span className="text-sm text-muted max-sm:text-xs">
         {room.phase === 'lobby'
           ? 'Salon'
           : room.connait
@@ -141,10 +142,11 @@ export function TopBar({ onQuit, onSwitch }: { onQuit: () => void; onSwitch?: ()
           </span>
         ) : null}
       </div>
-      <div className="ml-auto flex items-center gap-2 sm:ml-0">
+      <div className="ml-auto flex items-center gap-1.5 sm:ml-0 sm:gap-2">
         <MeetButton />
+        <MusicDock />
         <SoundButton />
-        <button className="btn-ghost relative overflow-hidden px-2.5 py-1.5 font-mono" onClick={copy} title="Inviter : partager le lien du salon">
+        <button className="btn-ghost relative overflow-hidden px-2.5 py-1.5 font-mono max-sm:px-2 max-sm:text-xs" onClick={copy} title="Inviter : partager le lien du salon">
           {/* Le code glisse vers le haut et laisse place à une coche qui se dessine. */}
           <span key={String(copied)} className="m-rise inline-flex items-center gap-1.5" aria-live="polite">
             {copied ? (
@@ -155,7 +157,15 @@ export function TopBar({ onQuit, onSwitch }: { onQuit: () => void; onSwitch?: ()
                 Lien copié
               </>
             ) : (
-              `#${room.code}`
+              <>
+                {/* Téléphone, en partie : une icône de lien, pour garder la barre sur une ligne. */}
+                {room.phase !== 'lobby' && (
+                  <svg viewBox="0 0 24 24" className="size-4 sm:hidden" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" />
+                  </svg>
+                )}
+                <span className={room.phase !== 'lobby' ? 'max-sm:sr-only' : ''}>#{room.code}</span>
+              </>
             )}
           </span>
         </button>

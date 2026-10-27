@@ -110,15 +110,17 @@ export function MimeStage() {
           </div>
           {/* Téléphone, tablette : la réponse se tape sur la vidéo, les bruitages se replient derrière 👏. */}
           <div className="absolute inset-x-2 bottom-2 z-20 mx-auto max-w-md lg:hidden" style={stage.on ? { bottom: 'max(0.5rem, env(safe-area-inset-bottom))' } : undefined}>
-            {stage.tray && (
-              <div className="mime-cheer gb-tray mb-2 rounded-xl bg-black/50 p-1.5 backdrop-blur-md">
-                <SoundBoard compact only={CHEERS} />
-              </div>
-            )}
             <GuessBox
               variant="stage"
               inputRef={stage.input}
               onFocusChange={stage.focus}
+              above={
+                stage.tray && (
+                  <div className="mime-cheer gb-tray mb-2 rounded-xl bg-black/50 p-1.5 backdrop-blur-md">
+                    <SoundBoard compact only={CHEERS} />
+                  </div>
+                )
+              }
               lead={
                 <button
                   type="button"

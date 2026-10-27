@@ -37,6 +37,34 @@ export function MusicPlayer() {
   );
 }
 
+/**
+ * Téléphone, tablette, en partie : la capsule flottante cachait les boutons du jeu dans le coin
+ * (gomme, Valider, réponses du quiz…). Elle se range dans la barre du haut : ce disque l'ouvre.
+ */
+export function MusicDock() {
+  const track = useMusic((s) => heard(s));
+  const playing = useMusic((s) => s.playing);
+  const listening = useMusic((s) => s.listening);
+  const blocked = useMusic((s) => s.blocked);
+  const open = useMusic((s) => s.open);
+  return (
+    <button
+      type="button"
+      className={`mp-dockbtn lg:hidden ${playing ? 'mp-playing' : ''}`}
+      onClick={() => (blocked ? unlock() : music.setOpen(!open))}
+      aria-label={blocked ? 'Activer le son de la musique' : open ? 'Replier le lecteur' : 'Ouvrir le lecteur de musique'}
+      aria-expanded={open}
+    >
+      <span className="mp-discw">
+        <span className="mp-disc" style={track ? { backgroundImage: `url(${thumbOf(track.id)})` } : undefined} />
+        {!track && <span className="mp-dock-note" aria-hidden>♪</span>}
+        <Ring />
+        {(listening || blocked) && <span className="mp-ping" />}
+      </span>
+    </button>
+  );
+}
+
 // ---- Capsule fermée ------------------------------------------------------------------------------
 
 function Pill() {

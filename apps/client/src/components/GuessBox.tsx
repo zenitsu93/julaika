@@ -18,12 +18,15 @@ export function GuessBox({
   variant,
   onFocusChange,
   lead,
+  above,
   inputRef,
 }: {
   variant: 'stage' | 'bar';
   onFocusChange?: (focused: boolean) => void;
   /** Bouton posé à gauche du champ (les bruitages du mime). */
   lead?: ReactNode;
+  /** Posé juste au-dessus du champ, sous les bulles du chat (le plateau de bruitages). */
+  above?: ReactNode;
   inputRef?: React.RefObject<HTMLInputElement | null>;
 }) {
   const [text, setText] = useState('');
@@ -58,6 +61,7 @@ export function GuessBox({
           ))}
         </ul>
       )}
+      {above}
       <form
         ref={form}
         className="gb-form"
