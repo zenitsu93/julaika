@@ -59,7 +59,7 @@ export function TopBar() {
   const room = useGame((s) => s.room!);
   const left = useCountdown(room.endsAt);
   const [copied, setCopied] = useState(false);
-  const urgent = (room.phase === 'drawing' || room.phase === 'guess') && left <= 10;
+  const urgent = (room.phase === 'drawing' || room.phase === 'guess' || room.phase === 'draw' || room.phase === 'write' || room.phase === 'describe') && left <= 10;
   const timer = useRef<HTMLSpanElement>(null);
 
   // Sous 10 s, la pastille bat doucement à chaque seconde.
@@ -87,7 +87,13 @@ export function TopBar() {
         <b className="font-semibold tracking-[-0.035em]">julaïka</b>
       </span>
       <span className="text-sm text-muted">
-        {room.phase === 'lobby' ? 'Salon' : `Manche ${Math.min(room.round, room.settings.rounds)}/${room.settings.rounds}`}
+        {room.phase === 'lobby'
+          ? 'Salon'
+          : room.tel
+            ? room.phase === 'album'
+              ? 'Album'
+              : `Étape ${room.tel.step + 1}/${room.tel.steps}`
+            : `Manche ${Math.min(room.round, room.settings.rounds)}/${room.settings.rounds}`}
       </span>
       <div className="order-last min-w-0 basis-full truncate text-center font-mono text-lg font-bold tracking-[0.2em] empty:hidden sm:order-none sm:flex-1 sm:basis-auto sm:text-xl sm:tracking-[0.3em]" aria-live="polite">
         {room.hint ? (

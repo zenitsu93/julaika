@@ -1,4 +1,4 @@
-import { SETTINGS_LIMITS, type Difficulty, type RoomSettings } from '@julaika/shared';
+import { SETTINGS_LIMITS, type Difficulty, type RoomGame, type RoomSettings } from '@julaika/shared';
 import { useEffect, useRef } from 'react';
 import { net } from '../lib/net';
 import { useGame } from '../lib/store';
@@ -25,9 +25,29 @@ const WAVE_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
+// Téléphone dessiné : une étape par joueur, seul le temps de dessin se règle.
+const TEL_FIELDS: typeof FIELDS = [
+  { key: 'drawTime', label: 'Temps de dessin (s)', step: 10 },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
+const RULES: Partial<Record<RoomGame, string[]>> = {
+  wavelength: [
+    'Le télépathe voit où se cache la cible entre deux extrêmes, et donne un indice.',
+    "Les autres placent l'aiguille ensemble (parlez-vous en visio !), puis valident.",
+    "Le volet s'ouvre : jusqu'à 4 points pour l'équipe. On change de télépathe.",
+  ],
+  telephone: [
+    'Chacun écrit une phrase farfelue, en secret.',
+    'Ton voisin la dessine, le suivant devine le dessin, et ainsi de suite : tout le monde joue en même temps.',
+    "À la fin, l'album rejoue chaque chaîne, dessin après phrase. Plus on est, plus ça déraille !",
+  ],
+};
+
 export function Lobby() {
   const room = useGame((s) => s.room!);
   const wave = room.game === 'wavelength';
+  const rules = RULES[room.game];
   const isHost = useGame((s) => s.room!.players.find((p) => p.id === s.selfId)?.isHost ?? false);
   const error = useGame((s) => s.error);
   const set = (settings: Partial<RoomSettings>) => net.send({ t: 'settings', settings });
@@ -44,7 +64,7 @@ export function Lobby() {
     <div className="panel p-5 text-left shadow-sm">
       <h2 className="mb-4 text-lg font-semibold">Réglages du salon <span className="font-mono text-muted">#{room.code}</span></h2>
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : FIELDS).map(({ key, label, step }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : FIELDS).map(({ key, label, step }) => {
           const [min, max] = SETTINGS_LIMITS[key];
           return (
             <label key={key} className="text-sm">
@@ -70,17 +90,13 @@ export function Lobby() {
           );
         })}
       </div>
-      {wave ? (
+      {rules ? (
         <ol className="mt-4 space-y-1.5 text-sm text-muted">
-          <li>
-            <b className="text-ink">1.</b> Le télépathe voit où se cache la cible entre deux extrêmes, et donne un indice.
-          </li>
-          <li>
-            <b className="text-ink">2.</b> Les autres placent l'aiguille ensemble (parlez-vous en visio !), puis valident.
-          </li>
-          <li>
-            <b className="text-ink">3.</b> Le volet s'ouvre : jusqu'à 4 points pour l'équipe. On change de télépathe.
-          </li>
+          {rules.map((rule, i) => (
+            <li key={i}>
+              <b className="text-ink">{i + 1}.</b> {rule}
+            </li>
+          ))}
         </ol>
       ) : (
       <>

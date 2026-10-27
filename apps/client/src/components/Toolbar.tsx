@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { BRUSH_SIZES, PALETTE } from '@julaika/shared';
 import type { Pen, Tool } from '../lib/board';
-import { board } from '../lib/board';
 import { net } from '../lib/net';
 import { animate, reducedMotion, useIndicator, wipeBoard } from '../motion';
 
@@ -19,7 +18,7 @@ export function Toolbar({ pen }: { pen: Pen }) {
     force((n) => n + 1);
   };
   const undo = () => {
-    board.undo();
+    pen.target.undo();
     net.send({ t: 'undo' });
     spin(undoBtn.current);
   };
@@ -117,7 +116,7 @@ export function Toolbar({ pen }: { pen: Pen }) {
             onClick={(e) => {
               spin(e.currentTarget);
               wipeBoard();
-              board.reset();
+              pen.target.reset();
               net.send({ t: 'clear' });
             }}
             className={tile}

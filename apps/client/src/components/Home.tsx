@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AVATARS } from '../lib/avatars';
+import { isRoomGame } from '@julaika/shared';
 import { GAMES, type GameId } from '../lib/games';
 import { net } from '../lib/net';
 import { useGame } from '../lib/store';
@@ -51,7 +52,7 @@ export function Home({ game, onBack }: { game: GameId | null; onBack: () => void
       localStorage.setItem('julaika:avatar', JSON.stringify(avatar));
     } catch {}
     // Le jeu ne compte qu'à la création : avec un code, on rejoint le jeu du salon.
-    net.connect(name, avatar, room || undefined, game === 'wavelength' ? 'wavelength' : 'dessin');
+    net.connect(name, avatar, room || undefined, isRoomGame(game) ? game : 'dessin');
   };
 
   return (

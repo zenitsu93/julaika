@@ -113,6 +113,7 @@ const SKINS: Record<GameId, string> = {
   mime: 'border-primary bg-primary text-on-primary',
   wavelength: 'border-edge bg-surface text-ink',
   motdujour: 'border-[#15803d] bg-[#16a34a] text-white',
+  telephone: 'border-[#6d28d9] bg-[#7c3aed] text-white',
 };
 
 function GameCard({ game, className, style, onPick }: { game: GameInfo; className: string; style: CSSProperties; onPick: () => void }) {
@@ -190,7 +191,26 @@ const MotArt = () => (
   </span>
 );
 
-const ART: Record<GameId, JSX.Element> = { dessin: <DrawArt />, mime: <MimeArt />, wavelength: <WaveArt />, motdujour: <MotArt /> };
+/** La chaîne du téléphone : une phrase, son dessin, puis « c'est quoi ? », qui arrivent tour à tour. */
+const TelArt = () => (
+  <svg viewBox="0 0 220 140" className="mx-auto max-h-36 w-full" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <g className="tel-art" style={{ transformOrigin: '40px 70px' }}>
+      <path d="M14 42h52a8 8 0 0 1 8 8v26a8 8 0 0 1-8 8H38l-12 10V84H14a8 8 0 0 1-8-8V50a8 8 0 0 1 8-8z" fill="currentColor" fillOpacity=".18" strokeWidth="4" />
+      <path d="M18 56h40M18 68h28" strokeWidth="5" strokeOpacity=".7" />
+    </g>
+    <g className="tel-art" style={{ animationDelay: '500ms', transformOrigin: '110px 70px' }}>
+      <rect x="80" y="34" width="60" height="72" rx="8" fill="#fff" stroke="none" />
+      <path className="m-draw" pathLength={1} d="M92 86c6-26 16-34 20-14s12 20 16-6" stroke="#18181b" strokeWidth="5" />
+      <circle cx="122" cy="52" r="6" fill="#f5b700" stroke="none" />
+    </g>
+    <g className="tel-art" style={{ animationDelay: '1000ms', transformOrigin: '180px 70px' }}>
+      <path d="M154 42h52a8 8 0 0 1 8 8v26a8 8 0 0 1-8 8h-12v10l-12-10h-28a8 8 0 0 1-8-8V50a8 8 0 0 1 8-8z" fill="currentColor" fillOpacity=".18" strokeWidth="4" />
+      <path d="M174 56a7 7 0 1 1 9 7v4M183 75v.5" stroke="#f5b700" strokeWidth="5" />
+    </g>
+  </svg>
+);
+
+const ART: Record<GameId, JSX.Element> = { dessin: <DrawArt />, mime: <MimeArt />, wavelength: <WaveArt />, motdujour: <MotArt />, telephone: <TelArt /> };
 
 /** Carte d'un jeu en préparation : même mise en scène, en pointillés et sans clic. */
 function SoonCard({ game, className, style }: { game: (typeof SOON)[number]; className: string; style: CSSProperties }) {
@@ -226,14 +246,6 @@ const svg = (body: JSX.Element, viewBox = '0 0 200 140') => (
 );
 
 const SOON_ART: Record<SoonId, JSX.Element> = {
-  // Une bulle de texte qui se change en gribouillis.
-  telephone: svg(
-    <>
-      <path d="M40 30h90a14 14 0 0 1 14 14v34a14 14 0 0 1-14 14H80l-22 18v-18H40a14 14 0 0 1-14-14V44a14 14 0 0 1 14-14z" strokeWidth="5" />
-      <path className="m-draw" pathLength={1} d="M48 70c10-22 22-22 28-4s18 18 26-6 16-12 24 4" stroke="#f5b700" strokeWidth="6" />
-      <path className="soon-pulse" d="M162 52l14-8M164 70h16M162 88l14 8" strokeWidth="5" />
-    </>,
-  ),
   // Quatre têtes pareilles, une qui n'est pas comme les autres.
   intrus: svg(
     <>

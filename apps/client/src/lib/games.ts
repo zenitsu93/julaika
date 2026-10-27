@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone';
 
 export interface GameInfo {
   id: GameId;
@@ -45,13 +45,20 @@ export const GAMES: GameInfo[] = [
     badge: 'Quotidien',
     keywords: ['mot', 'jour', 'quotidien', 'wordle', 'lettres', 'solo', 'classement', 'deviner'],
   },
+  {
+    id: 'telephone',
+    name: 'Téléphone dessiné',
+    pitch: 'Une phrase devient un dessin, qui redevient une phrase…',
+    players: '3 joueurs ou plus',
+    badge: 'Nouveau',
+    keywords: ['telephone', 'dessin', 'dessiner', 'chaine', 'phrase', 'album', 'gartic', 'deviner'],
+  },
 ];
 
-export type SoonId = 'telephone' | 'intrus' | 'interdits' | 'petitbac' | 'fredonne' | 'connait' | 'agents';
+export type SoonId = 'intrus' | 'interdits' | 'petitbac' | 'fredonne' | 'connait' | 'agents';
 
 /** Jeux en préparation, affichés en « Bientôt » après les jeux disponibles (ordre de la liste des jeux à faire). */
 export const SOON: { id: SoonId; name: string; pitch: string; keywords: string[] }[] = [
-  { id: 'telephone', name: 'Téléphone dessiné', pitch: 'Une phrase devient un dessin, qui redevient une phrase…', keywords: ['telephone', 'dessin', 'chaine', 'phrase'] },
   { id: 'intrus', name: "L'Intrus", pitch: 'Tout le monde a le même mot, sauf un.', keywords: ['intrus', 'imposteur', 'vote', 'mot'] },
   { id: 'interdits', name: 'Mots interdits', pitch: 'Fais deviner sans dire les mots interdits.', keywords: ['interdit', 'tabou', 'visio', 'buzz'] },
   { id: 'petitbac', name: 'Petit Bac', pitch: 'Une lettre, des catégories, le plus vite possible.', keywords: ['petit bac', 'bac', 'lettre', 'categories'] },
