@@ -21,18 +21,22 @@ import { SourireBoard, useSmiledKey } from './sourire/SourireBoard';
 import { TelBoard } from './tel/TelBoard';
 import { AovBoard } from './verite/AovBoard';
 import { TopBar } from './TopBar';
+import { EndDock, useQuit } from './QuitButton';
 import { WaveBoard } from './wave/WaveBoard';
 
-export function Game() {
+export function Game({ onQuit }: { onQuit: () => void }) {
   const game = useGame((s) => s.room!.game);
+  const quit = useQuit(onQuit);
   useSmiledKey();
   return (
     <div className="mx-auto flex min-h-full max-w-[1400px] flex-col gap-3 p-3">
-      <TopBar />
+      <TopBar onQuit={quit.ask} />
       <div className="grid flex-1 gap-3 lg:grid-cols-[1fr_20rem]">
         {game === 'wavelength' ? <WaveBoard /> : game === 'telephone' ? <TelBoard /> : game === 'intrus' ? <IntrusBoard /> : game === 'petitbac' ? <BacBoard /> : game === 'connait' ? <ConnaitBoard /> : game === 'bombe' ? <BombBoard /> : game === 'photomaton' ? <PhotoBoard /> : game === 'sourire' ? <SourireBoard /> : game === 'brasdefer' ? <BrasBoard /> : game === 'flash' ? <FlashBoard /> : game === 'cadavre' ? <CadBoard /> : game === 'interdits' ? <InterditsBoard /> : game === 'motamot' ? <StoryBoard /> : game === 'agents' ? <AgentsBoard /> : game === 'fredonne' ? <FredBoard /> : game === 'alibi' ? <AlibiBoard /> : game === 'pitch' ? <PitchBoard /> : game === 'cerveau' ? <CerveauBoard /> : game === 'verite' ? <AovBoard /> : game === 'quiz' ? <QuizBoard /> : <Board />}
         <Chat />
       </div>
+      <EndDock onAsk={quit.ask} />
+      {quit.dialog}
     </div>
   );
 }

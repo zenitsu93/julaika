@@ -61,6 +61,13 @@ class Net {
     ws?.close();
   }
 
+  /** Départ volontaire : on ferme sans passer par « connexion perdue » et on rend l'adresse d'accueil. */
+  leave() {
+    this.close();
+    store.reset();
+    history.replaceState(null, '', '/');
+  }
+
   private stopPing() {
     if (this.pingTimer) clearInterval(this.pingTimer);
     this.pingTimer = null;

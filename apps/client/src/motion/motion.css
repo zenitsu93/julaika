@@ -1860,3 +1860,115 @@
     transform: none;
   }
 }
+
+/* Quitter le salon ---------------------------------------------------------------------- */
+/* Au survol, le battant de la petite porte s'entrouvre et la flèche glisse dehors. */
+.q-door {
+  overflow: visible;
+}
+.q-door .q-leaf {
+  transform-box: fill-box;
+  transform-origin: left center;
+  transition: transform 0.32s var(--ease-spring);
+}
+.q-door .q-arrow {
+  opacity: 0.55;
+  transition:
+    transform 0.28s var(--ease-out),
+    opacity 0.2s;
+}
+.q-btn:hover .q-leaf,
+.q-btn:focus-visible .q-leaf,
+.q-confirm:hover .q-leaf {
+  transform: perspective(40px) rotateY(-38deg);
+}
+.q-btn:hover .q-arrow,
+.q-btn:focus-visible .q-arrow,
+.q-confirm:hover .q-arrow {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+/* Carte de confirmation : la grande porte s'ouvre sur une lueur dorée, puis se referme au départ. */
+@keyframes q-open {
+  from {
+    transform: perspective(60px) rotateY(0);
+  }
+  to {
+    transform: perspective(60px) rotateY(-48deg);
+  }
+}
+@keyframes q-shut {
+  from {
+    transform: perspective(60px) rotateY(-48deg);
+  }
+  60% {
+    transform: perspective(60px) rotateY(4deg);
+  }
+  to {
+    transform: perspective(60px) rotateY(0);
+  }
+}
+@keyframes q-glow-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+@keyframes q-arrow-out {
+  0%,
+  45% {
+    transform: none;
+    opacity: 0;
+  }
+  to {
+    transform: translateX(2px);
+    opacity: 1;
+  }
+}
+@keyframes q-card-away {
+  to {
+    transform: translateY(10px) scale(0.94);
+    opacity: 0;
+  }
+}
+.q-door-big .q-leaf {
+  transition: none;
+  animation: q-open 0.5s 0.2s var(--ease-spring) both;
+}
+.q-door-big .q-arrow {
+  animation: q-arrow-out 0.7s 0.2s var(--ease-out) both;
+}
+.q-glow {
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--color-gold) 38%, transparent), transparent);
+  animation: q-glow-in 0.6s 0.25s var(--ease-out) backwards;
+}
+[data-quitting] .q-door-big .q-leaf {
+  animation: q-shut 0.3s ease-in forwards;
+}
+[data-quitting] .q-door-big .q-arrow {
+  transition: opacity 0.12s;
+  opacity: 0;
+  animation: none;
+}
+[data-quitting] .q-glow {
+  transition: opacity 0.25s;
+  opacity: 0;
+}
+[data-quitting] .q-card {
+  animation: q-card-away 0.18s 0.24s ease-in forwards;
+}
+[data-quitting] .q-veil {
+  animation: m-veil-out 0.2s 0.22s ease-in forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .q-door .q-leaf,
+  .q-door .q-arrow {
+    transition: none;
+  }
+  .q-door-big .q-leaf {
+    animation: none;
+    transform: perspective(60px) rotateY(-48deg);
+  }
+}
