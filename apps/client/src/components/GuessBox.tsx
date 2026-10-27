@@ -5,14 +5,14 @@ import { useGame } from '../lib/store';
 import { animate, bump, shake } from '../motion';
 import './guess.css';
 
-/** Durée d'affichage d'une ligne du chat en écho au-dessus de la boîte. */
+/** Durée d'affichage d'un essai en bulle au-dessus de la boîte. */
 const ECHO_MS = 4500;
 
 /**
- * Petite boîte de réponse posée sur le jeu (téléphone, tablette) : on tape sa réponse sans quitter
- * des yeux le tableau ou le mimeur, et les dernières lignes du chat remontent en bulles au-dessus.
- * `stage` : par-dessus la vidéo du mime ; `bar` : juste sous le tableau du dessin.
- * Sur grand écran, le chat est à côté du jeu : la boîte ne s'affiche pas (lg:hidden côté appelant).
+ * Boîte de réponse posée sur le jeu : on tape sa réponse sans quitter des yeux le tableau ou le
+ * mimeur, et les derniers essais (les siens, ceux des autres, « tu chauffes ») remontent en bulles.
+ * Il n'y a plus de chat libre : on se parle en visio, la boîte ne sert qu'à deviner.
+ * `stage` : par-dessus la vidéo du mime ; `bar` : juste sous le tableau du dessin ou la carte.
  */
 export function GuessBox({
   variant,
@@ -25,7 +25,7 @@ export function GuessBox({
   onFocusChange?: (focused: boolean) => void;
   /** Bouton posé à gauche du champ (les bruitages du mime). */
   lead?: ReactNode;
-  /** Posé juste au-dessus du champ, sous les bulles du chat (le plateau de bruitages). */
+  /** Posé juste au-dessus du champ, sous les bulles (le plateau de bruitages). */
   above?: ReactNode;
   inputRef?: React.RefObject<HTMLInputElement | null>;
 }) {
@@ -49,8 +49,21 @@ export function GuessBox({
     } else if (last.kind === 'close' && last.from === selfId) shake(form.current);
   }, [last, selfId]);
 
+  // « / » ou « Entrée » hors champ : focus direct sur la réponse (clavier physique).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLButtonElement) return;
+      if (e.key === '/' || e.key === 'Enter') {
+        e.preventDefault();
+        input.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [input]);
+
   return (
-    <div className={`gb gb-${variant}`}>
+    <div className={`gb gb-${variant} ${guessed ? 'gb-done' : ''}`}>
       {echo.length > 0 && (
         <ul className="gb-echo" aria-hidden>
           {echo.map((e) => (
@@ -67,7 +80,7 @@ export function GuessBox({
         className="gb-form"
         onSubmit={(e) => {
           e.preventDefault();
-          if (!text.trim()) return;
+          if (!text.trim() || guessed) return;
           net.send({ t: 'chat', text });
           setText('');
         }}
@@ -81,7 +94,8 @@ export function GuessBox({
           onChange={(e) => setText(e.target.value)}
           onFocus={() => onFocusChange?.(true)}
           onBlur={() => onFocusChange?.(false)}
-          placeholder={guessed ? 'Trouvé ! Papote avec les gagnants' : 'Ta réponse…'}
+          disabled={guessed}
+          placeholder={guessed ? 'Trouvé ! Attends les autres…' : 'Ta réponse…'}
           aria-label="Ta réponse"
           enterKeyHint="send"
           autoComplete="off"
@@ -90,7 +104,7 @@ export function GuessBox({
           spellCheck={false}
         />
         {/* mousedown annulé : le clavier reste ouvert pour enchaîner les essais. */}
-        <button type="submit" className="gb-send" disabled={!text.trim()} onPointerDown={(e) => e.preventDefault()} aria-label="Valider ma réponse">
+        <button type="submit" className="gb-send" disabled={guessed || !text.trim()} onPointerDown={(e) => e.preventDefault()} aria-label="Valider ma réponse">
           <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M5 12h13M13 6l6 6-6 6" />
           </svg>
@@ -100,7 +114,10 @@ export function GuessBox({
   );
 }
 
-/** Les dernières lignes du chat arrivées depuis l'ouverture de la boîte, chacune s'efface après ECHO_MS. */
+/**
+ * Les derniers essais arrivés depuis l'ouverture de la boîte, chacun s'efface après ECHO_MS.
+ * Les annonces du jeu (trouvé, système) passent par les Annonces, en haut de l'écran.
+ */
 function useEcho() {
   const chat = useGame((s) => s.chat);
   const [items, setItems] = useState<{ key: number; line: ChatLine }[]>([]);
@@ -112,7 +129,7 @@ function useEcho() {
     const line = chat.at(-1);
     if (!line || line === seen.current) return;
     seen.current = line;
-    if (line.kind === 'system') return;
+    if (line.kind !== 'msg' && line.kind !== 'close') return;
     const key = ++next.current;
     setItems((l) => [...l.slice(-2), { key, line }]);
     const id = setTimeout(() => {

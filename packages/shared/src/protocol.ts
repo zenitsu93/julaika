@@ -45,7 +45,7 @@ export function isRoomGame(v: unknown): v is RoomGame {
   return (ROOM_GAMES as readonly unknown[]).includes(v);
 }
 
-/** Nom de chaque jeu, pour annoncer dans le chat le jeu que l'hôte vient de choisir. */
+/** Nom de chaque jeu, pour annoncer le jeu que l'hôte vient de choisir. */
 export const ROOM_GAME_NAMES: Record<RoomGame, string> = {
   dessin: 'Dessin',
   wavelength: 'Wavelength',
@@ -326,7 +326,7 @@ export function parseMeetUrl(input: string): string | null {
   }
 }
 
-export type ChatKind = 'msg' | 'system' | 'correct' | 'close' | 'guessed';
+export type ChatKind = 'msg' | 'system' | 'correct' | 'close';
 
 export interface ChatLine {
   from: string | null;

@@ -111,10 +111,9 @@ describe('Fredonne ! : une partie', () => {
     expect(conns[2]!.state().players.find((p) => p.id === ids[1])!.guessed).toBe(true);
     expect(score(room, ids[1]!)).toBe(fredGain(0.3, 0));
 
-    // Ce que dit celui qui a trouvé ne va qu'au chanteur et aux autres « initiés ».
+    // Celui qui a trouvé n'a plus rien à taper : rien n'est relayé.
     room.handle(ids[1]!, { t: 'chat', text: 'trop facile' });
-    expect(conns[0]!.chats().at(-1)).toMatchObject({ text: 'trop facile', kind: 'guessed' });
-    expect(conns[2]!.chats().some((l) => l.text === 'trop facile')).toBe(false);
+    expect(conns.some((c) => c.chats().some((l) => l.text === 'trop facile'))).toBe(false);
   });
 
   it('quand tout le monde a trouvé, on révèle et le chanteur marque', () => {

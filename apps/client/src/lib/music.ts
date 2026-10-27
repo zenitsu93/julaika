@@ -101,9 +101,6 @@ export function useMusic<T>(select: (s: MusicState) => T): T {
   );
 }
 
-/** Vrai quand un morceau joue chez soi (les sons du chat se font alors plus discrets). */
-export const musicPlaying = () => state.playing;
-
 /** Le morceau qu'on entend : celui du salon quand on l'écoute, sinon le sien. */
 export function heard(s: MusicState = state): MusicTrack | null {
   if (s.listening && s.room) return s.room.track;

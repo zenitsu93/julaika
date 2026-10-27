@@ -18,7 +18,7 @@ const THEMES = [
 
 // Les trois niveaux sont décrits ensemble et le modèle range ses mots dans chacun : il calibre
 // bien mieux en comparant qu'en jugeant un niveau isolé. Seule la liste demandée est gardée.
-const SYSTEM = `Tu fournis des mots pour julaïka, un jeu de dessin en ligne : un joueur dessine le mot, les autres le devinent dans le chat. Les joueurs sont francophones (France, Afrique, Canada…) et de tous âges.
+const SYSTEM = `Tu fournis des mots pour julaïka, un jeu de dessin en ligne : un joueur dessine le mot, les autres le devinent en tapant leur réponse. Les joueurs sont francophones (France, Afrique, Canada…) et de tous âges.
 Les trois niveaux :
 - facile : un objet, animal, aliment ou personnage du quotidien, qu'un enfant de 8 ans dessine en quelques traits (ex. chat, pomme, soleil, vélo) ;
 - moyen : un objet moins courant, un métier, un lieu ou un mot composé, qui demande un dessin travaillé (ex. phare, boulanger, brosse à dents, hamac) ;
@@ -30,7 +30,7 @@ Chaque mot doit être :
 - différent des autres mots et des exemples ci-dessus.
 Réponds uniquement en JSON, au format {"facile": [...], "moyen": [...], "difficile": [...]}.`;
 
-const SYSTEM_MIME = `Tu fournis des mots pour le mode mime de julaïka, un jeu en ligne entre amis : un joueur mime le mot devant sa caméra, sans parler, et les autres le devinent dans le chat. Les joueurs sont francophones (France, Afrique, Canada…) et de tous âges.
+const SYSTEM_MIME = `Tu fournis des mots pour le mode mime de julaïka, un jeu en ligne entre amis : un joueur mime le mot devant sa caméra, sans parler, et les autres le devinent en tapant leur réponse. Les joueurs sont francophones (France, Afrique, Canada…) et de tous âges.
 Les trois niveaux :
 - facile : une action du quotidien ou un animal qu'on reconnaît tout de suite au geste (ex. nager, se brosser les dents, singe, téléphoner) ;
 - moyen : un métier, un sport ou une activité qui demande quelques gestes enchaînés (ex. dentiste, jongler, faire la vaisselle, pilote d'avion) ;

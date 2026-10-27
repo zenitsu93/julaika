@@ -48,7 +48,7 @@ export const FRED_STYLE_CHANCE = 0.5;
 
 /**
  * Une partie de Fredonne !. Les chanteurs passent dans l'ordre d'arrivée, `rounds` fois chacun.
- * Les réponses arrivent par le chat : le salon nous les confie avant de les diffuser.
+ * Les réponses tapées arrivent par le salon, qui nous les confie avant tout le reste.
  */
 export class Fredonne {
   phase: 'pick' | 'hum' | 'reveal' | 'done' = 'pick';
@@ -93,18 +93,13 @@ export class Fredonne {
   }
 
   /**
-   * Message de chat pendant un tour. Renvoie vrai si le jeu l'a pris en charge : bonne réponse
-   * (jamais diffusée), ou bavardage de ceux qui savent déjà, gardé entre eux.
+   * Réponse tapée pendant un tour. Renvoie vrai si le jeu l'a prise en charge : bonne réponse
+   * (jamais diffusée) ; ceux qui savent déjà n'ont plus rien à taper.
    */
   chat(id: string, text: string): boolean {
     if (this.phase !== 'hum' || !this.song) return false;
     const name = this.name(id);
-    const insider = id === this.singerId || this.found.includes(id);
-    if (insider) {
-      const line = { from: id, name, text, kind: 'guessed' as const };
-      for (const pid of [this.singerId, ...this.found]) this.host.sendTo(pid, { t: 'chat', line });
-      return true;
-    }
+    if (id === this.singerId || this.found.includes(id)) return true;
     const verdict = checkSong(text, this.song);
     if (verdict === 'correct') {
       this.correct(id);

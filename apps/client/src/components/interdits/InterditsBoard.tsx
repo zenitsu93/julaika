@@ -461,10 +461,8 @@ function Guesser({ s }: { s: InterditsState }) {
           🤐
         </span>
       </div>
-      {/* Téléphone : la réponse se tape ici, sous la carte, plutôt que tout en bas dans le chat. */}
-      <div className="lg:hidden">
-        <GuessBox variant="bar" />
-      </div>
+      {/* La réponse se tape ici, sous la carte. */}
+      <GuessBox variant="bar" />
       <div className="panel p-3">
         <p className="mb-2 text-xs font-medium text-muted">Bruitages</p>
         <SoundBoard compact />

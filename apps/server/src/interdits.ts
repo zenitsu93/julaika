@@ -89,13 +89,14 @@ export class Interdits {
   }
 
   /**
-   * Message du chat pendant la partie. Rend true s'il est traité ici : celui qui fait deviner
-   * et le gardien se taisent (ils connaissent la carte) ; une bonne réponse tapée fait gagner la carte.
+   * Réponse tapée pendant la partie. Rend true si elle est traitée ici : celui qui fait deviner
+   * et le gardien ne tapent rien (ils connaissent la carte) ; une bonne réponse fait gagner la carte,
+   * un essai raté passe en bulle chez tout le monde.
    */
   chat(id: string, text: string): boolean {
     if (this.phase !== 'faceoff' && this.phase !== 'explain') return false;
     if (id === this.explainerId || id === this.guardId) {
-      const why = id === this.explainerId ? 'Fais deviner à l’oral : le chat est fermé pendant ton tour.' : 'Tu gardes la carte : pas un mot dans le chat !';
+      const why = id === this.explainerId ? 'Fais deviner à l’oral : pas de réponse tapée pendant ton tour.' : 'Tu gardes la carte : rien à taper !';
       this.host.sendTo(id, { t: 'chat', line: { from: null, name: null, text: why, kind: 'system' } });
       return true;
     }
@@ -105,10 +106,11 @@ export class Interdits {
       this.resolve('found', id);
       return true;
     }
+    this.host.broadcast({ t: 'chat', line: { from: id, name: this.name(id), text, kind: 'msg' } });
     if (result === 'close') {
       this.host.sendTo(id, { t: 'chat', line: { from: null, name: null, text: `« ${text} » : tu chauffes !`, kind: 'close' } });
     }
-    return false;
+    return true;
   }
 
   /** Celui qui fait deviner part : tour suivant. Le gardien part : le tour continue sans lui. */

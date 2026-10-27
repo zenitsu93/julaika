@@ -1011,7 +1011,7 @@ button.mp-ib.mp-sound {
     m-fade 0.4s ease-in 3.8s reverse forwards;
 }
 
-/* Dans un salon sur grand écran, l'île passe à gauche : le chat et sa saisie restent libres. */
+/* Dans un salon sur grand écran, l'île passe à gauche : le coin droit reste au jeu. */
 @media (min-width: 1024px) {
   .mp-salon {
     right: auto;
