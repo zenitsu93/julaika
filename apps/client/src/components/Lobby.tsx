@@ -7,6 +7,7 @@ import { useGame } from '../lib/store';
 import { QuizThemeField } from './quiz/QuizThemeField';
 import { bump, Ticker, useIndicator } from '../motion';
 import { Planche } from './mime/Planche';
+import { TremaLoader } from './Logo';
 import { AovLevelPicker } from './verite/AovBoard';
 
 const FIELDS: { key: keyof typeof SETTINGS_LIMITS; label: string; step?: number; max?: number }[] = [
@@ -471,10 +472,16 @@ export function Lobby() {
       )}
       {isHost ? (
         <button ref={start} className="btn-primary mt-5 w-full py-2.5" disabled={!canStart} onClick={() => net.send({ t: 'start' })}>
-          {canStart ? 'Lancer la partie' : minPlayers > 2 ? `En attente de joueurs (${room.players.length}/${minPlayers})…` : 'En attente de joueurs…'}
+          <span className="inline-flex items-center gap-2">
+            <TremaLoader done={canStart} />
+            {canStart ? 'Lancer la partie' : minPlayers > 2 ? `En attente de joueurs (${room.players.length}/${minPlayers})…` : 'En attente de joueurs…'}
+          </span>
         </button>
       ) : (
-        <p className="mt-5 text-center text-muted">L'hôte va lancer la partie…</p>
+        <p className="mt-5 flex items-center justify-center gap-2 text-muted">
+          <TremaLoader />
+          L'hôte va lancer la partie…
+        </p>
       )}
       {error && (
         <p key={error} className="m-rise mt-2 text-center text-sm text-bad">

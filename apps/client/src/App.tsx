@@ -11,6 +11,27 @@ export function App() {
   const online = useGame((s) => s.status === 'online' && s.room !== null);
   // Un lien d'invitation (/r/CODE) saute l'accueil des jeux : on va droit au pseudo.
   const [screen, setScreen] = useState<{ game: GameId | null } | null>(() => (codeFromUrl() ? { game: null } : null));
+  // Chaque changement de page rejoue la « respiration » (fil d'or, page qui monte, logo qui hoche).
+  const page = online ? 'salon' : screen ? (screen.game ?? 'code') : 'accueil';
+  return (
+    <>
+      <div key={`fil-${page}`} className="page-breath" aria-hidden />
+      <div key={page} className="page-in h-full">
+        <Page online={online} screen={screen} setScreen={setScreen} />
+      </div>
+    </>
+  );
+}
+
+function Page({
+  online,
+  screen,
+  setScreen,
+}: {
+  online: boolean;
+  screen: { game: GameId | null } | null;
+  setScreen: (s: { game: GameId | null } | null) => void;
+}) {
   if (online)
     return (
       <>

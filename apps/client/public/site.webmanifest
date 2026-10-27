@@ -1,7 +1,7 @@
 {
   "name": "julaïka",
   "short_name": "julaïka",
-  "description": "Dessine, devine, marque des points. Jeu de dessin multijoueur en temps réel.",
+  "description": "Des jeux entre amis ou en couple, avec la visio intégrée. Un lien, zéro compte.",
   "lang": "fr",
   "start_url": "/",
   "display": "standalone",

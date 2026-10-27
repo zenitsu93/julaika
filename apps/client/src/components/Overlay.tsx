@@ -7,6 +7,7 @@ import { useGame } from '../lib/store';
 import { TRAP_INFO } from '../lib/traps';
 import { confetti, Presence, reducedMotion, useCountUp } from '../motion';
 import { Lobby } from './Lobby';
+import { TremaLoader } from './Logo';
 import { Planche, TurnShots } from './mime/Planche';
 
 function Panel({ children, flow = false }: { children: React.ReactNode; flow?: boolean }) {
@@ -222,12 +223,8 @@ export function Overlay() {
               <p className="text-lg">
                 <span className="m-breathe text-3xl">{drawer && avatarOf(drawer.avatar)}</span>
                 <br />
-                <b>{drawer?.name}</b> choisit un mot{room.turnKind === 'mime' ? ' à mimer' : ''}
-                <span className="m-dots" aria-hidden>
-                  <span>.</span>
-                  <span>.</span>
-                  <span>.</span>
-                </span>
+                <b>{drawer?.name}</b> choisit un mot{room.turnKind === 'mime' ? ' à mimer' : ''}{' '}
+                <TremaLoader />
               </p>
             )}
             {room.trap && !choosing && <TrapCard trap={room.trap} drawer={false} />}

@@ -9,7 +9,7 @@ import { CerveauArt } from './cerveau/CerveauArt';
 import { ConnaitArt } from './connait/ConnaitArt';
 import { FlashArt } from './flash/FlashArt';
 import { AovArt } from './verite/AovArt';
-import { LogoMark } from './Logo';
+import { Wordmark } from './Logo';
 import { QuizArt } from './quiz/QuizArt';
 import { StoryArt } from './motamot/StoryArt';
 import './photo/photo.css';
@@ -19,6 +19,18 @@ import './pitch/pitch.css';
 
 // L'entrée animée ne se joue qu'une fois par visite, comme sur l'écran du pseudo.
 let introPlayed = false;
+
+/** Texte découpé en mots qui sortent du flou l'un après l'autre (rien ne bouge hors de l'intro). */
+function Words({ text, start, step, soft = false }: { text: string; start: number; step: number; soft?: boolean }) {
+  return text.split(' ').map((w, i) => (
+    <span key={i}>
+      {i > 0 && ' '}
+      <span className={soft ? 'hub-word hub-word-soft' : 'hub-word'} style={{ '--w': `${start + i * step}ms` } as CSSProperties}>
+        {w}
+      </span>
+    </span>
+  ));
+}
 
 /** Accueil : une carte par jeu, posée dans un écrin chocolat, et une recherche. */
 export function Hub({ onPick, onCode }: { onPick: (id: GameId) => void; onCode: () => void }) {
@@ -53,10 +65,7 @@ export function Hub({ onPick, onCode }: { onPick: (id: GameId) => void; onCode: 
       </div>
       <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <div className="flex items-center gap-2.5">
-          <LogoMark className="h-9 w-auto" animated={intro} />
-          <span style={after(300)} className={`font-logo text-2xl font-semibold tracking-[-0.04em] ${rise}`}>
-            julaïka
-          </span>
+          <Wordmark className="h-11 w-auto" animated={intro} />
         </div>
         <button type="button" className="btn-ghost" onClick={onCode}>
           J'ai un code de salon
@@ -64,12 +73,18 @@ export function Hub({ onPick, onCode }: { onPick: (id: GameId) => void; onCode: 
       </header>
 
       <section className="px-4 pt-8 text-center sm:pt-12">
-        <h1 style={after(340)} className={`text-4xl font-semibold leading-none tracking-[-0.045em] sm:text-6xl ${rise}`}>
-          <span className="accroche text-5xl text-accent sm:text-7xl">entre amis</span>
-          Salut ! On joue à quoi ?
+        <h1 className={`text-4xl font-semibold leading-none tracking-[-0.045em] sm:text-6xl ${intro ? 'hub-title' : ''}`}>
+          <span className="accroche hub-script text-5xl text-accent sm:text-7xl">entre amis</span>
+          <Words text="Salut ! On joue à" start={420} step={80} />{' '}
+          <span className="hub-quoi" style={{ '--d': `${420 + 5 * 80}ms` } as CSSProperties}>
+            <Words text="quoi ?" start={420 + 5 * 80} step={80} />
+            <svg viewBox="0 0 120 14" className="hub-underline" preserveAspectRatio="none" aria-hidden>
+              <path pathLength={1} d="M3 9C30 4 62 3 117 7" />
+            </svg>
+          </span>
         </h1>
-        <p style={after(400)} className={`mx-auto mt-3 max-w-md text-base text-muted sm:text-lg ${rise}`}>
-          Choisis un jeu, crée un salon et envoie le lien à tes amis.
+        <p className={`mx-auto mt-3 max-w-md text-base text-muted sm:text-lg ${intro ? 'hub-title' : ''}`}>
+          <Words text="Choisis un jeu, crée un salon et envoie le lien à tes amis." start={1000} step={28} soft />
         </p>
         <label
           style={after(460)}

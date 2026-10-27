@@ -25,8 +25,10 @@
   --color-warn: #d97706;
   --color-bad: #dc2626;
   --color-info: #2563eb;
-  /* Or de la marque (gomme et trait du logo) : bruni en clair, plus lumineux en sombre. */
+  /* Or de la marque (tréma et sourire du logo) : bruni en clair, plus lumineux en sombre. */
   --color-accent: #b07d2c;
+  /* Yeux du picto (tréma du ï) : or lumineux sur le carré chocolat, or bruni sur le carré crème. */
+  --color-logo-eye: #d6a24a;
   /* Écrin des cartes de l'accueil : dégradé de chocolat, dessin en crème, touches d'or. */
   --color-cacao: #4b2e21;
   --color-cacao-2: #7a4e36;
@@ -44,6 +46,7 @@
     --color-primary: #f2e6b3;
     --color-on-primary: #2a1a12;
     --color-accent: #d6a24a;
+    --color-logo-eye: #b07d2c;
     --color-cacao: #24160f;
     --color-cacao-2: #4b2e21;
     --color-good: #22c55e;
