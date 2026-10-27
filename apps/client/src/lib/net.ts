@@ -1,5 +1,6 @@
-import { decodeDraw, isSoundId, type ClientMsg, type GameMode, type RoomGame, type RoomState, type ServerMsg } from '@julaika/shared';
+import { decodeDraw, isArcadeFrame, isSoundId, type ClientMsg, type GameMode, type RoomGame, type RoomState, type ServerMsg } from '@julaika/shared';
 import { wipeBoard } from '../motion';
+import { arcadeFrames, emitArcadeEvents } from './arcade';
 import { board } from './board';
 import { call } from './call';
 import { mimeSnapshot } from './mime';
@@ -29,6 +30,7 @@ class Net {
     };
     ws.onmessage = (e) => {
       if (e.data instanceof ArrayBuffer) {
+        if (isArcadeFrame(e.data)) return arcadeFrames.push(e.data);
         const packet = decodeDraw(e.data);
         // Octet 3 : calque du Cerveau coupé (0 = tableau commun).
         const layer = inkLayers[new Uint8Array(e.data)[3]! - 1];
@@ -70,6 +72,7 @@ class Net {
     switch (msg.t) {
       case 'welcome':
         board.reset();
+        arcadeFrames.reset();
         resetInk();
         call.configure({
           selfId: msg.selfId,
@@ -163,6 +166,9 @@ class Net {
         break;
       case 'creatures':
         store.set({ creatures: msg.creatures });
+        break;
+      case 'arcadeEv':
+        emitArcadeEvents(msg.ev);
         break;
       case 'dial':
         store.set({ dial: msg.value });

@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash' | 'cadavre' | 'interdits' | 'motamot' | 'agents' | 'fredonne' | 'alibi' | 'pitch' | 'cerveau' | 'verite' | 'quiz';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash' | 'cadavre' | 'interdits' | 'motamot' | 'agents' | 'fredonne' | 'alibi' | 'pitch' | 'cerveau' | 'verite' | 'quiz' | 'foot' | 'oreillers' | 'drap';
 
 export interface GameInfo {
   id: GameId;
@@ -108,6 +108,30 @@ export const GAMES: GameInfo[] = [
     players: 'À deux ou plus · micro',
     badge: 'À deux',
     keywords: ['bras de fer', 'guerre des pouces', 'pouce', 'duel', 'jauge', 'tapoter', 'rapidite', 'micro', 'crier', 'voix', 'duo', 'deux'],
+  },
+  {
+    id: 'foot',
+    name: 'Tête-à-tête',
+    pitch: 'Foot grosses têtes à deux, avec la frappe bisou.',
+    players: 'À deux ou plus · action',
+    badge: 'Nouveau',
+    keywords: ['foot', 'football', 'tete a tete', 'ballon', 'but', 'action', 'arcade', 'duel', 'clavier', 'manette', 'duo', 'deux', 'football legends'],
+  },
+  {
+    id: 'oreillers',
+    name: 'Bataille d’oreillers',
+    pitch: 'Deux pantins mous sur un lit : fais tomber l’autre !',
+    players: 'À deux ou plus · action',
+    badge: 'Nouveau',
+    keywords: ['oreiller', 'oreillers', 'bataille', 'lit', 'ragdoll', 'pantin', 'combat', 'action', 'arcade', 'duel', 'duo', 'deux', 'plumes'],
+  },
+  {
+    id: 'drap',
+    name: 'Le Drap tendu',
+    pitch: 'Bougez ensemble, attrapez les cœurs, évitez les orages.',
+    players: 'À deux · coopératif',
+    badge: 'À deux',
+    keywords: ['drap', 'drap tendu', 'coeur', 'coeurs', 'cooperatif', 'coop', 'ensemble', 'bisou', 'action', 'arcade', 'duo', 'deux', 'couple'],
   },
   {
     id: 'flash',
