@@ -30,12 +30,12 @@ function Tile({ player, stream, self, drawing, psychic, mime }: { player: Player
         player.guessed ? 'border-good' : 'border-edge'
       } ${speaking ? 'm-speaking grow-[1.7] outline-2 outline-good' : 'grow'} basis-0`}
     >
-      {/* La vidéo reste montée même caméra coupée : elle porte aussi le son. */}
+      {/* Image seulement : la voix passe par le lecteur caché de lib/call. */}
       <video
         ref={video}
         autoPlay
         playsInline
-        muted={self}
+        muted
         className={`size-full object-cover ${self ? '-scale-x-100' : ''} ${player.cam ? '' : 'invisible'}`}
       />
       {!player.cam && <span className="absolute inset-0 grid place-items-center text-3xl">{avatarOf(player.avatar)}</span>}
@@ -96,6 +96,12 @@ export function CallBar() {
   return (
     <div className="panel m-rise flex items-center gap-1.5 p-1.5">
       <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto p-1">
+        {/* Son bloqué par le navigateur tant qu'on n'a pas touché la page (iPhone surtout). */}
+        {view.muted && (
+          <button className="btn-primary m-pop shrink-0 self-center" onClick={call.unmute}>
+            🔊 Activer le son
+          </button>
+        )}
         {inCall.map((p) => (
           <Tile
             key={p.id}
