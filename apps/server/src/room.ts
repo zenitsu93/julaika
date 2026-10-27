@@ -42,6 +42,7 @@ import { Flash } from './flash';
 import type { PairGenerator, WordGenerator } from './deepseek';
 import { Interdits } from './interdits';
 import { Intrus } from './intrus';
+import { MotAMot } from './motamot';
 import { INTRUS_PAIRS } from './intrusPairs';
 import { PetitBac } from './petitbac';
 import { Photomaton } from './photomaton';
@@ -121,6 +122,7 @@ export class Room {
   private flash: Flash | null = null;
   private cadavre: Cadavre | null = null;
   private interdits: Interdits | null = null;
+  private mot: MotAMot | null = null;
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -208,7 +210,7 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.bras || this.flash || this.cadavre || this.interdits) {
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.bras || this.flash || this.cadavre || this.interdits || this.mot) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
       this.intrus?.onLeave(id);
@@ -221,6 +223,7 @@ export class Room {
       this.flash?.onLeave(id);
       this.cadavre?.onLeave(id);
       this.interdits?.onLeave(id);
+      this.mot?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -292,6 +295,9 @@ export class Room {
         break;
       case 'interdits':
         if (msg && typeof msg === 'object') this.interdits?.handle(id, msg);
+        break;
+      case 'motamot':
+        if (msg && typeof msg === 'object') this.mot?.handle(id, msg);
         break;
       case 'sound':
         // Boîte à sons, dans tous les jeux : l'émetteur l'a déjà joué chez lui.
@@ -404,6 +410,7 @@ export class Room {
     if (this.game === 'flash') return this.startFlash();
     if (this.game === 'cadavre') return this.startCadavre();
     if (this.game === 'interdits') return this.startInterdits();
+    if (this.game === 'motamot') return this.startMot();
     this.usedWords.clear();
     this.shotCount = 0;
     this.nextRound();
@@ -905,6 +912,30 @@ export class Room {
     this.interdits.start();
   }
 
+  private startMot(): void {
+    this.mot?.dispose();
+    this.mot = new MotAMot({
+      playerIds: () => [...this.players.keys()],
+      name: (id) => this.players.get(id)?.name ?? '?',
+      rounds: () => this.settings.rounds,
+      random: this.random,
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      broadcast: (msg, except) => this.broadcast(msg, except),
+      system: (text) => this.system(text),
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      endGame: () => this.endGame(),
+    });
+    this.mot.start();
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -946,6 +977,9 @@ export class Room {
     this.cadavre = null;
     this.interdits?.dispose();
     this.interdits = null;
+    // Gardé jusqu'ici pour le recueil de la fin de partie.
+    this.mot?.dispose();
+    this.mot = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -1069,6 +1103,7 @@ export class Room {
       flash: this.flash?.state() ?? null,
       cadavre: this.cadavre?.state() ?? null,
       interdits: this.interdits?.stateFor(id) ?? null,
+      motamot: this.mot?.state() ?? null,
     };
   }
 
@@ -1116,6 +1151,7 @@ export class Room {
     this.flash?.dispose();
     this.cadavre?.dispose();
     this.interdits?.dispose();
+    this.mot?.dispose();
   }
 }
 

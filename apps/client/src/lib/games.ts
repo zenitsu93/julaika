@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash' | 'cadavre' | 'interdits';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash' | 'cadavre' | 'interdits' | 'motamot';
 
 export interface GameInfo {
   id: GameId;
@@ -132,6 +132,14 @@ export const GAMES: GameInfo[] = [
     players: 'En visio · à deux ou plus',
     badge: 'Nouveau',
     keywords: ['interdit', 'interdits', 'tabou', 'taboo', 'mots', 'deviner', 'oral', 'parler', 'visio', 'buzz', 'buzzer', 'duo', 'deux', 'bruitages'],
+  },
+  {
+    id: 'motamot',
+    name: 'Mot à mot',
+    pitch: 'Une histoire à plusieurs, un mot chacun, 4 secondes.',
+    players: 'À deux ou plus',
+    badge: 'Nouveau',
+    keywords: ['mot', 'mots', 'histoire', 'speed story', 'conte', 'ecrire', 'contrainte', 'voix', 'duo', 'deux', 'rapidite'],
   },
 ];
 

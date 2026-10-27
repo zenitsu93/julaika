@@ -15,3 +15,4 @@ export * from './brasdefer';
 export * from './flash';
 export * from './cadavre';
 export * from './interdits';
+export * from './motamot';

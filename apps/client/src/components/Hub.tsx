@@ -6,6 +6,7 @@ import { CadArt } from './cadavre/CadArt';
 import { ConnaitArt } from './connait/ConnaitArt';
 import { FlashArt } from './flash/FlashArt';
 import { LogoMark } from './Logo';
+import { StoryArt } from './motamot/StoryArt';
 import './photo/photo.css';
 import './interdits/interdits.css';
 
@@ -337,6 +338,7 @@ const ART: Record<GameId, JSX.Element> = {
   flash: <FlashArt />,
   cadavre: <CadArt />,
   interdits: <InterditsArt />,
+  motamot: <StoryArt />,
 };
 
 /** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */
