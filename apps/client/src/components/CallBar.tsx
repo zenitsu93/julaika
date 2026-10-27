@@ -123,7 +123,7 @@ export function CallBar() {
         </button>
         <button
           className={`${dockBtn} ${view.mic ? 'hover:bg-on-primary/15' : 'bg-bad text-white'} disabled:cursor-not-allowed`}
-          title={view.hushed ? 'Micro coupé pendant ton mime' : view.mic ? 'Couper le micro' : 'Activer le micro'}
+          title={view.hushed ? 'Micro coupé pendant ce tour' : view.mic ? 'Couper le micro' : 'Activer le micro'}
           disabled={view.hushed}
           aria-pressed={view.mic}
           onClick={(e) => {

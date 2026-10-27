@@ -37,6 +37,7 @@ import {
 } from '@julaika/shared';
 import { Bombe } from './bombe';
 import { Connait } from './connait';
+import { Fredonne } from './fredonne';
 import type { PairGenerator, WordGenerator } from './deepseek';
 import { Intrus } from './intrus';
 import { INTRUS_PAIRS } from './intrusPairs';
@@ -113,6 +114,7 @@ export class Room {
   private bomb: Bombe | null = null;
   private photo: Photomaton | null = null;
   private sourire: Sourire | null = null;
+  private fred: Fredonne | null = null;
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -198,7 +200,7 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire) {
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.fred) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
       this.intrus?.onLeave(id);
@@ -207,6 +209,7 @@ export class Room {
       this.bomb?.onLeave(id);
       this.photo?.onLeave(id);
       this.sourire?.onLeave(id);
+      this.fred?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -266,6 +269,9 @@ export class Room {
         break;
       case 'mimeShot':
         this.mimeShot(id, msg.finder, msg.image);
+        break;
+      case 'fred':
+        if (msg && typeof msg === 'object') this.fred?.handle(id, msg);
         break;
       case 'sound':
         // Boîte à sons, dans tous les jeux : l'émetteur l'a déjà joué chez lui.
@@ -368,6 +374,7 @@ export class Room {
     if (this.game === 'bombe') return this.startBomb();
     if (this.game === 'photomaton') return this.startPhoto();
     if (this.game === 'sourire') return this.startSourire();
+    if (this.game === 'fredonne') return this.startFred();
     this.usedWords.clear();
     this.shotCount = 0;
     this.nextRound();
@@ -485,6 +492,7 @@ export class Room {
   private chat(player: Player, raw: string): void {
     const text = raw.trim().slice(0, 120);
     if (!text) return;
+    if (this.fred?.chat(player.id, text)) return;
     const line: ChatLine = { from: player.id, name: player.name, text, kind: 'msg' };
 
     const canGuess = this.phase === 'drawing' && this.word && player.id !== this.drawerId && !player.guessed;
@@ -772,6 +780,36 @@ export class Room {
     this.sourire.start();
   }
 
+  private startFred(): void {
+    this.fred?.dispose();
+    this.fred = new Fredonne({
+      playerIds: () => [...this.players.keys()],
+      player: (id) => this.players.get(id),
+      rounds: () => this.settings.rounds,
+      humTime: () => this.settings.drawTime,
+      difficulty: () => this.settings.difficulty,
+      random: this.random,
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      setGuessed: (id) => {
+        for (const p of this.players.values()) if (id === null || p.id === id) p.guessed = id !== null;
+      },
+      broadcastState: () => this.broadcastState(),
+      broadcast: (msg, except) => this.broadcast(msg, except),
+      sendTo: (id, msg) => this.sendTo(id, msg),
+      system: (text) => this.system(text),
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      endGame: () => this.endGame(),
+    });
+    this.fred.start();
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -805,6 +843,8 @@ export class Room {
     this.photo = null;
     this.sourire?.dispose();
     this.sourire = null;
+    this.fred?.dispose();
+    this.fred = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -924,6 +964,7 @@ export class Room {
       bomb: this.bomb?.state() ?? null,
       photo: this.photo?.state() ?? null,
       sourire: this.sourire?.stateFor(id) ?? null,
+      fred: this.fred?.stateFor(id) ?? null,
     };
   }
 
@@ -967,6 +1008,7 @@ export class Room {
     this.bomb?.dispose();
     this.photo?.dispose();
     this.sourire?.dispose();
+    this.fred?.dispose();
   }
 }
 

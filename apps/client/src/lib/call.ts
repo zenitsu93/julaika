@@ -27,6 +27,8 @@ const VIDEO: MediaTrackConstraints = { width: { ideal: 320 }, height: { ideal: 2
 /** Pendant son mime, on est affiché en grand : image plus fine et plus fluide, débit relevé. */
 const VIDEO_MIME: MediaTrackConstraints = { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { max: 24 } };
 const AUDIO: MediaTrackConstraints = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
+/** Fredonne ! : l'anti-bruit et le gain automatique mangent la mélodie, on les coupe pour le chanteur. */
+const MUSIC: MediaTrackConstraints = { echoCancellation: true, noiseSuppression: false, autoGainControl: false };
 /** Plafond par flux vidéo sortant : 8 personnes × 250 kb/s restent sous 2 Mb/s montants. */
 const VIDEO_BITRATE = 250_000;
 /** Un seul mimeur à la fois : 7 × 600 kb/s, le temps d'un tour. */
@@ -36,7 +38,7 @@ export interface CallView {
   joined: boolean;
   cam: boolean;
   mic: boolean;
-  /** Micro coupé d'office pendant son tour de mime. */
+  /** Micro coupé d'office : pendant son tour de mime, ou en écoutant quelqu'un fredonner. */
   hushed: boolean;
   local: MediaStream | null;
   /** Déformation choisie, appliquée dès que la caméra est allumée. */
@@ -57,11 +59,14 @@ class Call {
   private listeners = new Set<() => void>();
   /** Tour de mime en cours : micro coupé (pas le droit de parler) et vidéo en haute qualité. */
   private miming = false;
+  /** Fredonne ! : le chanteur (micro ouvert, réglé pour la musique) ou un auditeur (micro coupé). */
+  private stage: 'singer' | 'listener' | null = null;
   private view: CallView = { joined: false, cam: false, mic: false, hushed: false, local: null, warp: null, remotes: {}, error: null };
 
   configure(opts: { selfId: string; ice: IceServer[]; send: Send; announce: Call['announce'] }) {
     this.leave(false);
     this.miming = false;
+    this.stage = null;
     this.selfId = opts.selfId;
     this.ice = opts.ice;
     this.send = opts.send;
@@ -88,7 +93,7 @@ class Call {
   }
 
   async toggle(kind: Kind) {
-    if (kind === 'audio' && this.miming) return;
+    if (kind === 'audio' && this.hushing) return;
     if (this.tracks[kind]) this.disable(kind);
     else await this.enable(kind);
     this.publish();
@@ -98,7 +103,7 @@ class Call {
   setMiming(on: boolean) {
     if (this.miming === on) return;
     this.miming = on;
-    if (this.tracks.audio) this.tracks.audio.enabled = !on;
+    if (this.tracks.audio) this.tracks.audio.enabled = !this.hushing;
     void this.tracks.video?.applyConstraints(on ? VIDEO_MIME : VIDEO).catch(() => {});
     for (const { pc } of this.peers.values()) void this.capBitrate(pc);
     this.publish();
@@ -113,6 +118,28 @@ class Call {
     this.update({ warp: effect });
     await this.syncWarp();
     if (this.tracks.video) this.publish();
+  }
+
+  /** Fredonne ! : début ou fin d'un tour. Le micro d'un auditeur reste ouvert côté navigateur, sa piste est juste muette. */
+  setStage(role: 'singer' | 'listener' | null) {
+    if (this.stage === role) return;
+    this.stage = role;
+    const track = this.tracks.audio;
+    if (track) {
+      track.enabled = !this.hushing;
+      void track.applyConstraints(role === 'singer' ? MUSIC : AUDIO).catch(() => {});
+    }
+    this.publish();
+  }
+
+  /** Micro coupé d'office : on mime, ou on écoute le chanteur. */
+  private get hushing() {
+    return this.miming || this.stage === 'listener';
+  }
+
+  /** Son propre micro, pour l'égaliseur du chanteur (la vue locale ne porte que la vidéo). */
+  micStream(): MediaStream | null {
+    return this.tracks.audio ? new MediaStream([this.tracks.audio]) : null;
   }
 
   // ---- Synchronisation avec l'état du salon ----------------------------------
@@ -209,9 +236,9 @@ class Call {
 
   private async enable(kind: Kind) {
     try {
-      const media = await navigator.mediaDevices.getUserMedia(kind === 'video' ? { video: this.miming ? VIDEO_MIME : VIDEO } : { audio: AUDIO });
+      const media = await navigator.mediaDevices.getUserMedia(kind === 'video' ? { video: this.miming ? VIDEO_MIME : VIDEO } : { audio: this.stage === 'singer' ? MUSIC : AUDIO });
       const track = media.getTracks()[0]!;
-      if (kind === 'audio' && this.miming) track.enabled = false;
+      if (kind === 'audio' && this.hushing) track.enabled = false;
       this.tracks[kind] = track;
       if (kind === 'video') await this.syncWarp();
       else await this.replace(kind);
@@ -273,7 +300,7 @@ class Call {
     const cam = Boolean(this.tracks.video);
     const mic = Boolean(this.tracks.audio?.enabled);
     const local = cam ? new MediaStream([this.outVideo()!]) : null;
-    this.update({ cam, mic, local, hushed: this.miming && Boolean(this.tracks.audio) });
+    this.update({ cam, mic, local, hushed: this.hushing && Boolean(this.tracks.audio) });
     if (this.view.joined) this.announce(true, cam, mic);
   }
 

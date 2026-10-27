@@ -3,6 +3,7 @@
 
 import type { BombEvent, BombState } from './bombe';
 import type { ConnaitState } from './connait';
+import type { FredState } from './fredonne';
 import type { IntrusState } from './intrus';
 import type { MimeShot, MimeTwist } from './mime';
 import type { BacState } from './petitbac';
@@ -23,7 +24,7 @@ export const PALETTE = [
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 /** Jeux proposés : chaque salon en porte un, choisi à sa création. */
-export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire'] as const;
+export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'fredonne'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
@@ -37,7 +38,7 @@ export function isRoomGame(v: unknown): v is RoomGame {
  * → steal (l'intrus démasqué tente le mot) → reveal. Petit Bac : fill (la grille) → vote → reveal.
  * Qui me connaît le mieux : answer (la vedette répond, les autres parient) → reveal.
  * Bombe à mots : bomb, jusqu'au dernier survivant. Photomaton : pose (consigne puis flash) → vote → reveal.
- * Pas un sourire ! : faceoff (3, 2, 1) → duel → verdict.
+ * Pas un sourire ! : faceoff (3, 2, 1) → duel → verdict. Fredonne ! : pick (le chanteur choisit) → hum → reveal.
  */
 export type Phase =
   | 'lobby'
@@ -60,6 +61,8 @@ export type Phase =
   | 'faceoff'
   | 'duel'
   | 'verdict'
+  | 'pick'
+  | 'hum'
   | 'gameEnd';
 
 /** Difficulté des mots proposés : sert au tirage dans les listes intégrées et à la génération par IA. */
@@ -207,6 +210,8 @@ export interface RoomState {
   photo: PhotoState | null;
   /** État de Pas un sourire !, null pour les autres jeux. */
   sourire: SourireState | null;
+  /** État de Fredonne ! vu par ce joueur (la chanson reste secrète), null pour les autres jeux. */
+  fred: FredState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -274,6 +279,8 @@ export type ClientMsg =
   | { t: 'sourire'; smiled: true }
   | { t: 'sourire'; dare: true }
   | { t: 'sourire'; warp: WarpId | null }
+  | { t: 'fred'; pick: number }
+  | { t: 'fred'; reroll: true }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =
