@@ -62,7 +62,7 @@ export function Home({ game, onBack }: { game: GameId | null; onBack: () => void
   };
 
   return (
-    <main className="grid min-h-full place-items-center p-4">
+    <main className="safe-x grid min-h-full place-items-center p-4">
       <div className="w-full max-w-md">
         <button type="button" onClick={onBack} className="btn -ml-3 mb-4 text-muted hover:text-ink">
           <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>

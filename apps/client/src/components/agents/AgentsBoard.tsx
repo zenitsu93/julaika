@@ -354,7 +354,7 @@ function ClueForm({ a }: { a: AgentsState }) {
           }}
           aria-invalid={Boolean(error)}
         />
-        <div ref={counter.container} role="group" aria-label="Nombre de cartes" className="relative flex rounded-md border border-edge p-0.5">
+        <div ref={counter.container} role="group" aria-label="Nombre de cartes" className="relative flex rounded-md border border-edge p-0.5 max-sm:w-full">
           <span ref={counter.indicator} className="m-indicator rounded bg-primary" />
           {Array.from({ length: AGENTS_COUNT_MAX }, (_, i) => i + 1).map((n) => (
             <button
@@ -363,7 +363,7 @@ function ClueForm({ a }: { a: AgentsState }) {
               data-slot
               aria-pressed={n === count}
               onClick={() => setCount(n)}
-              className={`relative w-7 rounded py-1.5 font-mono text-sm font-bold transition-colors sm:w-8 ${n === count ? 'text-on-primary' : 'text-muted hover:text-ink'}`}
+              className={`relative rounded py-1.5 font-mono text-sm font-bold transition-colors max-sm:min-h-11 max-sm:flex-1 sm:w-8 ${n === count ? 'text-on-primary' : 'text-muted hover:text-ink'}`}
             >
               {n}
             </button>
@@ -395,7 +395,7 @@ function Grid({ a, phase, role, selfId }: { a: AgentsState; phase: string; role:
   // Ce que chacun voit : la clé de fin de grille (celle de l'équipe qui jouait en duo), sinon la sienne.
   const key = a.keys ? (a.mode === 'duo' ? null : a.keys.or) : a.key;
   return (
-    <div className="grid grid-cols-5 gap-1.5 sm:gap-2.5" role="grid" aria-label="Grille des agents">
+    <div className="grid grid-cols-5 gap-1 sm:gap-2.5" role="grid" aria-label="Grille des agents">
       {a.cards.map((card, i) => (
         <Card
           key={`${a.grid}-${i}`}
@@ -482,7 +482,8 @@ function Card({
         className={`ag-card ${revealed ? `ag-flip ag-face-${revealed}` : shownTint ? `ag-tint-${shownTint}` : ''} relative flex aspect-[4/3] w-full flex-col items-center justify-center overflow-hidden rounded-lg border px-0.5 text-center outline-none focus-visible:ring-2 focus-visible:ring-info sm:aspect-[16/10] sm:rounded-xl`}
       >
         {revealed && <AgentGlyph kind={revealed} className="ag-glyph absolute inset-x-0 top-1 mx-auto h-[55%] opacity-80" />}
-        <span className={`relative z-[1] w-full break-words font-semibold leading-tight ${revealed ? 'mt-auto pb-1 text-[9px] sm:text-xs' : 'text-[10px] uppercase tracking-[0.02em] sm:text-sm'}`} lang="fr" style={{ hyphens: 'auto' }}>
+        {/* Téléphone : minuscules à 12 px plutôt que des capitales à 10 px coupées en deux (« CALEN-DRIER »). */}
+        <span className={`relative z-[1] w-full font-semibold leading-tight [overflow-wrap:anywhere] ${revealed ? 'mt-auto pb-1 text-xs' : 'text-xs sm:text-sm sm:uppercase sm:tracking-[0.02em]'}`} lang="fr">
           {card.word}
         </span>
         {!revealed && shownTint === 'assassin' && (
