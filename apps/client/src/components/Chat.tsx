@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
+import type { ChatLine } from '@julaika/shared';
 import { net } from '../lib/net';
 import { useGame } from '../lib/store';
+import { animate } from '../motion';
 
+// Chaque ligne glisse depuis le bas ; « tu chauffes » se balance, une bonne réponse s'illumine.
 const KIND_STYLE = {
-  msg: '',
-  system: 'text-muted',
-  correct: 'font-semibold text-good',
-  close: 'text-warn',
-  guessed: 'text-good',
+  msg: 'm-msg',
+  system: 'm-msg text-muted',
+  correct: 'm-flash-good font-semibold text-good',
+  close: 'm-wiggle text-warn',
+  guessed: 'm-msg text-good',
 } as const;
 
 export function Chat() {
@@ -17,9 +20,24 @@ export function Chat() {
   const list = useRef<HTMLUListElement>(null);
   const input = useRef<HTMLInputElement>(null);
 
+  const selfId = useGame((s) => s.selfId);
+  // Clé stable par ligne (l'historique est tronqué par le début) : seule la nouvelle ligne s'anime.
+  const keys = useRef({ map: new WeakMap<ChatLine, number>(), next: 0 });
+  const keyOf = (l: ChatLine) => {
+    const k = keys.current;
+    if (!k.map.has(l)) k.map.set(l, k.next++);
+    return k.map.get(l)!;
+  };
   useEffect(() => {
     list.current?.scrollTo({ top: list.current.scrollHeight });
-  }, [chat]);
+    // Quand tu trouves le mot, ton champ de réponse clignote vert une fois.
+    const last = chat.at(-1);
+    if (last?.kind === 'correct' && last.from === selfId)
+      animate(input.current, [{ boxShadow: '0 0 0 3px color-mix(in srgb, var(--color-good) 40%, transparent)', borderColor: 'var(--color-good)' }, {}], {
+        duration: 700,
+        fill: 'none',
+      });
+  }, [chat, selfId]);
 
   // « / » ou « Entrée » hors champ : focus direct sur la réponse.
   useEffect(() => {
@@ -37,8 +55,8 @@ export function Chat() {
   return (
     <section className="panel flex max-h-[60vh] min-h-64 flex-col lg:max-h-none">
       <ul ref={list} className="flex-1 space-y-1 overflow-y-auto p-3 text-sm">
-        {chat.map((l, i) => (
-          <li key={i} className={`break-words ${KIND_STYLE[l.kind]}`}>
+        {chat.map((l) => (
+          <li key={keyOf(l)} className={`break-words ${KIND_STYLE[l.kind]}`}>
             {l.name && l.kind !== 'correct' && <b className="font-semibold text-ink">{l.name} </b>}
             {l.text}
           </li>

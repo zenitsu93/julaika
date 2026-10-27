@@ -46,7 +46,7 @@ export function MeetButton() {
       )}
 
       {open && isHost && (
-        <div className="panel animate-pop absolute right-0 top-full z-20 mt-2 w-80 space-y-3 p-4 text-sm shadow-lg">
+        <div className="panel m-pop absolute right-0 top-full z-20 mt-2 w-80 space-y-3 p-4 text-sm shadow-lg">
           <p className="font-semibold">Visio Google Meet</p>
           <ol className="list-decimal space-y-1 pl-5 text-muted">
             <li>

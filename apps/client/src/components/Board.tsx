@@ -4,6 +4,7 @@ import { Pen, board } from '../lib/board';
 import { net } from '../lib/net';
 import { useCall } from '../lib/call';
 import { useGame } from '../lib/store';
+import { attachWipe, Presence } from '../motion';
 import { CallBar } from './CallBar';
 import { Overlay } from './Overlay';
 import { PlayerStrip } from './PlayerStrip';
@@ -11,6 +12,7 @@ import { Toolbar } from './Toolbar';
 
 export function Board() {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const wipe = useRef<HTMLCanvasElement>(null);
   const [pen] = useState(() => new Pen((buf) => net.sendBinary(buf)));
   const inCall = useCall().joined;
   const lobby = useGame((s) => s.room!.phase === 'lobby');
@@ -18,7 +20,11 @@ export function Board() {
 
   useEffect(() => {
     board.attach(canvas.current);
-    return () => board.attach(null);
+    attachWipe(canvas.current, wipe.current);
+    return () => {
+      board.attach(null);
+      attachWipe(null, null);
+    };
   }, []);
 
   useEffect(() => {
@@ -57,9 +63,11 @@ export function Board() {
           onPointerUp={() => pen.end()}
           onPointerCancel={() => pen.end()}
         />
+        {/* Calque de « Tout effacer » : le dessin copié s'y gomme de gauche à droite. */}
+        <canvas ref={wipe} className="pointer-events-none absolute inset-0 size-full" aria-hidden />
         <Overlay />
       </div>
-      {canDraw && <Toolbar pen={pen} />}
+      <Presence>{canDraw ? <Toolbar pen={pen} /> : null}</Presence>
       <CallBar />
     </section>
   );

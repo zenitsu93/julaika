@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import './motion/motion.css';
 
 /* Concept « Studio Pro » : outil de création épuré, le tableau d'abord.
    Tous les tons passent par ces variables : changer de concept = changer ce bloc. */
@@ -17,6 +18,8 @@
   --color-warn: #d97706;
   --color-bad: #dc2626;
   --color-info: #2563eb;
+  /* Jaune de la marque (gomme et trait du logo), mêmes valeurs en sombre. */
+  --color-accent: #f5b700;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -54,8 +57,9 @@ body {
   @apply rounded-lg border border-edge bg-surface;
 }
 
+/* Survol : le bouton monte d'un pixel avec une ombre douce ; appui : il s'enfonce. */
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-md px-3.5 py-2 text-sm font-medium transition outline-none focus-visible:ring-2 focus-visible:ring-info active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-40;
+  @apply inline-flex items-center justify-center gap-2 rounded-md px-3.5 py-2 text-sm font-medium transition outline-none focus-visible:ring-2 focus-visible:ring-info enabled:hover:-translate-y-px enabled:hover:shadow-[0_4px_12px_-6px_rgb(0_0_0/0.35)] enabled:active:translate-y-0 enabled:active:scale-[.97] enabled:active:duration-75 disabled:cursor-not-allowed disabled:opacity-40;
 }
 
 @utility btn-primary {
@@ -68,27 +72,10 @@ body {
 
 /* 16px sur téléphone : en dessous, iOS zoome au focus et reste zoomé. */
 @utility input {
-  @apply w-full rounded-md border border-edge bg-surface px-3 py-2 text-base outline-none sm:text-sm transition placeholder:text-muted focus:border-ink focus:ring-2 focus:ring-ink/10;
+  @apply w-full rounded-md border border-edge bg-surface px-3 py-2 text-base outline-none sm:text-sm transition placeholder:text-muted focus:border-ink focus:ring-4 focus:ring-ink/10 aria-invalid:border-bad;
 }
 
 /* Petite touche de clavier, pour afficher les raccourcis. */
 @utility kbd {
   @apply rounded border border-edge px-1 font-mono text-[10px] leading-4 text-muted;
-}
-
-@keyframes pop {
-  from {
-    transform: translateY(4px);
-    opacity: 0;
-  }
-}
-
-.animate-pop {
-  animation: pop 0.18s ease-out;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-pop {
-    animation: none;
-  }
 }
