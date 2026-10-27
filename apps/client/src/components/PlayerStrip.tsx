@@ -4,7 +4,7 @@ import { avatarOf } from '../lib/avatars';
 import { useGame } from '../lib/store';
 import { useCountUp, useFlip } from '../motion';
 
-function Pill({ player, rank, drawing, self }: { player: PlayerPublic; rank: number; drawing: boolean; self: boolean }) {
+function Pill({ player, rank, drawing, mime, self }: { player: PlayerPublic; rank: number; drawing: boolean; mime: boolean; self: boolean }) {
   const score = useCountUp(player.score);
   // « +180 » qui s'envole quand le score monte.
   const [gains, setGains] = useState<{ id: number; value: number }[]>([]);
@@ -27,8 +27,8 @@ function Pill({ player, rank, drawing, self }: { player: PlayerPublic; rank: num
       <span className={`max-w-32 truncate ${self ? 'font-semibold' : ''}`}>{player.name}</span>
       <span className="font-mono text-xs tabular-nums text-muted">{score}</span>
       {drawing && (
-        <span title="Dessine" className="m-wobble">
-          ✏️
+        <span title={mime ? 'Mime' : 'Dessine'} className="m-wobble">
+          {mime ? '🎭' : '✏️'}
         </span>
       )}
       {player.guessed && (
@@ -59,6 +59,7 @@ function Pill({ player, rank, drawing, self }: { player: PlayerPublic; rank: num
 export function PlayerStrip() {
   const players = useGame((s) => s.room!.players);
   const drawerId = useGame((s) => s.room!.drawerId);
+  const mime = useGame((s) => s.room!.turnKind === 'mime');
   const selfId = useGame((s) => s.selfId);
   const ranked = [...players].sort((a, b) => b.score - a.score);
   const list = useRef<HTMLOListElement>(null);
@@ -67,7 +68,7 @@ export function PlayerStrip() {
   return (
     <ol ref={list} className="relative flex flex-wrap justify-center gap-1.5" aria-label="Classement">
       {ranked.map((p, i) => (
-        <Pill key={p.id} player={p} rank={i + 1} drawing={p.id === drawerId} self={p.id === selfId} />
+        <Pill key={p.id} player={p} rank={i + 1} drawing={p.id === drawerId} mime={mime} self={p.id === selfId} />
       ))}
     </ol>
   );

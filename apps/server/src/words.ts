@@ -43,3 +43,32 @@ export const WORDS_FR: Record<Difficulty, string[]> = {
     tourbillon, trampoline, tremblement de terre, ventriloque, verglas, vertige
   `),
 };
+
+// Mots à mimer : surtout des actions, des métiers et des animaux qui bougent, qu'on fait
+// deviner avec le corps, sans parler ni montrer d'objet écrit.
+export const MIME_FR: Record<Difficulty, string[]> = {
+  facile: list(`
+    applaudir, avoir froid, bâiller, boire, boxer, chanter, chat, cheval, conduire, courir, danser,
+    dormir, éternuer, gorille, grenouille, jouer au foot, kangourou, lapin, lire, manger une banane,
+    marcher, nager, oiseau, pêcher, pleurer, pompier, poule, rire, sauter à la corde, serpent,
+    se brosser les dents, se coiffer, se laver les mains, singe, skier, téléphoner, tirer une corde,
+    tomber, voler, éléphant, faire du vélo, jouer au tennis, peindre, se maquiller, taper au clavier
+  `),
+  moyen: list(`
+    astronaute, balayer, boulanger, chauffeur de taxi, chef d'orchestre, chirurgien, coiffeur,
+    cow-boy, dentiste, dompteur, faire du surf, faire la vaisselle, faire un gâteau, footballeur,
+    gardien de but, guitariste, jardinier, joueur de djembé, jongler, magicien, mécanicien,
+    photographe, pianiste, pilote d'avion, plongeur, policier, prendre une douche, repasser,
+    robot, sculpteur, serveur, statue, se raser, soldat, surfeur, tricoter, vendeuse au marché,
+    zombie, piler le mil, faire un selfie, monter à cheval, ouvrir un cadeau, ramer
+  `),
+  difficile: list(`
+    avoir le hoquet, bataille de polochons, cache-cache, chewing-gum collé, coup de foudre,
+    coup de soleil, course en sac, crevaison, déménagement, embouteillage, escalader une montagne,
+    être en retard, fou rire, funambule, griot, jour de pluie, mal de mer, marcher sur la lune,
+    montagnes russes, panne de courant, passer l'aspirateur, perdre ses clés, piquer une colère,
+    rater le bus, saut à l'élastique, somnambule, tir à la corde, tour de magie, trampoline,
+    tremblement de terre, ventriloque, marcher sur des braises, prendre un bain de mer,
+    se faire piquer par une abeille, attraper une mouche, changer une couche, premier rendez-vous
+  `),
+};

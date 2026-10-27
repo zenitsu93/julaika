@@ -1,0 +1,206 @@
+/* Mime : projecteur sans caméra, consigne surprise, flash et pile de polaroids, bruitages. */
+
+/* Sans caméra : un rond de lumière chaude sur le rideau chocolat. */
+.mime-spot {
+  background:
+    radial-gradient(42% 55% at 50% 42%, rgb(242 230 179 / 0.16), transparent 70%),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.12) 0 14px, transparent 14px 34px),
+    var(--color-cacao);
+}
+
+/* ---- Consigne surprise ------------------------------------------------------------ */
+
+/* L'étiquette tombe, dépasse, puis se balance comme un panneau accroché à deux fils. */
+@keyframes mime-twist-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-140%) rotate(-10deg) scale(0.9);
+  }
+  45% {
+    opacity: 1;
+    transform: translateY(8%) rotate(5deg) scale(1.04);
+  }
+  65% {
+    transform: translateY(-3%) rotate(-3deg);
+  }
+  82% {
+    transform: rotate(1.5deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+.mime-twist {
+  transform-origin: 50% -40px;
+  animation: mime-twist-in 0.9s var(--ease-out) backwards;
+}
+/* Reflet qui traverse l'étiquette juste après sa chute. */
+@keyframes mime-glint {
+  from {
+    transform: translateX(-120%) skewX(-20deg);
+  }
+  to {
+    transform: translateX(320%) skewX(-20deg);
+  }
+}
+.mime-twist-glint {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 35%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.7), transparent);
+  animation: mime-glint 0.9s ease-in-out 0.55s both;
+}
+@keyframes mime-emoji {
+  0%,
+  100% {
+    transform: none;
+  }
+  30% {
+    transform: scale(1.45) rotate(-14deg);
+  }
+  60% {
+    transform: scale(0.92) rotate(8deg);
+  }
+}
+.mime-twist-emoji {
+  animation: mime-emoji 0.7s var(--ease-spring) 0.45s both;
+}
+/* Jauge jusqu'à la prochaine consigne. */
+@keyframes mime-drain {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+.mime-twist-bar {
+  transform-origin: left;
+  animation: mime-drain var(--mime-twist, 20s) linear both;
+}
+
+/* ---- Polaroids des trouvailles ---------------------------------------------------- */
+
+/* Flash d'appareil : blanc franc qui retombe vite. */
+@keyframes mime-flash {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.mime-flash {
+  animation: mime-flash 0.6s ease-out both;
+}
+/* Pile en haut à droite ; sur téléphone, réduite en bas à gauche pour ne pas cacher la consigne. */
+.mime-pile {
+  top: 3rem;
+  right: 1rem;
+  width: 8rem;
+}
+@media (max-width: 639px) {
+  .mime-pile {
+    top: auto;
+    right: auto;
+    bottom: 3.6rem;
+    left: 0.6rem;
+    width: 6rem;
+    scale: 0.62;
+    transform-origin: bottom left;
+  }
+}
+/* Pile : le plus récent devant, les anciens glissent un peu en dessous, plus sombres. */
+.mime-pile-card {
+  --i: 0;
+  z-index: calc(10 - var(--i));
+  transform: translate(calc(var(--i) * -10px), calc(var(--i) * 12px)) scale(calc(1 - var(--i) * 0.06));
+  filter: brightness(calc(1 - var(--i) * 0.12));
+  transition:
+    transform 0.5s var(--ease-spring),
+    filter 0.5s ease;
+}
+/* Le plus récent donne sa hauteur à la pile ; les autres se glissent dessous. */
+.mime-pile-card:last-child {
+  position: relative;
+}
+
+/* ---- Bruitages ---------------------------------------------------------------------- */
+
+/* Rangée de pads plus basse sur la scène, pour laisser voir le mimeur. */
+.mime-cheer .sb-pad {
+  height: 3.25rem;
+  background: rgb(255 255 255 / 0.92);
+  color: var(--color-cacao);
+}
+@media (max-width: 639px) {
+  .mime-cheer .sb-pad {
+    height: 2.5rem;
+  }
+  .mime-cheer .sb-pad > span:not(.sb-emoji) {
+    display: none;
+  }
+}
+/* L'emoji du bruitage monte en ondulant puis s'évapore. */
+@keyframes mime-burst {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.4) rotate(0deg);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(-20px) scale(1.25) rotate(var(--r));
+  }
+  50% {
+    transform: translate(14px, -45cqh) scale(1) rotate(calc(var(--r) * -1));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-10px, -80cqh) scale(0.85) rotate(var(--r));
+  }
+}
+.mime-burst {
+  --r: 0deg;
+  animation: mime-burst 1.8s var(--ease-out) forwards;
+  filter: drop-shadow(0 4px 8px rgb(0 0 0 / 0.35));
+}
+
+/* ---- Planche de fin ------------------------------------------------------------------ */
+
+/* Les tirages s'étalent en éventail, chacun avec son petit retard. */
+.mime-planche > * {
+  margin-inline: -0.6rem;
+}
+.mime-planche > *:hover {
+  z-index: 5;
+}
+/* Petits tirages : légende resserrée. */
+.mime-planche figcaption {
+  min-height: 0;
+  padding: 0.3rem 0.1rem 0.45rem;
+}
+.mime-planche figcaption > span:first-child {
+  font-size: 1rem;
+}
+.mime-mini figcaption > span:first-child {
+  font-size: 0.8rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mime-twist,
+  .mime-twist-glint,
+  .mime-twist-emoji,
+  .mime-flash,
+  .mime-burst {
+    animation: none;
+  }
+  .mime-twist-bar {
+    animation: none;
+  }
+  .mime-pile-card {
+    transition: none;
+  }
+}

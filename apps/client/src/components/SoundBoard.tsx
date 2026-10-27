@@ -24,8 +24,9 @@ function ripple(el: HTMLElement, at: { x: number; y: number } | null) {
   setTimeout(done, 1000);
 }
 
-/** Grille de pads : clic ou touche 1…= quand la grille a le focus. */
-export function SoundBoard({ compact = false, onSend }: { compact?: boolean; onSend?: (id: SoundId) => void }) {
+/** Grille de pads : clic ou touche 1…= quand la grille a le focus. `only` : une sélection de bruitages, en une rangée. */
+export function SoundBoard({ compact = false, only, onSend }: { compact?: boolean; only?: readonly SoundId[]; onSend?: (id: SoundId) => void }) {
+  const list = only ?? SOUNDS;
   const [cooling, setCooling] = useState<{ id: SoundId; n: number } | null>(null);
   const busy = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -51,15 +52,15 @@ export function SoundBoard({ compact = false, onSend }: { compact?: boolean; onS
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    const id = SOUNDS[(KEYS as readonly string[]).indexOf(e.key)];
+    const id = list[(KEYS as readonly string[]).indexOf(e.key)];
     if (!id) return;
     e.preventDefault();
     fire(id, null);
   };
 
   return (
-    <div data-sb-grid tabIndex={-1} role="group" aria-label="Boîte à sons" onKeyDown={onKeyDown} className={`grid grid-cols-4 outline-none ${compact ? 'gap-1.5' : 'gap-2 sm:grid-cols-6'}`}>
-      {SOUNDS.map((id, i) => {
+    <div data-sb-grid tabIndex={-1} role="group" aria-label="Boîte à sons" onKeyDown={onKeyDown} className={`grid outline-none ${only ? 'grid-flow-col auto-cols-fr' : 'grid-cols-4'} ${compact ? 'gap-1.5' : 'gap-2 sm:grid-cols-6'}`}>
+      {list.map((id, i) => {
         const { label, emoji } = SOUND_INFO[id];
         return (
           <button

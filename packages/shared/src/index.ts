@@ -10,4 +10,5 @@ export * from './intrus';
 export * from './petitbac';
 export * from './photomaton';
 export * from './sourire';
+export * from './mime';
 export * from './interdits';

@@ -1,7 +1,7 @@
-import { normalize, type Difficulty, type IntrusPair } from '@julaika/shared';
+import { normalize, type Difficulty, type IntrusPair, type TurnKind } from '@julaika/shared';
 
-/** Fournit `count` mots nouveaux pour une difficulté, en évitant ceux de `avoid`. */
-export type WordGenerator = (difficulty: Difficulty, count: number, avoid: string[]) => Promise<string[]>;
+/** Fournit `count` mots nouveaux pour une difficulté (à dessiner ou à mimer), en évitant ceux de `avoid`. */
+export type WordGenerator = (difficulty: Difficulty, count: number, avoid: string[], kind?: TurnKind) => Promise<string[]>;
 
 /** Fournit `count` paires nouvelles pour L'Intrus, sans réutiliser les mots de `avoid`. */
 export type PairGenerator = (count: number, avoid: string[]) => Promise<IntrusPair[]>;
@@ -23,6 +23,18 @@ Les trois niveaux :
 Chaque mot doit être :
 - en français, au singulier, en minuscules (sauf noms propres), de 1 à 4 mots courts et 30 caractères au plus ;
 - dessinable : on doit pouvoir le faire deviner par un dessin, sans écrire de lettres ni de chiffres ;
+- connu de la plupart des gens et tout public (ni violence, ni armes, ni sexe, ni alcool ni drogue, ni politique) ;
+- différent des autres mots et des exemples ci-dessus.
+Réponds uniquement en JSON, au format {"facile": [...], "moyen": [...], "difficile": [...]}.`;
+
+const SYSTEM_MIME = `Tu fournis des mots pour le mode mime de julaïka, un jeu en ligne entre amis : un joueur mime le mot devant sa caméra, sans parler, et les autres le devinent dans le chat. Les joueurs sont francophones (France, Afrique, Canada…) et de tous âges.
+Les trois niveaux :
+- facile : une action du quotidien ou un animal qu'on reconnaît tout de suite au geste (ex. nager, se brosser les dents, singe, téléphoner) ;
+- moyen : un métier, un sport ou une activité qui demande quelques gestes enchaînés (ex. dentiste, jongler, faire la vaisselle, pilote d'avion) ;
+- difficile : une situation ou une petite histoire à jouer, une expression imagée (ex. rater le bus, avoir le hoquet, perdre ses clés, fou rire).
+Chaque mot doit être :
+- en français, au singulier, en minuscules (sauf noms propres), de 1 à 4 mots courts et 30 caractères au plus ;
+- mimable : on doit pouvoir le faire deviner avec le corps et le visage, seul devant une caméra, sans parler ni écrire ;
 - connu de la plupart des gens et tout public (ni violence, ni armes, ni sexe, ni alcool ni drogue, ni politique) ;
 - différent des autres mots et des exemples ci-dessus.
 Réponds uniquement en JSON, au format {"facile": [...], "moyen": [...], "difficile": [...]}.`;
@@ -126,7 +138,7 @@ export function deepseekWords(env = process.env, fetchImpl: typeof fetch = fetch
   const call = deepseekCaller(env, fetchImpl, 'mots');
   if (!call) return null;
 
-  return async (difficulty, count, avoid) => {
+  return async (difficulty, count, avoid, kind = 'draw') => {
     const prompt = [
       `Pour varier, pioche surtout dans ces thèmes : ${pickThemes(random).join(', ')}.`,
       avoid.length ? `Mots déjà sortis, à ne pas redonner : ${avoid.join(', ')}.` : '',
@@ -135,7 +147,7 @@ export function deepseekWords(env = process.env, fetchImpl: typeof fetch = fetch
       .filter(Boolean)
       .join('\n');
     const taken = new Set(avoid.map(normalize));
-    const words = await call(SYSTEM, prompt, (content) => parseWords(content, difficulty).filter((w) => !taken.has(normalize(w))));
+    const words = await call(kind === 'mime' ? SYSTEM_MIME : SYSTEM, prompt, (content) => parseWords(content, difficulty).filter((w) => !taken.has(normalize(w))));
     return words.slice(0, count);
   };
 }

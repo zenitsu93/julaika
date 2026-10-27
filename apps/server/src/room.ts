@@ -2,6 +2,10 @@ import {
   DEFAULT_SETTINGS,
   DrawOp,
   INTRUS_MIN_PLAYERS,
+  MIME_MAX_SHOTS,
+  MIME_TWISTS,
+  MIME_TWIST_EVERY,
+  MIME_TWIST_MARGIN,
   MAX_CALL,
   SETTINGS_LIMITS,
   TRAPS,
@@ -9,6 +13,8 @@ import {
   checkGuess,
   decodeDraw,
   isDifficulty,
+  isGameMode,
+  isPhotoDataUrl,
   isTrapMode,
   isSoundId,
   maskWord,
@@ -19,6 +25,7 @@ import {
   type Difficulty,
   type IceServer,
   type IntrusPair,
+  type MimeTwist,
   type Phase,
   type PlayerPublic,
   type RoomGame,
@@ -26,6 +33,7 @@ import {
   type RoomState,
   type ServerMsg,
   type Trap,
+  type TurnKind,
 } from '@julaika/shared';
 import { Bombe } from './bombe';
 import { Connait } from './connait';
@@ -38,7 +46,7 @@ import { Photomaton } from './photomaton';
 import { Sourire } from './sourire';
 import { Telephone } from './telephone';
 import { Wavelength } from './wavelength';
-import { WORDS_FR } from './words';
+import { MIME_FR, WORDS_FR } from './words';
 
 export interface Conn {
   send(data: string | ArrayBuffer | Uint8Array): void;
@@ -82,6 +90,7 @@ export class Room {
   hostId: string | null = null;
   round = 0;
   drawerId: string | null = null;
+  turnKind: TurnKind = 'draw';
   word: string | null = null;
   endsAt: number | null = null;
   meetUrl = '';
@@ -90,6 +99,8 @@ export class Room {
 
   /** Piège du tour en cours (manches piégées du Dessin). */
   trap: Trap | null = null;
+  /** Consigne surprise du mime en cours. */
+  twist: MimeTwist | null = null;
 
   private wave: Wavelength | null = null;
   private tel: Telephone | null = null;
@@ -112,11 +123,18 @@ export class Room {
   private timers: ReturnType<typeof setTimeout>[] = [];
   private guessCount = 0;
   private usedWords = new Set<string>();
-  // Stock de mots générés par l'IA, par difficulté : chaque mot ne sert qu'une fois.
-  private generated: Record<Difficulty, string[]> = { facile: [], moyen: [], difficile: [] };
-  private generating = new Set<Difficulty>();
+  // Stock de mots générés par l'IA, par type de tour et difficulté : chaque mot ne sert qu'une fois.
+  private generated: Record<TurnKind, Record<Difficulty, string[]>> = {
+    draw: { facile: [], moyen: [], difficile: [] },
+    mime: { facile: [], moyen: [], difficile: [] },
+  };
+  private generating = new Set<string>();
   private offered: string[] = [];
   private lastTrap: Trap['kind'] | null = null;
+  // Mime : trouvailles du tour qui attendent le polaroid du mimeur, et tirages de la partie.
+  private pendingSnaps = new Set<string>();
+  private shotCount = 0;
+  private twistCount = 0;
 
   constructor(
     code: string,
@@ -249,6 +267,9 @@ export class Room {
       case 'sourire':
         if (msg && typeof msg === 'object') this.sourire?.handle(id, msg);
         break;
+      case 'mimeShot':
+        this.mimeShot(id, msg.finder, msg.image);
+        break;
       case 'interdits':
         if (msg && typeof msg === 'object') this.interdits?.handle(id, msg);
         break;
@@ -333,7 +354,7 @@ export class Room {
   }
 
   private isDrawing(id: string): boolean {
-    return this.phase === 'drawing' && this.drawerId === id;
+    return this.phase === 'drawing' && this.drawerId === id && this.turnKind === 'draw';
   }
 
   // ---- Boucle de jeu ----------------------------------------------------------
@@ -355,6 +376,7 @@ export class Room {
     if (this.game === 'sourire') return this.startSourire();
     if (this.game === 'interdits') return this.startInterdits();
     this.usedWords.clear();
+    this.shotCount = 0;
     this.nextRound();
   }
 
@@ -387,8 +409,12 @@ export class Room {
       p.turnGain = 0;
     }
     this.broadcast({ t: 'clear' });
-    this.trap = this.pickTrap();
-
+    this.twist = null;
+    this.pendingSnaps.clear();
+    const { mode } = this.settings;
+    this.turnKind = mode === 'mime' ? 'mime' : mode === 'mixte' && this.random() < 0.5 ? 'mime' : 'draw';
+    // Les manches piégées touchent le crayon : rien à piéger quand on mime.
+    this.trap = this.turnKind === 'draw' ? this.pickTrap() : null;
     this.phase = 'choosing';
     this.choices = this.pickWords(this.settings.wordChoices);
     this.endsAt = Date.now() + CHOOSE_TIME * 1000;
@@ -415,8 +441,45 @@ export class Room {
       this.afterMs(drawMs * at, () => this.revealLetter(letters));
     }
     this.afterMs(drawMs, () => this.endTurn());
-    this.system(`${this.players.get(this.drawerId!)?.name} dessine !`);
+    if (this.turnKind === 'mime' && this.settings.twists) {
+      for (let at = MIME_TWIST_EVERY; at <= this.settings.drawTime - MIME_TWIST_MARGIN; at += MIME_TWIST_EVERY) {
+        this.after(at, () => this.nextTwist());
+      }
+    }
+    this.system(`${this.players.get(this.drawerId!)?.name} ${this.turnKind === 'mime' ? 'mime' : 'dessine'} !`);
     this.broadcastState();
+  }
+
+  /** Nouvelle consigne surprise pour le mimeur, jamais deux fois la même d'affilée. */
+  private nextTwist(): void {
+    const others = MIME_TWISTS.filter((t) => t.text !== this.twist?.text);
+    const pick = others[Math.floor(this.random() * others.length)]!;
+    this.twist = { n: ++this.twistCount, ...pick };
+    this.broadcastState();
+  }
+
+  /** Polaroid envoyé par le mimeur pour une trouvaille du tour en cours. */
+  private mimeShot(id: string, finder: unknown, image: unknown): void {
+    if (id !== this.drawerId || this.turnKind !== 'mime' || typeof finder !== 'string' || !this.pendingSnaps.has(finder)) return;
+    if (image !== null && !isPhotoDataUrl(image)) return;
+    this.pendingSnaps.delete(finder);
+    const mimer = this.players.get(id)!;
+    const found = this.players.get(finder);
+    if (!found || !this.word || this.shotCount >= MIME_MAX_SHOTS) return;
+    this.broadcast({
+      t: 'mimeShot',
+      shot: {
+        id: ++this.shotCount,
+        round: this.round,
+        word: this.word,
+        mimerId: id,
+        mimerName: mimer.name,
+        finderId: finder,
+        finderName: found.name,
+        image,
+        avatar: mimer.avatar,
+      },
+    });
   }
 
   private revealLetter(letters: number[]): void {
@@ -462,6 +525,11 @@ export class Room {
     player.turnGain = gain;
     player.score += gain;
     this.broadcast({ t: 'chat', line: { from: player.id, name: player.name, text: `${player.name} a trouvé le mot !`, kind: 'correct' } });
+    // Mime : la caméra du mimeur tire un polaroid de l'instant.
+    if (this.turnKind === 'mime' && this.drawerId) {
+      this.pendingSnaps.add(player.id);
+      this.sendTo(this.drawerId, { t: 'mimeSnap', finder: player.id });
+    }
     this.checkAllGuessed();
     this.broadcastState();
   }
@@ -743,7 +811,9 @@ export class Room {
     this.clearTimers();
     this.phase = 'gameEnd';
     this.drawerId = null;
+    this.turnKind = 'draw';
     this.trap = null;
+    this.twist = null;
     this.word = null;
     this.endsAt = Date.now() + GAME_END_TIME * 1000;
     const ranking = this.publicPlayers().sort((a, b) => b.score - a.score);
@@ -775,8 +845,10 @@ export class Room {
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
+    this.turnKind = 'draw';
     this.word = null;
     this.trap = null;
+    this.twist = null;
     this.endsAt = null;
     this.strokes = [];
     this.strokeBytes = 0;
@@ -797,9 +869,10 @@ export class Room {
 
   private pickWords(n: number): string[] {
     const { customWords: custom, customOnly, difficulty } = this.settings;
+    const kind = this.turnKind;
     // Mots de l'IA s'il en reste assez, sinon la liste intégrée de la même difficulté.
-    const generated = this.generated[difficulty].filter((w) => !this.usedWords.has(w));
-    const base = generated.length >= n ? generated : WORDS_FR[difficulty];
+    const generated = this.generated[kind][difficulty].filter((w) => !this.usedWords.has(w));
+    const base = generated.length >= n ? generated : (kind === 'mime' ? MIME_FR : WORDS_FR)[difficulty];
     const pool = customOnly && custom.length >= n ? custom : [...base, ...custom];
     const fresh = pool.filter((w) => !this.usedWords.has(w));
     const source = fresh.length >= n ? fresh : pool;
@@ -811,26 +884,36 @@ export class Room {
       [bag[i], bag[j]] = [bag[j]!, bag[i]!];
     }
     const picked = bag.slice(0, count);
-    this.generated[difficulty] = generated.filter((w) => !picked.includes(w));
+    this.generated[kind][difficulty] = generated.filter((w) => !picked.includes(w));
     this.offered = [...this.offered, ...picked].slice(-AVOID_MAX);
     this.refillWords();
     return picked;
   }
 
+  /** Types de tour que le mode de jeu peut tirer. */
+  private turnKinds(): TurnKind[] {
+    const { mode } = this.settings;
+    return mode === 'mixte' ? ['draw', 'mime'] : mode === 'mime' ? ['mime'] : ['draw'];
+  }
+
   /** Recommande des mots à l'IA quand le stock de la difficulté choisie descend sous trois tours. */
   private refillWords(): void {
     const { difficulty, customOnly, customWords, wordChoices } = this.settings;
-    if (!this.generateWords || this.game !== 'dessin' || this.generating.has(difficulty)) return;
+    if (!this.generateWords || this.game !== 'dessin') return;
     if (customOnly && customWords.length >= wordChoices) return;
-    if (this.generated[difficulty].length >= wordChoices * 3) return;
-    this.generating.add(difficulty);
-    const avoid = [...new Set([...this.generated[difficulty], ...this.offered])];
-    this.generateWords(difficulty, WORD_BATCH, avoid)
-      .then((words) => {
-        this.generated[difficulty] = [...new Set([...this.generated[difficulty], ...words])];
-      })
-      .catch(() => {}) // déjà signalé par le générateur ; les listes intégrées prennent le relais
-      .finally(() => this.generating.delete(difficulty));
+    for (const kind of this.turnKinds()) {
+      const key = `${kind}:${difficulty}`;
+      const stock = this.generated[kind];
+      if (this.generating.has(key) || stock[difficulty].length >= wordChoices * 3) continue;
+      this.generating.add(key);
+      const avoid = [...new Set([...stock[difficulty], ...this.offered])];
+      this.generateWords(difficulty, WORD_BATCH, avoid, kind)
+        .then((words) => {
+          stock[difficulty] = [...new Set([...stock[difficulty], ...words])];
+        })
+        .catch(() => {}) // déjà signalé par le générateur ; les listes intégrées prennent le relais
+        .finally(() => this.generating.delete(key));
+    }
   }
 
   // ---- Diffusion --------------------------------------------------------------
@@ -863,10 +946,12 @@ export class Room {
       settings: this.settings,
       players: this.publicPlayers(),
       drawerId: this.drawerId,
+      turnKind: this.turnKind,
       round: this.round,
       endsAt: this.endsAt,
       hint,
       trap: this.trap,
+      twist: this.twist,
       meetUrl: this.meetUrl,
       wave: this.wave?.stateFor(id) ?? null,
       tel: this.tel?.state() ?? null,
@@ -943,6 +1028,8 @@ function mergeSettings(cur: RoomSettings, patch: Partial<RoomSettings>): RoomSet
   }
   if (typeof patch.customOnly === 'boolean') next.customOnly = patch.customOnly;
   if (isDifficulty(patch.difficulty)) next.difficulty = patch.difficulty;
+  if (isGameMode(patch.mode)) next.mode = patch.mode;
   if (isTrapMode(patch.traps)) next.traps = patch.traps;
+  if (typeof patch.twists === 'boolean') next.twists = patch.twists;
   return next;
 }

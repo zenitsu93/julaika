@@ -1,7 +1,8 @@
-import { decodeDraw, isSoundId, type ClientMsg, type RoomGame, type RoomState, type ServerMsg } from '@julaika/shared';
+import { decodeDraw, isSoundId, type ClientMsg, type GameMode, type RoomGame, type RoomState, type ServerMsg } from '@julaika/shared';
 import { wipeBoard } from '../motion';
 import { board } from './board';
 import { call } from './call';
+import { mimeSnapshot } from './mime';
 import { configureSounds, receive as receiveSound } from './sounds';
 import { store, type GameState } from './store';
 
@@ -12,7 +13,7 @@ class Net {
   private ws: WebSocket | null = null;
   private pingTimer: ReturnType<typeof setInterval> | null = null;
 
-  connect(name: string, avatar: number, room?: string, game?: RoomGame) {
+  connect(name: string, avatar: number, room?: string, game?: RoomGame, mode?: GameMode) {
     this.close();
     store.reset();
     store.set({ status: 'connecting' });
@@ -22,7 +23,7 @@ class Net {
     this.ws = ws;
 
     ws.onopen = () => {
-      this.send({ t: 'join', name, avatar, room, game });
+      this.send({ t: 'join', name, avatar, room, game, mode });
       this.pingTimer = setInterval(() => this.send({ t: 'ping', at: Date.now() }), 10_000);
     };
     ws.onmessage = (e) => {
@@ -90,6 +91,8 @@ class Net {
           bombEvent: msg.state.bomb ? s.bombEvent : null,
           photos: msg.state.photo && phase !== 'pose' ? s.photos : null,
           reel: msg.state.photo ? keepBest(s.reel, s.photos, msg.state) : [],
+          // Les polaroids du mime restent jusqu'au lancement de la partie suivante.
+          mimeShots: s.room?.phase === 'lobby' && phase !== 'lobby' ? [] : s.mimeShots,
         }));
         call.sync(msg.state.players);
         break;
@@ -127,6 +130,12 @@ class Net {
         break;
       case 'photos':
         store.set({ photos: { round: msg.round, shots: msg.shots } });
+        break;
+      case 'mimeSnap':
+        this.send({ t: 'mimeShot', finder: msg.finder, image: mimeSnapshot() });
+        break;
+      case 'mimeShot':
+        store.set((s) => ({ mimeShots: [...s.mimeShots, msg.shot] }));
         break;
       case 'dial':
         store.set({ dial: msg.value });
