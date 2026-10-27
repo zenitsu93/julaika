@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { MAX_CALL, type PlayerPublic } from '@julaika/shared';
 import { avatarOf } from '../lib/avatars';
-import { playWithSound } from '../lib/autoplay';
 import { call, useCall } from '../lib/call';
 import { useGame } from '../lib/store';
 import { bump, useSpeaking } from '../motion';
@@ -21,12 +20,8 @@ function Tile({ player, stream, self, drawing, psychic, mime }: { player: Player
   const video = useRef<HTMLVideoElement>(null);
   const speaking = useSpeaking(stream, player.mic);
   useEffect(() => {
-    const v = video.current;
-    if (!v || v.srcObject === stream) return;
-    v.srcObject = stream;
-    // Les autres : on s'assure que leur voix passe, même si le navigateur bloque la lecture auto.
-    if (stream && !self) playWithSound(v);
-  }, [stream, self]);
+    if (video.current && video.current.srcObject !== stream) video.current.srcObject = stream;
+  }, [stream]);
 
   return (
     // Pellicule : la tuile de qui parle s'élargit, les autres se serrent.
