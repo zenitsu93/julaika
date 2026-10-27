@@ -22,6 +22,7 @@ import type { QuizState } from './quiz';
 import type { TelChain, TelEntry, TelState } from './telephone';
 import type { AovKind, AovLevel, AovState } from './verite';
 import type { SoundId, SourireState, WarpId } from './sourire';
+import type { MusicTrack, RoomMusic } from './musique';
 import type { WaveState } from './wavelength';
 
 export const CANVAS_W = 800;
@@ -339,6 +340,9 @@ export type ClientMsg =
   | { t: 'mimeShot'; finder: string; image: string | null }
   /** Boîte à sons : un bruitage joué chez tout le salon (dans tous les jeux). */
   | { t: 'sound'; id: SoundId }
+  /** Lecteur de musique : partager son morceau avec le salon (et chaque pause, saut ou changement), ou arrêter. */
+  | { t: 'music'; track: MusicTrack; playing: boolean; pos: number }
+  | { t: 'music'; stop: true }
   | { t: 'sourire'; smiled: true }
   | { t: 'sourire'; dare: true }
   | { t: 'sourire'; warp: WarpId | null }
@@ -412,6 +416,8 @@ export type ServerMsg =
   | { t: 'mimeShot'; shot: MimeShot }
   /** Bruitage envoyé par un joueur : chacun le synthétise chez lui (sauf s'il a coupé le son). */
   | { t: 'sound'; id: SoundId; by: string }
+  /** Musique partagée avec le salon (null : plus personne ne partage). */
+  | { t: 'music'; music: RoomMusic | null }
   /** Flash : les croquis de la manche, envoyés une fois au début du vote. */
   | { t: 'sketches'; round: number; sketches: FlashSketch[] }
   /** Cadavre exquis : le morceau à dessiner, et la bande de jonction de celui d'au-dessus. */

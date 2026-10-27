@@ -34,6 +34,7 @@
 - **Beaucoup de jeux à deux** : la plupart marchent dès deux joueurs, parfaits pour un duo ou un couple ; d'autres montent jusqu'à 16.
 - **Des cartes inventées par l'IA** (facultatif) : avec une clé DeepSeek, les mots, défis et questions sont générés à la volée, sinon le jeu pioche dans ses listes intégrées.
 - **Léger et rapide** : un seul process Node sert le site et le WebSocket, le dessin voyage en binaire.
+- **Un lecteur de musique** flottant (YouTube) : recherche, playlist en boucle, et écoute synchronisée avec tout le salon.
 - **Thème Cacao** clair et sombre, qui suit le système, avec des micro-animations partout.
 
 ## Les jeux
@@ -114,6 +115,7 @@ Toutes les variables sont facultatives ; le serveur lit un `.env` à la racine.
 | --- | --- |
 | `DEEPSEEK_API_KEY` | Mots, défis et questions inventés par l'IA. Sans clé : listes intégrées. |
 | `DEEPSEEK_MODEL`, `DEEPSEEK_BASE_URL` | Pour changer de modèle ou d'adresse d'API. |
+| `YOUTUBE_API_KEY` | Recherche du lecteur de musique (YouTube Data API v3, clé gratuite). Sans clé : on colle des liens YouTube. |
 | `TURN_URLS`, `TURN_SECRET` | Relais TURN de la visio pour les réseaux stricts (4G, entreprise). |
 | `MOT_DATA_DIR`, `MOT_TZ` | Dossier des classements du Mot du jour et son fuseau (Europe/Paris par défaut). |
 | `PORT` | Port du serveur (3001 par défaut). |
@@ -140,6 +142,8 @@ Chaque jeu a son fichier côté serveur (`apps/server/src/<jeu>.ts`) et son doss
   tarde ou échoue, le tour part avec la réserve intégrée. Plafond d'appels par heure pour tout le serveur.
 - **Visio en pair à pair** : maillage WebRTC jusqu'à 8 personnes, vidéo plafonnée à 250 kb/s par
   flux, signalisation par le WebSocket du jeu, relais coturn en secours.
+- **Musique** : lecteur YouTube intégré qui ne se démonte jamais d'une page à l'autre ; la clé de recherche
+  reste sur le serveur (`/api/musique`, avec cache), et l'écoute partagée ne transmet que le morceau, l'état et la position.
 - Limitation de débit par connexion et heartbeat pour couper les sockets mortes.
 
 ## Déployer

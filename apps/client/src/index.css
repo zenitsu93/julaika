@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import './motion/motion.css';
 @import './motion/sourire.css';
+@import './motion/musique.css';
 
 /* Concept « Studio Pro » en tenue « Cacao » : crème et chocolat (Whipped Butter #f2e6b3,
    Cookie Crumble #4b2e21), avec un or bruni en accent.

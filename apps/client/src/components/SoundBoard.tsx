@@ -256,7 +256,7 @@ export function SoundToasts() {
   }, []);
 
   return (
-    <div className="pointer-events-none fixed bottom-4 left-4 z-50 flex flex-col items-start gap-2" aria-live="polite">
+    <div className="snd-toasts pointer-events-none fixed bottom-4 left-4 z-50 flex flex-col items-start gap-2" aria-live="polite">
       {items.map((e) => {
         const { emoji, label } = SOUND_INFO[e.id];
         const name = e.by === selfId ? 'Toi' : (players?.find((p) => p.id === e.by)?.name ?? 'Quelqu’un');
