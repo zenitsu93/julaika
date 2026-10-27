@@ -22,15 +22,28 @@ export interface PhotoState {
   done: string[];
   /** Révélation : étoiles reçues par photo (somme) et nombre de notes. Vide avant. */
   stars: Record<string, { total: number; votes: number }>;
+  /** Vote : heure (ms) où les étoiles s'ouvrent ; avant, la table annonce la notation et rappelle la consigne. */
+  opensAt: number | null;
+  /** L'hôte a mis la partie en pause : les minuteurs sont figés. */
+  paused: boolean;
+  /** En pause : millisecondes qui restaient au minuteur de la phase. */
+  pausedLeft: number | null;
 }
 
-/** Lecture de la consigne, puis 3, 2, 1 : le flash tombe à `endsAt` (s). */
-export const PHOTO_POSE_TIME = 8;
+/** Lecture de la consigne, puis 5, 4, 3, 2, 1 : le flash tombe à `endsAt` (s). */
+export const PHOTO_POSE_TIME = 11;
+/** Le décompte affiché avant le flash (s). */
+export const PHOTO_COUNTDOWN = 5;
 /** Secondes laissées pour que les photos arrivent après le flash. */
 export const PHOTO_UPLOAD_GRACE = 6;
 /** Toutes les photos reçues : la table attend encore ce délai après le flash (ms), le temps que le tirage sorte et se révèle. */
 export const PHOTO_DEVELOP_MS = 3200;
-export const PHOTO_VOTE_TIME = 30;
+/** Annonce de la notation avant que les étoiles s'ouvrent (s), le temps de relire la consigne. */
+export const PHOTO_VOTE_INTRO = 5;
+/** Temps pour noter, une fois les étoiles ouvertes (s). On passe plus tôt si tout le monde a validé. */
+export const PHOTO_VOTE_TIME = 45;
+/** Tout le monde a validé ses notes : petit temps avant la révélation (ms). */
+export const PHOTO_ALL_RATED_MS = 1500;
 export const PHOTO_REVEAL_TIME = 9;
 /** Côté de la photo carrée (px) et taille maximale de sa data URL (le WebSocket coupe à 64 Ko). */
 export const PHOTO_SIZE = 360;

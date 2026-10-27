@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  PHOTO_ALL_RATED_MS,
   PHOTO_DEVELOP_MS,
   PHOTO_MAX_STARS,
   PHOTO_POSE_TIME,
@@ -7,6 +8,7 @@ import {
   PHOTO_REVEAL_TIME,
   PHOTO_STAR_POINTS,
   PHOTO_UPLOAD_GRACE,
+  PHOTO_VOTE_INTRO,
   PHOTO_VOTE_TIME,
   type ServerMsg,
 } from '@julaika/shared';
@@ -43,8 +45,16 @@ function shootAll(room: Room, ids: string[], noCam: number[] = []) {
   develop();
 }
 
-/** Le flash, puis le temps que les tirages se révèlent. */
-const develop = () => vi.advanceTimersByTime(PHOTO_POSE_TIME * 1000 + PHOTO_DEVELOP_MS);
+/** Le flash, le temps que les tirages se révèlent, puis l'annonce de la notation. */
+const develop = () => {
+  vi.advanceTimersByTime(PHOTO_POSE_TIME * 1000 + PHOTO_DEVELOP_MS);
+  vi.advanceTimersByTime(PHOTO_VOTE_INTRO * 1000);
+};
+/** Tout le monde valide ses notes, puis le petit temps avant la révélation. */
+function readyAll(room: Room, ids: string[]) {
+  for (const id of ids) room.handle(id, { t: 'photo', ready: true });
+  vi.advanceTimersByTime(PHOTO_ALL_RATED_MS);
+}
 
 const photoState = (c: FakeConn) => c.last('state')!.state.photo!;
 const score = (c: FakeConn, id: string) => c.last('state')!.state.players.find((p) => p.id === id)!.score;
@@ -68,6 +78,7 @@ describe('Photomaton', () => {
     shootAll(room, ids.slice(1));
     expect(room.phase).toBe('vote');
     expect(room.endsAt).toBe(Date.now() + PHOTO_VOTE_TIME * 1000);
+    expect(photoState(conns[0]!).opensAt).toBe(Date.now());
     expect(photoState(conns[0]!).done).toEqual([]);
     for (const c of conns) {
       expect(c.last('photos')).toEqual({
@@ -86,6 +97,16 @@ describe('Photomaton', () => {
     room.handle(ids[2]!, { t: 'photo', vote: ids[0]!, stars: 2 });
     expect(room.phase).toBe('vote');
     room.handle(ids[2]!, { t: 'photo', vote: ids[1]!, stars: 5 });
+    // Avoir tout noté ne suffit pas : on attend que chacun valide.
+    expect(room.phase).toBe('vote');
+    room.handle(ids[0]!, { t: 'photo', ready: true });
+    room.handle(ids[1]!, { t: 'photo', ready: true });
+    expect(photoState(conns[0]!).done).toEqual([ids[0], ids[1]]);
+    // Une fois validé, on ne change plus sa note.
+    room.handle(ids[0]!, { t: 'photo', vote: ids[1]!, stars: 1 });
+    room.handle(ids[2]!, { t: 'photo', ready: true });
+    expect(room.phase).toBe('vote');
+    vi.advanceTimersByTime(PHOTO_ALL_RATED_MS);
     expect(room.phase).toBe('reveal');
     expect(room.endsAt).toBe(Date.now() + PHOTO_REVEAL_TIME * 1000);
     expect(photoState(conns[0]!).stars).toEqual({
@@ -112,6 +133,58 @@ describe('Photomaton', () => {
     expect(room.phase).toBe('vote');
   });
 
+  it('la notation s’annonce : pas d’étoiles avant l’ouverture', () => {
+    const { room, conns, ids } = setup(2);
+    ids.forEach((id) => room.handle(id, { t: 'photo', image: IMG }));
+    vi.advanceTimersByTime(PHOTO_POSE_TIME * 1000 + PHOTO_DEVELOP_MS);
+    expect(room.phase).toBe('vote');
+    expect(photoState(conns[0]!).opensAt).toBe(Date.now() + PHOTO_VOTE_INTRO * 1000);
+    expect(room.endsAt).toBe(Date.now() + (PHOTO_VOTE_INTRO + PHOTO_VOTE_TIME) * 1000);
+    room.handle(ids[0]!, { t: 'photo', vote: ids[1]!, stars: 5 });
+    room.handle(ids[0]!, { t: 'photo', ready: true });
+    expect(photoState(conns[0]!).done).toEqual([]);
+    vi.advanceTimersByTime(PHOTO_VOTE_INTRO * 1000);
+    room.handle(ids[0]!, { t: 'photo', vote: ids[1]!, stars: 5 });
+    room.handle(ids[0]!, { t: 'photo', ready: true });
+    expect(photoState(conns[0]!).done).toEqual([ids[0]]);
+    // L'autre a tout son temps.
+    vi.advanceTimersByTime(PHOTO_VOTE_TIME * 1000 - 1);
+    expect(room.phase).toBe('vote');
+    vi.advanceTimersByTime(1);
+    expect(room.phase).toBe('reveal');
+    expect(photoState(conns[0]!).stars[ids[1]!]).toEqual({ total: 5, votes: 1 });
+  });
+
+  it('l’hôte met en pause et relance : le temps restant est gardé', () => {
+    const { room, conns, ids } = setup(2);
+    vi.advanceTimersByTime(4000);
+    // Un invité ne peut pas mettre en pause.
+    room.handle(ids[1]!, { t: 'photo', pause: true });
+    expect(photoState(conns[0]!).paused).toBe(false);
+    room.handle(ids[0]!, { t: 'photo', pause: true });
+    expect(photoState(conns[1]!)).toMatchObject({ paused: true, pausedLeft: PHOTO_POSE_TIME * 1000 - 4000 });
+    expect(conns[1]!.last('state')!.state.endsAt).toBeNull();
+    vi.advanceTimersByTime(60_000);
+    expect(room.phase).toBe('pose');
+    room.handle(ids[0]!, { t: 'photo', pause: false });
+    expect(photoState(conns[1]!).paused).toBe(false);
+    expect(room.endsAt).toBe(Date.now() + PHOTO_POSE_TIME * 1000 - 4000);
+    ids.forEach((id) => room.handle(id, { t: 'photo', image: IMG }));
+    vi.advanceTimersByTime(PHOTO_POSE_TIME * 1000 - 4000 + PHOTO_DEVELOP_MS);
+    expect(room.phase).toBe('vote');
+
+    // Pause pendant le vote : les deux ont validé, la révélation attend la reprise.
+    vi.advanceTimersByTime(PHOTO_VOTE_INTRO * 1000);
+    room.handle(ids[0]!, { t: 'photo', pause: true });
+    room.handle(ids[0]!, { t: 'photo', vote: ids[1]!, stars: 3 });
+    readyAll(room, ids);
+    vi.advanceTimersByTime(120_000);
+    expect(room.phase).toBe('vote');
+    room.handle(ids[0]!, { t: 'photo', pause: false });
+    vi.advanceTimersByTime(PHOTO_ALL_RATED_MS);
+    expect(room.phase).toBe('reveal');
+  });
+
   it('une image invalide devient null', () => {
     const { room, conns, ids } = setup();
     room.handle(ids[0]!, { t: 'photo', image: 'data:image/png;base64,AAAA' });
@@ -132,9 +205,8 @@ describe('Photomaton', () => {
     room.handle(ids[0]!, { t: 'photo', vote: ids[1]!, stars: 0 });
     room.handle(ids[0]!, { t: 'photo', vote: ids[1]!, stars: Number.NaN });
     room.handle(ids[0]!, { t: 'photo', vote: ids[1]!, stars: '4' as unknown as number });
-    expect(photoState(conns[0]!).done).toEqual([]);
     room.handle(ids[0]!, { t: 'photo', vote: ids[1]!, stars: 99 });
-    expect(photoState(conns[0]!).done).toEqual([ids[0]]);
+    expect(photoState(conns[0]!).done).toEqual([]);
     vi.advanceTimersByTime(PHOTO_VOTE_TIME * 1000);
     expect(room.phase).toBe('reveal');
     expect(photoState(conns[0]!).stars).toEqual({
@@ -150,6 +222,7 @@ describe('Photomaton', () => {
     room.handle(ids[0]!, { t: 'photo', vote: ids[1]!, stars: 1 });
     room.handle(ids[0]!, { t: 'photo', vote: ids[1]!, stars: 4 });
     room.handle(ids[1]!, { t: 'photo', vote: ids[0]!, stars: 2.6 });
+    readyAll(room, ids);
     expect(room.phase).toBe('reveal');
     expect(photoState(conns[0]!).stars).toEqual({ [ids[0]!]: { total: 3, votes: 1 }, [ids[1]!]: { total: 4, votes: 1 } });
   });
@@ -182,6 +255,7 @@ describe('Photomaton', () => {
     room.handle(ids[1]!, { t: 'photo', image: IMG });
     vi.advanceTimersByTime(PHOTO_UPLOAD_GRACE * 1000);
     expect(room.phase).toBe('vote');
+    vi.advanceTimersByTime(PHOTO_VOTE_INTRO * 1000);
     expect(conns[2]!.last('photos')!.shots.map((s) => s.image)).toEqual([IMG, IMG, null]);
     // J2 n'a rien envoyé, mais il peut quand même voter.
     room.handle(ids[2]!, { t: 'photo', vote: ids[0]!, stars: 3 });
@@ -200,14 +274,17 @@ describe('Photomaton', () => {
 
   it('un joueur parti ne bloque ni la pose ni le vote', () => {
     const { room, ids } = setup(4);
-    shootAll(room, ids.slice(0, 2));
+    ids.slice(0, 2).forEach((id) => room.handle(id, { t: 'photo', image: IMG }));
     room.leave(ids[3]!);
     expect(room.phase).toBe('pose');
     room.handle(ids[2]!, { t: 'photo', image: IMG });
     develop();
     expect(room.phase).toBe('vote');
     for (const v of ids.slice(0, 2)) for (const t of ids.slice(0, 3)) if (v !== t) room.handle(v, { t: 'photo', vote: t, stars: 3 });
+    readyAll(room, ids.slice(0, 2));
+    expect(room.phase).toBe('vote');
     room.leave(ids[2]!);
+    vi.advanceTimersByTime(PHOTO_ALL_RATED_MS);
     expect(room.phase).toBe('reveal');
   });
 
@@ -219,6 +296,7 @@ describe('Photomaton', () => {
       shootAll(room, ids);
       room.handle(ids[0]!, { t: 'photo', vote: ids[1]!, stars: 2 });
       room.handle(ids[1]!, { t: 'photo', vote: ids[0]!, stars: 1 });
+      readyAll(room, ids);
       vi.advanceTimersByTime(PHOTO_REVEAL_TIME * 1000);
     }
     expect(new Set(prompts).size).toBe(2);

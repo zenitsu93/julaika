@@ -1038,6 +1038,7 @@ export class Room {
       player: (id) => this.players.get(id),
       rounds: () => this.settings.rounds,
       random: this.random,
+      isHost: (id) => id === this.hostId,
       addScore: (id, points) => {
         const p = this.players.get(id);
         if (p) p.score += points;
