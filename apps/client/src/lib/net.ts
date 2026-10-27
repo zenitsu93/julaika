@@ -1,4 +1,4 @@
-import { decodeDraw, type ClientMsg, type ServerMsg } from '@julaika/shared';
+import { decodeDraw, type ClientMsg, type RoomGame, type ServerMsg } from '@julaika/shared';
 import { wipeBoard } from '../motion';
 import { board } from './board';
 import { call } from './call';
@@ -11,7 +11,7 @@ class Net {
   private ws: WebSocket | null = null;
   private pingTimer: ReturnType<typeof setInterval> | null = null;
 
-  connect(name: string, avatar: number, room?: string) {
+  connect(name: string, avatar: number, room?: string, game?: RoomGame) {
     this.close();
     store.reset();
     store.set({ status: 'connecting' });
@@ -21,7 +21,7 @@ class Net {
     this.ws = ws;
 
     ws.onopen = () => {
-      this.send({ t: 'join', name, avatar, room });
+      this.send({ t: 'join', name, avatar, room, game });
       this.pingTimer = setInterval(() => this.send({ t: 'ping', at: Date.now() }), 10_000);
     };
     ws.onmessage = (e) => {
@@ -71,7 +71,7 @@ class Net {
           send: (to, data) => this.send({ t: 'rtc', to, data }),
           announce: (inCall, cam, mic) => this.send({ t: 'call', inCall, cam, mic }),
         });
-        store.set({ status: 'online', selfId: msg.selfId, room: msg.state, clockOffset: msg.now - Date.now(), error: null });
+        store.set({ status: 'online', selfId: msg.selfId, room: msg.state, dial: msg.state.wave?.dial ?? null, clockOffset: msg.now - Date.now(), error: null });
         history.replaceState(null, '', `/r/${msg.state.code}`);
         break;
       case 'state': {
@@ -81,6 +81,7 @@ class Net {
           choices: phase === 'choosing' ? s.choices : null,
           turnEnd: phase === 'turnEnd' ? s.turnEnd : null,
           ranking: phase === 'gameEnd' ? s.ranking : null,
+          dial: msg.state.wave?.dial ?? null,
         }));
         call.sync(msg.state.players);
         break;
@@ -103,6 +104,9 @@ class Net {
         break;
       case 'undo':
         board.undo();
+        break;
+      case 'dial':
+        store.set({ dial: msg.value });
         break;
       case 'rtc':
         void call.onSignal(msg.from, msg.data);

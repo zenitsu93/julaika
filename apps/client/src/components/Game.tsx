@@ -1,13 +1,16 @@
+import { useGame } from '../lib/store';
 import { Board } from './Board';
 import { Chat } from './Chat';
 import { TopBar } from './TopBar';
+import { WaveBoard } from './wave/WaveBoard';
 
 export function Game() {
+  const wavelength = useGame((s) => s.room!.game === 'wavelength');
   return (
     <div className="mx-auto flex min-h-full max-w-[1400px] flex-col gap-3 p-3">
       <TopBar />
       <div className="grid flex-1 gap-3 lg:grid-cols-[1fr_20rem]">
-        <Board />
+        {wavelength ? <WaveBoard /> : <Board />}
         <Chat />
       </div>
     </div>

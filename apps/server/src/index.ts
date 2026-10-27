@@ -3,7 +3,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize as normalizePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, type WebSocket } from 'ws';
-import type { ClientMsg } from '@julaika/shared';
+import { isRoomGame, type ClientMsg, type RoomGame } from '@julaika/shared';
 import { deepseekWords } from './deepseek';
 import { iceServersFor } from './ice';
 import { Room } from './room';
@@ -59,6 +59,7 @@ wss.on('connection', (ws: WebSocket & { alive?: boolean }) => {
   let playerId: string | null = null;
   const chatBucket = bucket(5, 1); // 5 messages en rafale, 1/s ensuite
   const drawBucket = bucket(120, 60);
+  const dialBucket = bucket(40, 30); // aiguille de Wavelength : ~30 positions/s
 
   ws.alive = true;
   ws.on('pong', () => (ws.alive = true));
@@ -81,7 +82,7 @@ wss.on('connection', (ws: WebSocket & { alive?: boolean }) => {
         ws.send(JSON.stringify({ t: 'error', message: 'Salon introuvable.' }));
         return;
       }
-      room = code ? rooms.get(code)! : createRoom();
+      room = code ? rooms.get(code)! : createRoom(isRoomGame(msg.game) ? msg.game : 'dessin');
       playerId = room.join(ws, msg.name, msg.avatar);
       if (!playerId) {
         room = null;
@@ -91,6 +92,7 @@ wss.on('connection', (ws: WebSocket & { alive?: boolean }) => {
     }
     if (!room || !playerId) return;
     if (msg.t === 'chat' && !chatBucket()) return;
+    if (msg.t === 'wave' && !dialBucket()) return;
     room.handle(playerId, msg);
   });
 
@@ -110,7 +112,7 @@ setInterval(() => {
   }
 }, 20_000).unref();
 
-function createRoom(): Room {
+function createRoom(game: RoomGame): Room {
   let code: string;
   do code = randomCode();
   while (rooms.has(code));
@@ -124,6 +126,7 @@ function createRoom(): Room {
     (playerId) => iceServersFor(playerId),
     generateWords,
   );
+  room.game = game;
   rooms.set(code, room);
   return room;
 }

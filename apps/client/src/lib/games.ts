@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer une place « Bientôt »).
 
-export type GameId = 'dessin' | 'mime';
+export type GameId = 'dessin' | 'mime' | 'wavelength';
 
 export interface GameInfo {
   id: GameId;
@@ -29,10 +29,18 @@ export const GAMES: GameInfo[] = [
     badge: 'Nouveau',
     keywords: ['mime', 'mimer', 'visio', 'camera', 'deviner'],
   },
+  {
+    id: 'wavelength',
+    name: 'Wavelength',
+    pitch: 'Un indice, une aiguille : lisez-vous dans les pensées ?',
+    players: 'À deux ou plus',
+    badge: 'À deux',
+    keywords: ['wavelength', 'onde', 'cadran', 'aiguille', 'cooperatif', 'duo', 'deux', 'couple', 'telepathe', 'visio'],
+  },
 ];
 
 /** Places « Bientôt » affichées après les jeux disponibles. */
-export const SOON_SLOTS = 2;
+export const SOON_SLOTS = 1;
 
 const fold = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
 

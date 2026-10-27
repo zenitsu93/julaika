@@ -1,6 +1,8 @@
 // Contrat client <-> serveur.
 // Messages de contrôle : JSON (frames texte). Dessin : binaire (voir draw.ts).
 
+import type { WaveState } from './wavelength';
+
 export const CANVAS_W = 800;
 export const CANVAS_H = 600;
 
@@ -12,7 +14,19 @@ export const PALETTE = [
 ] as const;
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
-export type Phase = 'lobby' | 'choosing' | 'drawing' | 'turnEnd' | 'gameEnd';
+/** Jeux proposés : chaque salon en porte un, choisi à sa création. */
+export const ROOM_GAMES = ['dessin', 'wavelength'] as const;
+export type RoomGame = (typeof ROOM_GAMES)[number];
+
+export function isRoomGame(v: unknown): v is RoomGame {
+  return (ROOM_GAMES as readonly unknown[]).includes(v);
+}
+
+/**
+ * Dessin : choosing → drawing → turnEnd. Wavelength : clue (le télépathe cherche son indice)
+ * → guess (l'équipe place l'aiguille) → reveal.
+ */
+export type Phase = 'lobby' | 'choosing' | 'drawing' | 'turnEnd' | 'clue' | 'guess' | 'reveal' | 'gameEnd';
 
 /** Difficulté des mots proposés : sert au tirage dans les listes intégrées et à la génération par IA. */
 export const DIFFICULTIES = ['facile', 'moyen', 'difficile'] as const;
@@ -82,6 +96,7 @@ export type RtcSignal =
 
 export interface RoomState {
   code: string;
+  game: RoomGame;
   phase: Phase;
   settings: RoomSettings;
   players: PlayerPublic[];
@@ -93,6 +108,8 @@ export interface RoomState {
   hint: string | null;
   /** Lien Google Meet du salon, partagé par l'hôte (vide si aucun). */
   meetUrl: string;
+  /** État de Wavelength, null pour les autres jeux. */
+  wave: WaveState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -121,7 +138,7 @@ export interface ChatLine {
 }
 
 export type ClientMsg =
-  | { t: 'join'; name: string; avatar: number; room?: string }
+  | { t: 'join'; name: string; avatar: number; room?: string; game?: RoomGame }
   | { t: 'settings'; settings: Partial<RoomSettings> }
   | { t: 'start' }
   | { t: 'choose'; index: number }
@@ -131,6 +148,10 @@ export type ClientMsg =
   | { t: 'meet'; url: string }
   | { t: 'call'; inCall: boolean; cam: boolean; mic: boolean }
   | { t: 'rtc'; to: string; data: RtcSignal }
+  | { t: 'wave'; clue: string }
+  | { t: 'wave'; dial: number }
+  | { t: 'wave'; lock: true }
+  | { t: 'wave'; reroll: true }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =
@@ -143,5 +164,7 @@ export type ServerMsg =
   | { t: 'gameEnd'; ranking: PlayerPublic[] }
   | { t: 'clear' }
   | { t: 'undo' }
+  /** Aiguille de Wavelength bougée par un coéquipier : message léger, sans tout l'état. */
+  | { t: 'dial'; value: number; by: string }
   | { t: 'pong'; at: number; now: number }
   | { t: 'error'; message: string };

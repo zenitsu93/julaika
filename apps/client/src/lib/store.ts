@@ -10,6 +10,8 @@ export interface GameState {
   turnEnd: { word: string; gains: Record<string, number> } | null;
   ranking: PlayerPublic[] | null;
   error: string | null;
+  /** Aiguille de Wavelength, tenue à part pour ne re-rendre que le cadran à chaque mouvement. */
+  dial: number | null;
   /** Décalage horloge serveur - horloge locale (ms). */
   clockOffset: number;
 }
@@ -23,6 +25,7 @@ const initial: GameState = {
   turnEnd: null,
   ranking: null,
   error: null,
+  dial: null,
   clockOffset: 0,
 };
 
