@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DrawOp, encodeDraw, type ServerMsg } from '@julaika/shared';
-import { CHOOSE_TIME, Room, TURN_END_TIME, type Conn } from '../apps/server/src/room';
+import { CHOOSE_TIME, GAME_GRACE, LOBBY_GRACE, Room, TURN_END_TIME, type Conn } from '../apps/server/src/room';
 import { MIME_FR } from '../apps/server/src/words';
 
 class FakeConn implements Conn {
@@ -314,5 +314,107 @@ describe('mime enrichi', () => {
     expect(conns[0]!.last('mimeSnap')).toBeUndefined();
     room.handle(ids[0]!, { t: 'mimeShot', finder: ids[1]!, image: IMG });
     expect(conns[1]!.last('mimeShot')).toBeUndefined();
+  });
+});
+
+describe('Room : place gardée après une coupure', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  const seatOf = (conn: FakeConn) => conn.last('welcome')!.seat;
+
+  it("l'hôte seul qui passe sur WhatsApp garde son salon et sa place", () => {
+    const onEmpty = vi.fn();
+    const room = new Room('TEST', onEmpty, () => 0);
+    const conn = new FakeConn();
+    const id = room.join(conn, 'Christian', 0)!;
+    room.disconnect(id, conn);
+    vi.advanceTimersByTime((LOBBY_GRACE - 1) * 1000);
+    expect(onEmpty).not.toHaveBeenCalled();
+    expect(room.publicPlayers()[0]!.connected).toBe(false);
+
+    const back = new FakeConn();
+    expect(room.resume(seatOf(conn), back)).toBe(id);
+    expect(back.last('welcome')!.selfId).toBe(id);
+    expect(back.last('welcome')!.state.players[0]).toMatchObject({ isHost: true, connected: true });
+    vi.advanceTimersByTime(LOBBY_GRACE * 1000);
+    expect(onEmpty).not.toHaveBeenCalled();
+  });
+
+  it('un ami rejoint pendant que l\'hôte est absent, et l\'hôte reste hôte', () => {
+    const room = new Room('TEST', undefined, () => 0);
+    const host = new FakeConn();
+    const hostId = room.join(host, 'Hôte', 0)!;
+    room.disconnect(hostId, host);
+    const friend = new FakeConn();
+    room.join(friend, 'Julaïka', 1);
+    expect(friend.last('welcome')!.state.players.find((p) => p.id === hostId)).toMatchObject({ isHost: true, connected: false });
+    room.resume(seatOf(host), new FakeConn());
+    expect(friend.last('state')!.state.players.find((p) => p.id === hostId)!.connected).toBe(true);
+    expect(friend.json.some((m) => m.t === 'chat' && m.line.text.includes('est de retour'))).toBe(true);
+  });
+
+  it('la place se libère à la fin du délai de grâce, et le salon vide disparaît', () => {
+    const onEmpty = vi.fn();
+    const room = new Room('TEST', onEmpty, () => 0);
+    const conn = new FakeConn();
+    const id = room.join(conn, 'A', 0)!;
+    room.disconnect(id, conn);
+    vi.advanceTimersByTime(LOBBY_GRACE * 1000);
+    expect(room.players.size).toBe(0);
+    expect(onEmpty).toHaveBeenCalledOnce();
+    expect(room.resume(seatOf(conn), new FakeConn())).toBeNull();
+  });
+
+  it("en partie, le délai est plus court et l'hôte passe à un joueur présent", () => {
+    const { room, conns, ids } = setup(3);
+    room.handle(ids[0]!, { t: 'start' });
+    room.disconnect(ids[0]!, conns[0]!);
+    vi.advanceTimersByTime(GAME_GRACE * 1000);
+    expect(room.players.has(ids[0]!)).toBe(false);
+    expect(room.hostId).toBe(ids[1]);
+  });
+
+  it('quitter rend la place tout de suite', () => {
+    const { room, ids, conns } = setup(2);
+    room.leave(ids[1]!);
+    expect(room.players.has(ids[1]!)).toBe(false);
+    expect(room.resume(seatOf(conns[1]!), new FakeConn())).toBeNull();
+  });
+
+  it("une connexion remplacée est coupée et sa fermeture n'efface pas la nouvelle", () => {
+    const { room, conns, ids } = setup(2);
+    const old = conns[1]!;
+    const close = vi.fn();
+    (old as FakeConn & { close?: () => void }).close = close;
+    const fresh = new FakeConn();
+    room.resume(seatOf(old), fresh);
+    expect(close).toHaveBeenCalledOnce();
+    room.disconnect(ids[1]!, old);
+    expect(room.publicPlayers().find((p) => p.id === ids[1])!.connected).toBe(true);
+  });
+
+  it('un jeton inconnu ne reprend rien', () => {
+    const { room } = setup(2);
+    expect(room.resume('x'.repeat(22), new FakeConn())).toBeNull();
+  });
+});
+
+describe('Room : reprise en plein Téléphone dessiné', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('le joueur qui revient retrouve sa consigne', () => {
+    const room = new Room('TEST', undefined, () => 0);
+    room.game = 'telephone';
+    const conns = [new FakeConn(), new FakeConn(), new FakeConn()];
+    const ids = conns.map((c, i) => room.join(c, `J${i}`, i)!);
+    room.handle(ids[0]!, { t: 'start' });
+    const seat = conns[1]!.last('welcome')!.seat;
+    room.disconnect(ids[1]!, conns[1]!);
+    const back = new FakeConn();
+    room.resume(seat, back);
+    expect(back.last('telPrompt')).toMatchObject({ step: 0, prompt: null });
+    expect(back.last('welcome')!.state.tel).not.toBeNull();
   });
 });

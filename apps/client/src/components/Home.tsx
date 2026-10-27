@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AVATARS } from '../lib/avatars';
 import { isRoomGame } from '@julaika/shared';
 import { GAMES, type GameId } from '../lib/games';
-import { net } from '../lib/net';
+import { net, savedSeat } from '../lib/net';
 import { useGame } from '../lib/store';
 import { bump, shake, useIndicator } from '../motion';
 import { LogoMark, TremaLoader } from './Logo';
@@ -40,6 +40,12 @@ export function Home({ game, onBack }: { game: GameId | null; onBack: () => void
   // Arrivé par « J'ai un code de salon » : le curseur attend le code.
   useEffect(() => {
     if (game === null && !codeFromUrl()) codeInput.current?.focus();
+  }, []);
+
+  // L'onglet a été rechargé (le téléphone l'avait mis en veille) alors qu'on avait une place : on la reprend.
+  useEffect(() => {
+    const room = codeFromUrl();
+    if (room && savedSeat(room) && status === 'idle') play(room);
   }, []);
 
   useEffect(() => {

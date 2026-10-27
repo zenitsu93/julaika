@@ -96,6 +96,13 @@ export class Cadavre {
     if (this.phase === 'reveal') this.host.sendTo(id, { t: 'creatures', creatures: this.creatures });
   }
 
+  /** Retour après une coupure : on lui redonne la bande du morceau d'au-dessus. */
+  onResume(id: string): void {
+    const i = this.seats.findIndex((s) => s.id === id);
+    if (i < 0 || this.phase !== 'draw') return;
+    this.host.sendTo(id, this.promptAt(i));
+  }
+
   /** Un joueur part : son morceau sera rendu tel quel à la fin du temps, on n'attend plus que les présents. */
   onLeave(_id: string): void {
     this.checkAllDone();
@@ -125,13 +132,15 @@ export class Cadavre {
     this.sketches.clear();
     const seconds = this.host.drawTime();
     this.host.setPhase('draw', Date.now() + seconds * 1000, step + 1);
-    this.seats.forEach((s, i) => {
-      const above = step === 0 ? null : this.creatureAt(i).pieces[step - 1];
-      this.host.sendTo(s.id, { t: 'cadPrompt', step, above: above ? { name: above.name, strokes: cadJoinStrokes(above.strokes) } : null });
-    });
+    this.seats.forEach((s, i) => this.host.sendTo(s.id, this.promptAt(i)));
     // Une seconde de grâce : le dernier trait envoyé au gong arrive à temps.
     this.timers.push(setTimeout(() => this.endStep(), (seconds + 1) * 1000));
     this.host.broadcastState();
+  }
+
+  private promptAt(i: number): ServerMsg {
+    const above = this.step === 0 ? null : this.creatureAt(i).pieces[this.step - 1];
+    return { t: 'cadPrompt', step: this.step, above: above ? { name: above.name, strokes: cadJoinStrokes(above.strokes) } : null };
   }
 
   private endStep(): void {

@@ -20,7 +20,8 @@ function Pill({ player, rank, drawing, mime, self }: { player: PlayerPublic; ran
       data-flip={player.id}
       className={`m-pop relative flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-sm transition-colors duration-300 ${
         player.guessed ? 'border-good/50 bg-good/10 text-good' : drawing ? 'border-ink bg-surface' : 'border-edge bg-surface'
-      }`}
+      } ${player.connected ? '' : 'p-away'}`}
+      title={player.connected ? undefined : `${player.name} a perdu la connexion, sa place est gardée`}
     >
       <span className="font-mono text-[11px] text-muted">{rank}</span>
       <span aria-hidden>{avatarOf(player.avatar)}</span>

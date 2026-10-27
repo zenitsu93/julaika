@@ -196,6 +196,7 @@ export interface PlayerPublic {
   score: number;
   isHost: boolean;
   guessed: boolean;
+  /** Faux pendant une coupure : sa place est gardée le temps du délai de grâce. */
   connected: boolean;
   /** Présence dans la visio intégrée, et état caméra / micro (pour afficher l'avatar à la place). */
   inCall: boolean;
@@ -307,7 +308,10 @@ export interface ChatLine {
 }
 
 export type ClientMsg =
-  | { t: 'join'; name: string; avatar: number; room?: string; game?: RoomGame; mode?: GameMode }
+  /** `seat` : jeton reçu dans `welcome`, pour reprendre sa place après une coupure (appli en arrière-plan). */
+  | { t: 'join'; name: string; avatar: number; room?: string; game?: RoomGame; mode?: GameMode; seat?: string }
+  /** Départ volontaire : la place est rendue tout de suite, sans délai de grâce. */
+  | { t: 'leave' }
   | { t: 'settings'; settings: Partial<RoomSettings> }
   | { t: 'start' }
   | { t: 'choose'; index: number }
@@ -395,7 +399,7 @@ export type ClientMsg =
   | { t: 'ping'; at: number };
 
 export type ServerMsg =
-  | { t: 'welcome'; selfId: string; state: RoomState; now: number; ice: IceServer[] }
+  | { t: 'welcome'; selfId: string; seat: string; state: RoomState; now: number; ice: IceServer[] }
   | { t: 'rtc'; from: string; data: RtcSignal }
   | { t: 'state'; state: RoomState }
   | { t: 'chat'; line: ChatLine }

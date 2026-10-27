@@ -1970,5 +1970,156 @@
   .q-door-big .q-leaf {
     animation: none;
     transform: perspective(60px) rotateY(-48deg);
+
+/* ---- Reconnexion et invitation ------------------------------------------------ */
+
+/* Bandeau chocolat qui descend du haut de l'écran pendant une coupure. */
+@keyframes rc-in {
+  from {
+    transform: translateY(-140%) scale(0.92);
+    opacity: 0;
+  }
+}
+@keyframes rc-out {
+  to {
+    transform: translateY(-140%) scale(0.92);
+    opacity: 0;
+  }
+}
+/* Les ondes du wifi s'allument une à une, comme une recherche de réseau. */
+@keyframes rc-wave {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+/* Fil d'or qui file sous le bandeau tant qu'on essaie. */
+@keyframes rc-thread {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+.rc-wrap {
+  position: fixed;
+  inset: max(0.75rem, env(safe-area-inset-top)) 0 auto;
+  z-index: 60;
+  display: flex;
+  justify-content: center;
+  padding: 0 1rem;
+  pointer-events: none;
+}
+.rc-pill {
+  pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 26rem;
+  padding: 0.6rem 0.6rem 0.7rem 0.9rem;
+  border-radius: 1rem;
+  background: var(--color-cacao);
+  color: var(--color-butter);
+  box-shadow: 0 10px 30px -12px rgb(42 26 18 / 0.55), inset 0 0 0 1px rgb(217 164 65 / 0.35);
+  animation: rc-in 0.42s var(--ease-spring) backwards;
+}
+.rc-back {
+  padding-right: 0.9rem;
+  animation:
+    rc-in 0.3s var(--ease-spring) backwards,
+    rc-out 0.3s 1.3s var(--ease-out) forwards;
+}
+.rc-wifi path {
+  animation: rc-wave 1.4s infinite;
+}
+.rc-wifi path:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.rc-wifi path:nth-child(1) {
+  animation-delay: 0.3s;
+}
+.rc-retry {
+  flex-shrink: 0;
+  border-radius: 0.6rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--color-butter);
+  color: var(--color-cacao);
+  transition: transform 0.15s var(--ease-out), background-color 0.2s;
+}
+.rc-retry:hover {
+  background: #fff6d2;
+}
+.rc-retry:active {
+  transform: scale(0.94);
+}
+.rc-thread {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 40%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+  animation: rc-thread 1.6s ease-in-out infinite;
+}
+
+/* Joueur coupé : sa pastille pâlit et respire doucement, sa place l'attend. */
+@keyframes away-breathe {
+  50% {
+    opacity: 0.35;
+  }
+}
+.p-away {
+  opacity: 0.55;
+  filter: grayscale(0.6);
+  animation: away-breathe 2.6s ease-in-out infinite;
+}
+
+/* Carte d'invitation du salon : les lettres du code tombent une à une, le bouton brille. */
+@keyframes inv-shine {
+  from {
+    transform: translateX(-120%) skewX(-20deg);
+  }
+  to {
+    transform: translateX(320%) skewX(-20deg);
+  }
+}
+.inv-code > span {
+  display: inline-block;
+  animation: m-drop 0.42s ease-out backwards;
+}
+.inv-share {
+  position: relative;
+  overflow: hidden;
+}
+.inv-share::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.28), transparent);
+  animation: inv-shine 2.8s 0.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-pill,
+  .rc-back,
+  .rc-wifi path,
+  .rc-thread,
+  .p-away,
+  .inv-code > span,
+  .inv-share::after {
+    animation: none;
+  }
+  .rc-thread,
+  .inv-share::after {
+    display: none;
   }
 }

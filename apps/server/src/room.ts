@@ -46,6 +46,7 @@ import {
   cleanTrack,
   type RoomMusic,
 } from '@julaika/shared';
+import { randomBytes } from 'node:crypto';
 import { Agents } from './agents';
 import { Arcade } from './arcade';
 import { Alibi } from './alibi';
@@ -73,7 +74,12 @@ import { MIME_FR, WORDS_FR } from './words';
 
 export interface Conn {
   send(data: string | ArrayBuffer | Uint8Array): void;
+  /** Coupe une connexion remplacée par une autre (la même place reprise ailleurs). */
+  close?(): void;
 }
+
+/** Connexion d'un joueur parti en arrière-plan : ce qu'on lui envoie se perd, l'état lui sera renvoyé au retour. */
+const OFFLINE: Conn = { send() {} };
 
 interface Player {
   id: string;
@@ -83,6 +89,11 @@ interface Player {
   guessed: boolean;
   turnGain: number;
   conn: Conn;
+  /** Jeton secret qui permet de reprendre cette place après une coupure. */
+  seat: string;
+  online: boolean;
+  /** Délai de grâce en cours pendant une coupure. */
+  away: ReturnType<typeof setTimeout> | null;
   inCall: boolean;
   cam: boolean;
   mic: boolean;
@@ -98,6 +109,12 @@ const MAX_STROKE_BYTES = 2_000_000;
 /** Mots demandés à l'IA par appel, et nombre de mots déjà proposés qu'on lui demande d'éviter. */
 export const WORD_BATCH = 30;
 const AVOID_MAX = 60;
+/**
+ * Place gardée à un joueur dont la connexion tombe (téléphone passé sur WhatsApp, écran verrouillé) :
+ * longtemps au salon, où l'on attend ses amis, moins en partie, où les autres l'attendent.
+ */
+export const LOBBY_GRACE = 10 * 60;
+export const GAME_GRACE = 3 * 60;
 
 let nextId = 1;
 
@@ -211,6 +228,9 @@ export class Room {
       guessed: false,
       turnGain: 0,
       conn,
+      seat: randomBytes(16).toString('base64url'),
+      online: true,
+      away: null,
       inCall: false,
       cam: false,
       mic: false,
@@ -218,16 +238,8 @@ export class Room {
     this.players.set(id, player);
     if (!this.hostId) this.hostId = id;
 
-    this.sendTo(id, { t: 'welcome', selfId: id, state: this.stateFor(id), now: Date.now(), ice: this.iceServers(id) });
-    for (const stroke of this.strokes) for (const packet of stroke) conn.send(packet);
-    if (this.music) this.sendTo(id, { t: 'music', music: this.music });
-    if (this.phase === 'choosing' && this.drawerId === id) this.sendTo(id, { t: 'choices', words: this.choices });
-    this.tel?.onJoin(id);
-    this.photo?.onJoin(id);
-    this.flash?.onJoin(id);
-    this.cadavre?.onJoin(id);
     this.agents?.onJoin(id);
-    this.cerveau?.onJoin(id);
+    this.greet(player);
     this.system(`${player.name} a rejoint la partie.`);
     this.broadcastState(id);
     // Les mots sont commandés dès qu'une partie devient possible, pour être prêts au lancement.
@@ -240,9 +252,60 @@ export class Room {
     return id;
   }
 
+  /** Tout ce qu'un joueur doit recevoir en entrant, ou en revenant après une coupure. */
+  private greet(player: Player): void {
+    const { id, conn } = player;
+    this.sendTo(id, { t: 'welcome', selfId: id, seat: player.seat, state: this.stateFor(id), now: Date.now(), ice: this.iceServers(id) });
+    for (const stroke of this.strokes) for (const packet of stroke) conn.send(packet);
+    if (this.music) this.sendTo(id, { t: 'music', music: this.music });
+    if (this.phase === 'choosing' && this.drawerId === id) this.sendTo(id, { t: 'choices', words: this.choices });
+    this.tel?.onJoin(id);
+    this.photo?.onJoin(id);
+    this.flash?.onJoin(id);
+    this.cadavre?.onJoin(id);
+    this.cerveau?.onJoin(id);
+  }
+
+  /**
+   * La connexion d'un joueur tombe sans qu'il ait quitté : on lui garde sa place (score, rôle, hôte)
+   * le temps du délai de grâce. `conn` évite qu'une vieille connexion déjà remplacée ne l'efface.
+   */
+  disconnect(id: string, conn: Conn): void {
+    const player = this.players.get(id);
+    if (!player || player.conn !== conn) return;
+    player.conn = OFFLINE;
+    player.online = false;
+    // Ses liaisons de visio sont mortes avec la connexion : il y revient de lui-même au retour.
+    player.inCall = player.cam = player.mic = false;
+    this.system(`${player.name} a perdu la connexion : sa place est gardée.`);
+    const grace = this.phase === 'lobby' ? LOBBY_GRACE : GAME_GRACE;
+    player.away = setTimeout(() => this.leave(id), grace * 1000);
+    this.broadcastState();
+  }
+
+  /** Reprend la place liée à `seat` sur une nouvelle connexion ; null si elle n'existe plus. */
+  resume(seat: string, conn: Conn): string | null {
+    const player = [...this.players.values()].find((p) => p.seat === seat);
+    if (!player) return null;
+    if (player.away) clearTimeout(player.away);
+    player.away = null;
+    // La même place ouverte ailleurs (un deuxième onglet, un vieux socket pas encore tombé) cède la main.
+    if (player.conn !== OFFLINE) player.conn.close?.();
+    const wasAway = !player.online;
+    player.conn = conn;
+    player.online = true;
+    this.greet(player);
+    this.tel?.onResume(player.id);
+    this.cadavre?.onResume(player.id);
+    if (wasAway) this.system(`${player.name} est de retour.`);
+    this.broadcastState(player.id);
+    return player.id;
+  }
+
   leave(id: string): void {
     const player = this.players.get(id);
     if (!player) return;
+    if (player.away) clearTimeout(player.away);
     this.players.delete(id);
     this.drawQueue = this.drawQueue.filter((p) => p !== id);
     if (this.music?.dj === id) {
@@ -254,7 +317,7 @@ export class Room {
       this.onEmpty(this);
       return;
     }
-    if (this.hostId === id) this.hostId = this.players.keys().next().value ?? null;
+    if (this.hostId === id) this.hostId = ([...this.players.values()].find((p) => p.online) ?? this.players.values().next().value)?.id ?? null;
     this.system(`${player.name} a quitté la partie.`);
 
     if (this.phase !== 'lobby' && this.players.size < 2) {
@@ -1461,7 +1524,7 @@ export class Room {
       score: p.score,
       isHost: p.id === this.hostId,
       guessed: p.guessed,
-      connected: true,
+      connected: p.online,
       inCall: p.inCall,
       cam: p.cam,
       mic: p.mic,
@@ -1544,6 +1607,7 @@ export class Room {
 
   dispose(): void {
     this.clearTimers();
+    for (const p of this.players.values()) if (p.away) clearTimeout(p.away);
     this.wave?.dispose();
     this.tel?.dispose();
     this.intrus?.dispose();

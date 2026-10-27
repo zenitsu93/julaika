@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { shareInvite } from '../lib/invite';
 import { serverNow, useGame } from '../lib/store';
 import { animate, Ticker } from '../motion';
 import { Wordmark } from './Logo';
@@ -70,7 +71,7 @@ export function TopBar({ onQuit }: { onQuit: () => void }) {
   }, [urgent, left]);
 
   const copy = async () => {
-    await navigator.clipboard?.writeText(`${location.origin}/r/${room.code}`).catch(() => {});
+    if ((await shareInvite(room.code)) !== 'copied') return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -142,7 +143,7 @@ export function TopBar({ onQuit }: { onQuit: () => void }) {
       <div className="ml-auto flex items-center gap-2 sm:ml-0">
         <MeetButton />
         <SoundButton />
-        <button className="btn-ghost relative overflow-hidden px-2.5 py-1.5 font-mono" onClick={copy} title="Copier le lien d'invitation">
+        <button className="btn-ghost relative overflow-hidden px-2.5 py-1.5 font-mono" onClick={copy} title="Inviter : partager le lien du salon">
           {/* Le code glisse vers le haut et laisse place à une coche qui se dessine. */}
           <span key={String(copied)} className="m-rise inline-flex items-center gap-1.5" aria-live="polite">
             {copied ? (

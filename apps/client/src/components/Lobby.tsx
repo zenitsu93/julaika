@@ -7,6 +7,7 @@ import { useGame } from '../lib/store';
 import { QuizThemeField } from './quiz/QuizThemeField';
 import { bump, Ticker, useIndicator } from '../motion';
 import { Planche } from './mime/Planche';
+import { InviteCard } from './InviteCard';
 import { TremaLoader } from './Logo';
 import { AovLevelPicker } from './verite/AovBoard';
 
@@ -327,6 +328,7 @@ export function Lobby() {
           <Planche shots={mimeShots} />
         </div>
       )}
+      <InviteCard />
       <h2 className="mb-4 text-lg font-semibold">Réglages du salon <span className="font-mono text-muted">#{room.code}</span></h2>
       {!rules && (
       <div className="mb-3 text-sm">

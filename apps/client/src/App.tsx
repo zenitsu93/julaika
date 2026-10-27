@@ -6,10 +6,10 @@ import { MotDuJour } from './components/mot/MotDuJour';
 import { MusicPlayer } from './components/MusicPlayer';
 import { SoundToasts } from './components/SoundBoard';
 import { saveChosenGame, type GameId } from './lib/games';
-import { useGame } from './lib/store';
+import { inRoom, useGame } from './lib/store';
 
 export function App() {
-  const online = useGame((s) => s.status === 'online' && s.room !== null);
+  const online = useGame(inRoom);
   // Un lien d'invitation (/r/CODE) saute l'accueil des jeux : on va droit au pseudo.
   const [screen, setScreen] = useState<{ game: GameId | null } | null>(() => (codeFromUrl() ? { game: null } : null));
   // Chaque changement de page rejoue la « respiration » (fil d'or, page qui monte, logo qui hoche).
