@@ -1,0 +1,145 @@
+/* Jeux d'action : animations des glyphes, du plateau et de la manette tactile. */
+
+.ar-canvas {
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 1px var(--color-edge);
+}
+
+/* Tête-à-tête : les têtes sautent l'une après l'autre, le ballon fait l'aller-retour. */
+.ar-g-head-l {
+  animation: ar-hop 1.6s ease-in-out infinite;
+  transform-box: fill-box;
+}
+.ar-g-head-r {
+  animation: ar-hop 1.6s ease-in-out 0.8s infinite;
+  transform-box: fill-box;
+}
+.ar-g-ball {
+  animation: ar-volley 1.6s ease-in-out infinite;
+}
+@keyframes ar-hop {
+  0%, 60%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-14px); }
+}
+@keyframes ar-volley {
+  0% { transform: translate(-34px, 28px) rotate(0deg); }
+  25% { transform: translate(0, -10px) rotate(180deg); }
+  50% { transform: translate(34px, 28px) rotate(360deg); }
+  75% { transform: translate(0, -10px) rotate(540deg); }
+  100% { transform: translate(-34px, 28px) rotate(720deg); }
+}
+
+/* Bataille d'oreillers : l'oreiller s'abat, l'autre vacille, les plumes s'envolent. */
+.ar-g-swing {
+  transform-origin: 74px 72px;
+  animation: ar-swing 1.4s cubic-bezier(.6, 0, .3, 1) infinite;
+}
+.ar-g-wobble {
+  transform-origin: 130px 102px;
+  animation: ar-wobble 1.4s ease-in-out infinite;
+}
+.ar-g-feather {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ar-feather 1.4s ease-out infinite;
+}
+@keyframes ar-swing {
+  0%, 100% { transform: rotate(-70deg); }
+  30% { transform: rotate(-80deg); }
+  45% { transform: rotate(18deg); }
+  60% { transform: rotate(10deg); }
+}
+@keyframes ar-wobble {
+  0%, 40%, 100% { transform: rotate(0); }
+  52% { transform: rotate(14deg); }
+  70% { transform: rotate(-5deg); }
+}
+@keyframes ar-feather {
+  0%, 40% { transform: translate(0, 0) rotate(0); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translate(18px, -26px) rotate(160deg); opacity: 0; }
+}
+
+/* Drap tendu : le drap tangue, les cœurs tombent dedans, l'orage passe à côté. */
+.ar-g-sway {
+  animation: ar-sway 2.2s ease-in-out infinite;
+}
+.ar-g-fall {
+  animation: ar-fall 2.1s ease-in infinite;
+}
+.ar-g-storm {
+  animation: ar-drift 4.2s ease-in-out infinite;
+}
+@keyframes ar-sway {
+  0%, 100% { transform: translateX(-8px); }
+  50% { transform: translateX(8px); }
+}
+@keyframes ar-fall {
+  0% { translate: 0 -30px; opacity: 0; }
+  15% { opacity: 1; }
+  80% { translate: 0 72px; opacity: 1; }
+  100% { translate: 0 78px; opacity: 0; scale: 1.4; }
+}
+@keyframes ar-drift {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-24px); }
+}
+
+.ar-teaser {
+  animation: ar-float 3s ease-in-out infinite;
+}
+@keyframes ar-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* Compte à rebours, tampon du verdict, couronne, score qui saute. */
+.ar-count {
+  animation: ar-count 0.9s cubic-bezier(.2, .9, .3, 1.3) both;
+}
+@keyframes ar-count {
+  0% { transform: scale(2.2); opacity: 0; filter: blur(4px); }
+  45% { transform: scale(0.92); opacity: 1; filter: blur(0); }
+  100% { transform: scale(1); }
+}
+.ar-stamp {
+  animation: ar-stamp 0.55s cubic-bezier(.2, .9, .3, 1.4) both;
+  rotate: -4deg;
+}
+@keyframes ar-stamp {
+  0% { transform: scale(2.6); opacity: 0; }
+  60% { transform: scale(0.94); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.ar-crown {
+  animation: ar-crown 0.8s cubic-bezier(.3, 1.4, .5, 1) 0.2s both;
+}
+@keyframes ar-crown {
+  0% { transform: translateY(-40px) rotate(-30deg); opacity: 0; }
+  100% { transform: translateY(0) rotate(0); opacity: 1; }
+}
+.ar-score-pop {
+  animation: ar-score 0.6s cubic-bezier(.2, .9, .3, 1.5);
+}
+@keyframes ar-score {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.6) rotate(-6deg); color: var(--color-accent); }
+  100% { transform: scale(1); }
+}
+
+/* Manette : un appui enfonce la touche. */
+.ar-key {
+  transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.ar-key[data-down='1'] {
+  transform: translateY(2px) scale(0.94);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-gold) 45%, transparent);
+  filter: brightness(1.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ar-g-head-l, .ar-g-head-r, .ar-g-ball, .ar-g-swing, .ar-g-wobble, .ar-g-feather, .ar-g-sway, .ar-g-fall, .ar-g-storm, .ar-teaser, .ar-count, .ar-stamp, .ar-crown, .ar-score-pop {
+    animation: none;
+  }
+}

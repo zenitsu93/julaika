@@ -466,6 +466,43 @@ export function buzzerLong() {
   });
 }
 
+/**
+ * Petits bruits des jeux d'action. thump : frappe sourde (ballon, coup d'oreiller), plus grave
+ * quand `power` monte ; pop : bulle claire qui monte (cœur attrapé) ; whoosh : souffle filtré (bisou, chute).
+ */
+export function thump(power = 0.5) {
+  if (isMuted) return;
+  voice((v, t) => {
+    const o = tone(v, 'sine', 180 - power * 70, t, t + 0.16);
+    o.frequency.exponentialRampToValueAtTime(55, t + 0.14);
+    o.connect(env(v, 0.5, t, 0.002, 0.01, 0.12)).connect(v.out);
+    const lp = filter(v, 'lowpass', 900 + power * 1200);
+    noise(v, t, t + 0.06).connect(lp).connect(env(v, 0.12 + power * 0.12, t, 0.001, 0.005, 0.05)).connect(v.out);
+    return 0.18;
+  });
+}
+
+export function pop(step = 0) {
+  if (isMuted) return;
+  voice((v, t) => {
+    const f = 620 * Math.pow(2, Math.min(step, 12) / 12);
+    const o = tone(v, 'triangle', f, t, t + 0.14);
+    o.frequency.exponentialRampToValueAtTime(f * 1.9, t + 0.09);
+    o.connect(env(v, 0.22, t, 0.004, 0.02, 0.1)).connect(v.out);
+    return 0.15;
+  });
+}
+
+export function whoosh(up = true) {
+  if (isMuted) return;
+  voice((v, t) => {
+    const bp = filter(v, 'bandpass', up ? 500 : 1800, 1.4);
+    bp.frequency.exponentialRampToValueAtTime(up ? 2400 : 300, t + 0.35);
+    noise(v, t, t + 0.4).connect(bp).connect(env(v, 0.28, t, 0.06, 0.08, 0.24)).connect(v.out);
+    return 0.42;
+  });
+}
+
 // ---- Muet ---------------------------------------------------------------------------------
 
 const MUTE_KEY = 'julaika:muted';
