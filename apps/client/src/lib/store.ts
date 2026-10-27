@@ -18,6 +18,8 @@ export interface GameState {
   /** Bombe à mots : ce que tape celui qui tient la bombe, et le dernier événement (numéroté pour rejouer l'animation). */
   bombTyping: { by: string; text: string } | null;
   bombEvent: (BombEvent & { seq: number }) | null;
+  /** Mot à mot : ce que tape celui dont c'est le tour. */
+  storyTyping: { by: string; text: string } | null;
   /** Photomaton : les polaroids de la manche, et la meilleure photo de chaque manche pour la fin. */
   photos: { round: number; shots: PhotoShot[] } | null;
   reel: { round: number; prompt: string; shot: PhotoShot }[];
@@ -39,6 +41,7 @@ const initial: GameState = {
   album: null,
   bombTyping: null,
   bombEvent: null,
+  storyTyping: null,
   photos: null,
   reel: [],
   clockOffset: 0,

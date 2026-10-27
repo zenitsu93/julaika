@@ -88,6 +88,7 @@ class Net {
           // La bombe change de main : ce que tapait l'ancien porteur disparaît.
           bombTyping: msg.state.bomb && s.bombTyping?.by === msg.state.bomb.holder ? s.bombTyping : null,
           bombEvent: msg.state.bomb ? s.bombEvent : null,
+          storyTyping: msg.state.motamot && s.storyTyping?.by === msg.state.motamot.turn ? s.storyTyping : null,
           photos: msg.state.photo && phase !== 'pose' ? s.photos : null,
           reel: msg.state.photo ? keepBest(s.reel, s.photos, msg.state) : [],
         }));
@@ -124,6 +125,9 @@ class Net {
         break;
       case 'bombEvent':
         store.set((s) => ({ bombEvent: { ...msg.event, seq: (s.bombEvent?.seq ?? 0) + 1 } }));
+        break;
+      case 'storyTyping':
+        store.set({ storyTyping: { by: msg.by, text: msg.text } });
         break;
       case 'photos':
         store.set({ photos: { round: msg.round, shots: msg.shots } });

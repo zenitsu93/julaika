@@ -1,0 +1,307 @@
+/* Mot à mot : la page qui s'écrit, l'étiquette de contrainte qui tombe, la mèche du tour.
+   Mêmes règles que motion.css (transform et opacity, courbes partagées) ; le mouvement réduit
+   y est déjà géré pour tout. */
+
+/* Page de cahier : lignes discrètes, papier beurre. */
+.st-page {
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 calc(2.6rem - 1px), color-mix(in srgb, var(--color-cacao) 12%, transparent) calc(2.6rem - 1px) 2.6rem),
+    color-mix(in srgb, var(--color-butter) 55%, var(--color-surface));
+  line-height: 2.6rem;
+}
+@media (prefers-color-scheme: dark) {
+  .st-page {
+    background:
+      repeating-linear-gradient(to bottom, transparent 0 calc(2.6rem - 1px), color-mix(in srgb, var(--color-butter) 10%, transparent) calc(2.6rem - 1px) 2.6rem),
+      color-mix(in srgb, var(--color-cacao-2) 35%, var(--color-surface));
+  }
+}
+
+/* Un mot arrive : flou puis net, en montant (texte « blur in »). */
+@keyframes st-word-in {
+  from {
+    transform: translateY(0.45em) scale(0.92);
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+.st-word {
+  display: inline-block;
+  animation: st-word-in 0.42s var(--ease-out) backwards;
+}
+
+/* Mot sous contrainte : souligné or ; respecté, un reflet passe dessus. */
+.st-ruled {
+  background: linear-gradient(var(--color-gold), var(--color-gold)) no-repeat 0 88% / 100% 3px;
+}
+.st-ok {
+  position: relative;
+  overflow: hidden;
+}
+@keyframes st-gleam {
+  from {
+    transform: translateX(-120%) skewX(-20deg);
+  }
+  to {
+    transform: translateX(220%) skewX(-20deg);
+  }
+}
+.st-ok::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.65), transparent);
+  animation: st-gleam 0.9s var(--ease-out) 0.25s both;
+  pointer-events: none;
+}
+.st-late {
+  font-style: italic;
+  opacity: 0.55;
+}
+.st-vetoed {
+  text-decoration: line-through 2px var(--color-bad);
+}
+
+/* Ce que tape le joueur, en fantôme, avec un curseur qui clignote. */
+@keyframes st-caret {
+  50% {
+    opacity: 0;
+  }
+}
+.st-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: var(--color-accent);
+  animation: st-caret 0.9s steps(1) infinite;
+}
+
+/* L'étiquette de contrainte tombe au bout de son fil et se balance avant de se poser. */
+@keyframes st-tag {
+  0% {
+    transform: translateY(-140%) rotate(-14deg);
+    opacity: 0;
+  }
+  45% {
+    transform: translateY(6%) rotate(9deg);
+    opacity: 1;
+  }
+  65% {
+    transform: translateY(-2%) rotate(-5deg);
+  }
+  82% {
+    transform: rotate(2deg);
+  }
+}
+.st-tag {
+  transform-origin: 50% -1.5rem;
+  animation: st-tag 0.85s var(--ease-out) backwards;
+}
+.st-tag::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 2px;
+  height: 1.5rem;
+  background: var(--color-gold);
+}
+
+/* La mèche du tour : elle se consume de droite à gauche, rougit sur la fin. */
+@keyframes st-fuse {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+.st-fuse {
+  transform-origin: left center;
+  animation: st-fuse var(--d, 4s) linear both;
+}
+@keyframes st-fuse-hot {
+  0%,
+  70% {
+    background: var(--color-accent);
+  }
+  100% {
+    background: var(--color-bad);
+  }
+}
+.st-fuse > i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  animation: st-fuse-hot var(--d, 4s) linear both;
+}
+/* L'étincelle au bout de la mèche. */
+.st-fuse > b {
+  position: absolute;
+  right: -5px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, #fff 0 25%, var(--color-gold) 45%, transparent 70%);
+  animation: st-spark 0.16s linear infinite alternate;
+}
+
+/* Joueur dont c'est le tour : anneau or qui respire. */
+@keyframes st-turn {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-gold) 70%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--color-gold) 20%, transparent);
+  }
+}
+.st-turn {
+  animation: st-turn 1.4s ease-in-out infinite;
+}
+
+/* Compte à rebours de départ. */
+@keyframes st-count {
+  from {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+  30% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+}
+.st-count {
+  animation: st-count 1s var(--ease-out) both;
+}
+
+/* Lecture : le mot lu s'illumine (comme l'album du Téléphone), l'étoile éclate quand on vote. */
+.st-read {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 0 2px;
+  transition:
+    background-color 0.25s,
+    color 0.25s,
+    transform 0.25s var(--ease-spring);
+}
+.st-read:hover {
+  background: color-mix(in srgb, var(--color-gold) 18%, transparent);
+}
+.st-read.is-said {
+  background: color-mix(in srgb, var(--color-gold) 45%, transparent);
+  transform: translateY(-2px);
+}
+.st-read.is-starred {
+  background: var(--color-gold);
+  color: var(--color-cacao);
+}
+@keyframes st-star {
+  0% {
+    transform: translate(-50%, 0) scale(0) rotate(-40deg);
+    opacity: 0;
+  }
+  50% {
+    transform: translate(-50%, -110%) scale(1.5) rotate(10deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -80%) scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+.st-star {
+  position: absolute;
+  left: 50%;
+  top: -0.2rem;
+  font-size: 0.8rem;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: st-star 0.5s var(--ease-spring) both;
+}
+@keyframes st-ray {
+  from {
+    transform: rotate(var(--a)) translateY(0) scaleY(1);
+    opacity: 1;
+  }
+  to {
+    transform: rotate(var(--a)) translateY(-1.4rem) scaleY(0.2);
+    opacity: 0;
+  }
+}
+.st-rays > i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3px;
+  height: 0.6rem;
+  margin: -0.3rem 0 0 -1.5px;
+  border-radius: 2px;
+  background: var(--color-gold);
+  animation: st-ray 0.5s var(--ease-out) both;
+}
+
+/* Recueil de fin : les pages se posent en éventail. */
+@keyframes st-leaf {
+  from {
+    transform: translateY(14px) rotate(var(--r, -2deg));
+    opacity: 0;
+  }
+}
+.st-leaf {
+  animation: st-leaf 0.5s var(--ease-spring) backwards;
+}
+
+/* Carte de l'accueil : les mots s'écrivent en boucle, l'étiquette se balance. */
+@keyframes st-art-word {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  6%,
+  88% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.st-art-word {
+  animation: st-art-word 6s var(--ease-out) infinite both;
+}
+@keyframes st-art-tag {
+  0%,
+  100% {
+    transform: rotate(-7deg);
+  }
+  50% {
+    transform: rotate(7deg);
+  }
+}
+.st-art-tag {
+  animation: st-art-tag 2.4s ease-in-out infinite;
+}
+.st-art-caret {
+  animation: st-caret 0.9s steps(1) infinite;
+}
+@keyframes st-spark {
+  from {
+    transform: scale(0.7);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(1.25);
+    opacity: 1;
+  }
+}

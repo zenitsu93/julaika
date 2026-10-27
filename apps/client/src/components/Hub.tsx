@@ -3,6 +3,7 @@ import { GAMES, SOON, matchesGame, matchesSoon, type GameId, type GameInfo, type
 import { BombGlyph } from './bombe/BombGlyph';
 import { ConnaitArt } from './connait/ConnaitArt';
 import { LogoMark } from './Logo';
+import { StoryArt } from './motamot/StoryArt';
 import './photo/photo.css';
 
 // L'entrée animée ne se joue qu'une fois par visite, comme sur l'écran du pseudo.
@@ -303,6 +304,7 @@ const ART: Record<GameId, JSX.Element> = {
   bombe: <BombArt />,
   photomaton: <PhotoArt />,
   sourire: <SourireArt />,
+  motamot: <StoryArt />,
 };
 
 /** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */
