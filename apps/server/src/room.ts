@@ -5,6 +5,7 @@ import {
   checkGuess,
   decodeDraw,
   maskWord,
+  parseMeetUrl,
   type ChatLine,
   type ClientMsg,
   type Phase,
@@ -50,6 +51,7 @@ export class Room {
   drawerId: string | null = null;
   word: string | null = null;
   endsAt: number | null = null;
+  meetUrl = '';
 
   private choices: string[] = [];
   private drawQueue: string[] = [];
@@ -152,6 +154,19 @@ export class Room {
           const removed = this.strokes.pop()!;
           this.strokeBytes -= removed.reduce((n, p) => n + p.byteLength, 0);
           this.broadcast({ t: 'undo' }, id);
+        }
+        break;
+      case 'meet':
+        // L'hôte peut partager ou retirer le lien de visio à tout moment, même en pleine partie.
+        if (id === this.hostId) {
+          const url = parseMeetUrl(String(msg.url ?? ''));
+          if (url === null) {
+            this.sendTo(id, { t: 'error', message: 'Ce lien ne ressemble pas à un lien Google Meet (meet.google.com/abc-defg-hij).' });
+          } else if (url !== this.meetUrl) {
+            this.meetUrl = url;
+            this.system(url ? `${player.name} a partagé une visio Google Meet.` : 'La visio a été retirée.');
+            this.broadcastState();
+          }
         }
         break;
       case 'ping':
@@ -396,6 +411,7 @@ export class Room {
       round: this.round,
       endsAt: this.endsAt,
       hint,
+      meetUrl: this.meetUrl,
     };
   }
 

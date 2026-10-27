@@ -125,3 +125,15 @@ describe('Room', () => {
     expect(room.settings.rounds).toBe(1);
   });
 });
+
+describe('visio', () => {
+  it("seul l'hôte partage un lien Meet valide, diffusé à tous", () => {
+    const { room, conns, ids } = setup(2);
+    room.handle(ids[1]!, { t: 'meet', url: 'https://meet.google.com/abc-defg-hij' });
+    expect(room.meetUrl).toBe('');
+    room.handle(ids[0]!, { t: 'meet', url: 'https://evil.com/x' });
+    expect(conns[0]!.last('error')).toBeTruthy();
+    room.handle(ids[0]!, { t: 'meet', url: 'meet.google.com/abc-defg-hij' });
+    expect(conns[1]!.last('state')!.state.meetUrl).toBe('https://meet.google.com/abc-defg-hij');
+  });
+});

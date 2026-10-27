@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DrawOp, checkGuess, decodeDraw, encodeDraw, floodFill, maskWord } from '@julaika/shared';
+import { DrawOp, checkGuess, decodeDraw, encodeDraw, floodFill, maskWord, parseMeetUrl } from '@julaika/shared';
 
 describe('protocole de dessin', () => {
   it('encode et décode un trait', () => {
@@ -37,5 +37,18 @@ describe('remplissage', () => {
     expect([...px.slice(0, 3)]).toEqual([255, 0, 0]);
     expect([...px.slice((2 * w + 1) * 4, (2 * w + 1) * 4 + 3)]).toEqual([255, 0, 0]);
     expect([...px.slice(3 * 4, 3 * 4 + 3)]).toEqual([255, 255, 255]);
+  });
+});
+
+describe('lien Google Meet', () => {
+  it('accepte les formes courantes et normalise', () => {
+    expect(parseMeetUrl('https://meet.google.com/abc-defg-hij')).toBe('https://meet.google.com/abc-defg-hij');
+    expect(parseMeetUrl('meet.google.com/ABC-DEFG-HIJ?authuser=0')).toBe('https://meet.google.com/abc-defg-hij');
+    expect(parseMeetUrl('  ')).toBe('');
+  });
+  it('refuse le reste', () => {
+    expect(parseMeetUrl('https://evil.com/abc-defg-hij')).toBeNull();
+    expect(parseMeetUrl('https://meet.google.com.evil.com/abc-defg-hij')).toBeNull();
+    expect(parseMeetUrl('javascript:alert(1)')).toBeNull();
   });
 });

@@ -43,6 +43,12 @@ Points : le devineur gagne 50 à 500 selon sa rapidité (+ bonus aux premiers), 
 selon la part des joueurs qui ont trouvé. Les réponses ignorent casse et accents ; une réponse à une
 lettre près affiche « tu chauffes ». Ceux qui ont trouvé discutent entre eux sans spoiler.
 
+## Visio
+
+Google Meet refuse d'être intégré dans une page (iframe bloquée), donc l'hôte crée une réunion sur
+meet.google.com/new et colle son lien via « Ajouter une visio ». Le lien est validé côté serveur
+(uniquement `https://meet.google.com/xxx-xxxx-xxx`) et chaque joueur voit « Rejoindre la visio ».
+
 ## Thème
 
 Concept « Studio Pro » : tableau au centre, joueurs en pastilles au-dessus, dock flottant,

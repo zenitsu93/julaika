@@ -63,6 +63,24 @@ export interface RoomState {
   endsAt: number | null;
   /** Mot masqué ("_ _ a _"), ou mot complet pour le dessinateur. */
   hint: string | null;
+  /** Lien Google Meet du salon, partagé par l'hôte (vide si aucun). */
+  meetUrl: string;
+}
+
+/** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
+export const MEET_URL = /^https:\/\/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}$/;
+
+export function parseMeetUrl(input: string): string | null {
+  const raw = input.trim();
+  if (!raw) return '';
+  const withProto = /^https?:\/\//.test(raw) ? raw : `https://${raw}`;
+  try {
+    const u = new URL(withProto);
+    const url = `https://${u.hostname}${u.pathname}`.toLowerCase().replace(/\/$/, '');
+    return MEET_URL.test(url) ? url : null;
+  } catch {
+    return null;
+  }
 }
 
 export type ChatKind = 'msg' | 'system' | 'correct' | 'close' | 'guessed';
@@ -82,6 +100,7 @@ export type ClientMsg =
   | { t: 'chat'; text: string }
   | { t: 'clear' }
   | { t: 'undo' }
+  | { t: 'meet'; url: string }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =
