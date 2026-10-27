@@ -558,3 +558,98 @@
     animation: none !important;
   }
 }
+
+/* ---- Feuille « Ton image est prête » (téléphone) ------------------------------- */
+.save-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  background: rgb(20 12 8 / 0.55);
+  backdrop-filter: blur(3px);
+  animation: save-sheet-fade 0.25s ease-out both;
+  padding: 0 0.75rem env(safe-area-inset-bottom);
+}
+.save-sheet-card {
+  width: min(100%, 26rem);
+  max-height: 92dvh;
+  overflow-y: auto;
+  margin-bottom: 0.75rem;
+  border-radius: 1.25rem;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-edge);
+  padding: 0.75rem 1rem 1rem;
+  text-align: center;
+  box-shadow: 0 -20px 50px -20px rgb(40 20 10 / 0.6);
+  animation: save-sheet-up 0.42s cubic-bezier(0.2, 0.9, 0.25, 1.1) both;
+}
+.save-sheet-grip {
+  display: block;
+  width: 2.5rem;
+  height: 0.3rem;
+  margin: 0 auto 0.6rem;
+  border-radius: 99px;
+  background: var(--color-edge);
+}
+.save-sheet-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+}
+.save-sheet-img {
+  display: block;
+  margin: 0.75rem auto;
+  max-height: 55dvh;
+  max-width: 100%;
+  border-radius: 0.5rem;
+  box-shadow: 0 16px 30px -18px rgb(40 20 10 / 0.7);
+  -webkit-touch-callout: default;
+  user-select: auto;
+  animation: save-sheet-pop 0.5s 0.1s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+}
+.save-sheet-hint {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+.save-sheet-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.9rem;
+}
+.save-sheet-actions > * {
+  flex: 1;
+  padding-block: 0.7rem;
+}
+.save-sheet-out {
+  animation: save-sheet-fade 0.25s ease-in reverse forwards;
+}
+.save-sheet-out .save-sheet-card {
+  animation: save-sheet-up 0.25s ease-in reverse forwards;
+}
+@keyframes save-sheet-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes save-sheet-up {
+  from {
+    transform: translateY(110%);
+  }
+}
+@keyframes save-sheet-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.9) rotate(-2deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .save-sheet,
+  .save-sheet-card,
+  .save-sheet-img {
+    animation: none !important;
+  }
+}

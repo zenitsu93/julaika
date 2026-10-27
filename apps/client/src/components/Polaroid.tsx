@@ -102,7 +102,7 @@ export function SaveButton({ image, caption, name, small = false }: { image: str
         bump(btn.current, 0.94);
         setState('busy');
         const r = await savePolaroid(image, caption, name).catch(() => 'cancelled' as const);
-        setState(r === 'cancelled' ? 'idle' : 'done');
+        setState(r === 'shared' || r === 'saved' ? 'done' : 'idle');
       }}
       className={`pola-save group/save inline-flex items-center gap-1.5 rounded-full border font-medium shadow-sm transition-colors duration-300 outline-none focus-visible:ring-2 focus-visible:ring-info ${
         small ? 'px-2.5 py-1 text-xs' : 'px-4 py-2 text-sm'
