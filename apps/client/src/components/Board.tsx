@@ -7,6 +7,7 @@ import { useGame } from '../lib/store';
 import { attachWipe, Presence } from '../motion';
 import { CallBar } from './CallBar';
 import { Overlay } from './Overlay';
+import { Reaction } from './Reaction';
 import { PlayerStrip } from './PlayerStrip';
 import { Toolbar } from './Toolbar';
 
@@ -66,6 +67,7 @@ export function Board() {
         {/* Calque de « Tout effacer » : le dessin copié s'y gomme de gauche à droite. */}
         <canvas ref={wipe} className="pointer-events-none absolute inset-0 size-full" aria-hidden />
         <Overlay />
+        <Reaction />
       </div>
       <Presence>{canDraw ? <Toolbar pen={pen} /> : null}</Presence>
       <CallBar />
