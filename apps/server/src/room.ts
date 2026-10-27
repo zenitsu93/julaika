@@ -20,6 +20,7 @@ import {
   type ServerMsg,
 } from '@julaika/shared';
 import type { WordGenerator } from './deepseek';
+import { Telephone } from './telephone';
 import { Wavelength } from './wavelength';
 import { WORDS_FR } from './words';
 
@@ -69,6 +70,7 @@ export class Room {
   game: RoomGame = 'dessin';
 
   private wave: Wavelength | null = null;
+  private tel: Telephone | null = null;
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -115,6 +117,7 @@ export class Room {
     this.sendTo(id, { t: 'welcome', selfId: id, state: this.stateFor(id), now: Date.now(), ice: this.iceServers(id) });
     for (const stroke of this.strokes) for (const packet of stroke) conn.send(packet);
     if (this.phase === 'choosing' && this.drawerId === id) this.sendTo(id, { t: 'choices', words: this.choices });
+    this.tel?.onJoin(id);
     this.system(`${player.name} a rejoint la partie.`);
     this.broadcastState(id);
     // Les mots sont commandés dès qu'une partie devient possible, pour être prêts au lancement.
@@ -140,8 +143,9 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave) {
-      this.wave.onLeave(id);
+    if (this.wave || this.tel) {
+      this.wave?.onLeave(id);
+      this.tel?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -178,15 +182,20 @@ export class Room {
       case 'wave':
         if (msg && typeof msg === 'object') this.wave?.handle(id, msg);
         break;
+      case 'tel':
+        if (msg && typeof msg === 'object') this.tel?.handle(id, msg);
+        break;
       case 'clear':
-        if (this.isDrawing(id)) {
+        if (this.tel) this.tel.clear(id);
+        else if (this.isDrawing(id)) {
           this.strokes = [];
           this.strokeBytes = 0;
           this.broadcast({ t: 'clear' }, id);
         }
         break;
       case 'undo':
-        if (this.isDrawing(id) && this.strokes.length) {
+        if (this.tel) this.tel.undo(id);
+        else if (this.isDrawing(id) && this.strokes.length) {
           const removed = this.strokes.pop()!;
           this.strokeBytes -= removed.reduce((n, p) => n + p.byteLength, 0);
           this.broadcast({ t: 'undo' }, id);
@@ -233,6 +242,7 @@ export class Room {
 
   /** Paquet de dessin binaire : validé, archivé puis relayé tel quel aux autres. */
   handleDraw(id: string, data: Uint8Array): void {
+    if (this.tel) return this.tel.draw(id, data);
     if (!this.isDrawing(id)) return;
     const packet = decodeDraw(data);
     if (!packet) return;
@@ -263,6 +273,7 @@ export class Room {
     for (const p of this.players.values()) p.score = 0;
     this.round = 0;
     if (this.game === 'wavelength') return this.startWave();
+    if (this.game === 'telephone') return this.startTel();
     this.usedWords.clear();
     this.nextRound();
   }
@@ -419,6 +430,27 @@ export class Room {
     this.wave.start();
   }
 
+  private startTel(): void {
+    this.tel?.dispose();
+    this.tel = new Telephone({
+      playerIds: () => [...this.players.keys()],
+      player: (id) => this.players.get(id),
+      isHost: (id) => id === this.hostId,
+      drawTime: () => this.settings.drawTime,
+      random: this.random,
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      sendTo: (id, msg) => this.sendTo(id, msg),
+      system: (text) => this.system(text),
+      toLobby: () => this.toLobby(),
+    });
+    this.tel.start();
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -435,6 +467,8 @@ export class Room {
     this.clearTimers();
     this.wave?.dispose();
     this.wave = null;
+    this.tel?.dispose();
+    this.tel = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -520,6 +554,7 @@ export class Room {
       hint,
       meetUrl: this.meetUrl,
       wave: this.wave?.stateFor(id) ?? null,
+      tel: this.tel?.state() ?? null,
     };
   }
 
@@ -556,6 +591,7 @@ export class Room {
   dispose(): void {
     this.clearTimers();
     this.wave?.dispose();
+    this.tel?.dispose();
   }
 }
 

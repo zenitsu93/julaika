@@ -652,3 +652,78 @@
 .mot-from-right {
   animation: mot-from-right 0.28s var(--ease-out) backwards;
 }
+
+/* Téléphone dessiné --------------------------------------------------------------------- */
+
+/* Carte de l'accueil : la phrase, le dessin puis la question arrivent tour à tour, en boucle. */
+@keyframes tel-art {
+  0% {
+    transform: scale(0.6) translateY(10px);
+    opacity: 0;
+  }
+  12%,
+  80% {
+    transform: none;
+    opacity: 1;
+  }
+  92%,
+  100% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+}
+.tel-art {
+  display: inline-block;
+  transform-box: view-box;
+  animation: tel-art 4.2s var(--ease-spring) infinite backwards;
+}
+/* Le dessin reçu se pose comme une carte qu'on retourne. */
+@keyframes tel-card {
+  from {
+    transform: perspective(900px) rotateY(-70deg) scale(0.9);
+    opacity: 0;
+  }
+}
+.tel-card {
+  animation: tel-card 0.55s var(--ease-out) backwards;
+}
+/* La feuille à dessiner glisse en place sous la phrase. */
+@keyframes tel-sheet {
+  from {
+    transform: translateY(24px) rotate(-1.5deg);
+    opacity: 0;
+  }
+}
+.tel-sheet {
+  animation: tel-sheet 0.45s 0.15s var(--ease-spring) backwards;
+}
+/* Coche « envoyé » qui se trace. */
+.tel-check {
+  animation: m-pop 0.3s var(--ease-spring) backwards;
+}
+.tel-check path {
+  stroke-dasharray: 1;
+  animation: m-stroke 0.4s 0.15s ease-out backwards;
+}
+/* Pages de l'album : elles arrivent du côté de leur bulle. */
+@keyframes tel-from-left {
+  from {
+    transform: translateX(-28px) scale(0.96);
+    opacity: 0;
+  }
+}
+@keyframes tel-from-right {
+  from {
+    transform: translateX(28px) scale(0.96);
+    opacity: 0;
+  }
+}
+.tel-from-left {
+  animation: tel-from-left 0.42s var(--ease-spring) backwards;
+}
+.tel-from-right {
+  animation: tel-from-right 0.42s var(--ease-spring) backwards;
+}
+.tel-seen {
+  animation: none;
+}

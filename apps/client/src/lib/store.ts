@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { ChatLine, PlayerPublic, RoomState } from '@julaika/shared';
+import type { ChatLine, PlayerPublic, RoomState, TelChain, TelEntry } from '@julaika/shared';
 
 export interface GameState {
   status: 'idle' | 'connecting' | 'online' | 'closed';
@@ -12,6 +12,9 @@ export interface GameState {
   error: string | null;
   /** Aiguille de Wavelength, tenue à part pour ne re-rendre que le cadran à chaque mouvement. */
   dial: number | null;
+  /** Téléphone dessiné : ce qu'on a reçu à dessiner ou décrire, et l'album une fois révélé. */
+  telPrompt: { step: number; prompt: TelEntry | null } | null;
+  album: TelChain[] | null;
   /** Décalage horloge serveur - horloge locale (ms). */
   clockOffset: number;
 }
@@ -26,6 +29,8 @@ const initial: GameState = {
   ranking: null,
   error: null,
   dial: null,
+  telPrompt: null,
+  album: null,
   clockOffset: 0,
 };
 

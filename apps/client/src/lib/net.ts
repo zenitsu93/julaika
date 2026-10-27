@@ -82,6 +82,8 @@ class Net {
           turnEnd: phase === 'turnEnd' ? s.turnEnd : null,
           ranking: phase === 'gameEnd' ? s.ranking : null,
           dial: msg.state.wave?.dial ?? null,
+          telPrompt: msg.state.tel ? s.telPrompt : null,
+          album: phase === 'album' ? s.album : null,
         }));
         call.sync(msg.state.players);
         break;
@@ -104,6 +106,12 @@ class Net {
         break;
       case 'undo':
         board.undo();
+        break;
+      case 'telPrompt':
+        store.set({ telPrompt: { step: msg.step, prompt: msg.prompt } });
+        break;
+      case 'album':
+        store.set({ album: msg.chains });
         break;
       case 'dial':
         store.set({ dial: msg.value });

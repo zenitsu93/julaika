@@ -21,7 +21,7 @@ interface Stroke {
  * Modèle + rendu du tableau. Les traits sont gardés en mémoire (pour annuler et pour
  * redessiner si le canvas est remonté) ; le rendu est incrémental, sauf après une annulation.
  */
-class Board {
+export class BoardCanvas {
   private strokes: Stroke[] = [];
   private ctx: CanvasRenderingContext2D | null = null;
 
@@ -95,7 +95,45 @@ class Board {
   }
 }
 
-export const board = new Board();
+export const board = new BoardCanvas();
+
+/**
+ * Rejoue un dessin trait par trait sur `target`, en `ms` millisecondes au total (album du
+ * Téléphone dessiné). Renvoie de quoi l'arrêter ; en mouvement réduit, tout s'affiche d'un coup.
+ */
+export function replay(target: BoardCanvas, packets: DrawPacket[], ms: number, instant = false): () => void {
+  target.reset();
+  const total = packets.reduce((n, p) => n + Math.max(1, p.points.length / 2), 0);
+  if (instant || !total) {
+    for (const p of packets) target.apply(p);
+    return () => {};
+  }
+  let drawn = 0; // points déjà posés, tous traits confondus
+  let index = 0; // trait en cours
+  let inStroke = 0; // points posés du trait en cours
+  let raf = 0;
+  const t0 = performance.now();
+  const step = (t: number) => {
+    const goal = Math.min(total, Math.ceil((total * (t - t0)) / ms));
+    while (drawn < goal && index < packets.length) {
+      const p = packets[index]!;
+      const count = Math.max(1, p.points.length / 2);
+      const take = Math.min(count - inStroke, goal - drawn);
+      const pts = p.points.slice(inStroke * 2, (inStroke + take) * 2);
+      if (inStroke === 0) target.apply({ ...p, points: pts });
+      else target.apply({ ...p, op: DrawOp.Extend, points: pts });
+      inStroke += take;
+      drawn += take;
+      if (inStroke >= count) {
+        index++;
+        inStroke = 0;
+      }
+    }
+    if (index < packets.length) raf = requestAnimationFrame(step);
+  };
+  raf = requestAnimationFrame(step);
+  return () => cancelAnimationFrame(raf);
+}
 
 export type Tool = 'pen' | 'eraser' | 'fill';
 
@@ -111,12 +149,15 @@ export class Pen {
   private raf = 0;
   private down = false;
 
-  constructor(private readonly send: (buf: ArrayBuffer) => void) {}
+  constructor(
+    private readonly send: (buf: ArrayBuffer) => void,
+    readonly target: BoardCanvas = board,
+  ) {}
 
   private packet(op: DrawOp, points: number[]): void {
     const color = this.tool === 'eraser' ? 0 : this.color;
     const p: DrawPacket = { op, color, size: BRUSH_SIZES[this.sizeIndex] ?? 10, points };
-    board.apply(p);
+    this.target.apply(p);
     this.send(encodeDraw(p));
   }
 
