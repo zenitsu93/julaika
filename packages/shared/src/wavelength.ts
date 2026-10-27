@@ -19,6 +19,16 @@ export function wavePoints(target: number, dial: number): number {
   return WAVE_BANDS.find((b) => d <= b.half)?.points ?? 0;
 }
 
+/** Écart entre l'aiguille et la cible, en % de l'échelle (arrondi). */
+export function waveGap(target: number, dial: number): number {
+  return Math.round((Math.abs(target - dial) / DIAL_MAX) * 100);
+}
+
+/** Au-delà de cet écart (en %), le cadran explose à la révélation. */
+export const WAVE_BOOM_GAP = 25;
+
+export const waveBoom = (target: number, dial: number) => (Math.abs(target - dial) / DIAL_MAX) * 100 > WAVE_BOOM_GAP;
+
 export function clampDial(v: unknown): number | null {
   const n = Number(v);
   return Number.isFinite(n) ? Math.max(0, Math.min(DIAL_MAX, Math.round(n * 10) / 10)) : null;

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { wavePoints, waveVerdict, type ServerMsg } from '@julaika/shared';
+import { waveBoom, waveGap, wavePoints, waveVerdict, type ServerMsg } from '@julaika/shared';
 import { Room, type Conn } from '../apps/server/src/room';
 import { REVEAL_TIME } from '../apps/server/src/wavelength';
 
@@ -33,6 +33,14 @@ describe('Wavelength', () => {
     expect(wavePoints(50, 33)).toBe(2);
     expect(wavePoints(50, 80)).toBe(0);
     expect(waveVerdict(8, 2).title).toBe('Âmes sœurs');
+  });
+
+  it("donne l'écart en % et fait exploser le cadran au-delà de 25", () => {
+    expect(waveGap(50, 62.4)).toBe(12);
+    expect(waveGap(80, 20)).toBe(60);
+    expect(waveBoom(50, 75)).toBe(false);
+    expect(waveBoom(50, 75.1)).toBe(true);
+    expect(waveBoom(90, 10)).toBe(true);
   });
 
   it('seul le télépathe voit la cible avant la révélation', () => {
