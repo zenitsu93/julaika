@@ -363,6 +363,9 @@
   .m-draw {
     animation: none;
   }
+  .w-boom-fx {
+    display: none;
+  }
 }
 
 /* Wavelength ---------------------------------------------------------------------------- */
@@ -432,6 +435,187 @@
 }
 .w-stamp {
   animation: w-stamp 0.5s var(--ease-out) backwards;
+}
+
+/* Explosion du cadran (écart au-delà de 25 %) : tout part à BOOM_AT (Dial.tsx), un peu après
+   l'ouverture du volet. Le vrai cadran s'efface, ses éclats volent, retombent, puis il se recompose. */
+@keyframes w-crumble {
+  0% {
+    transform: none;
+    opacity: 1;
+  }
+  4% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+  10%,
+  62% {
+    transform: scale(0.82);
+    opacity: 0;
+  }
+  82% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+.w-crumble {
+  transform-box: view-box;
+  animation: w-crumble 2.2s var(--ease-out) backwards;
+}
+@keyframes w-shard {
+  0% {
+    transform: none;
+    opacity: 0;
+  }
+  1% {
+    opacity: 1;
+  }
+  45% {
+    transform: translate(var(--dx), var(--dy)) rotate(var(--rot));
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(var(--dx) * 1.15), calc(var(--dy) + 140px)) rotate(calc(var(--rot) * 1.6));
+    opacity: 0;
+  }
+}
+.w-shard {
+  transform-box: view-box;
+  animation: w-shard 1.25s cubic-bezier(0.15, 0.7, 0.4, 1) both;
+}
+@keyframes w-spark {
+  0% {
+    transform: none;
+    opacity: 0;
+  }
+  1% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) scale(0.2);
+    opacity: 0;
+  }
+}
+.w-spark {
+  transform-box: view-box;
+  animation: w-spark 0.7s var(--ease-out) both;
+}
+@keyframes w-flash {
+  0% {
+    transform: scale(0.1);
+    opacity: 0;
+  }
+  15% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+.w-flash {
+  transform-box: view-box;
+  animation: w-flash 0.6s ease-out both;
+}
+@keyframes w-ring {
+  0% {
+    transform: scale(0.2);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(3.4);
+    opacity: 0;
+  }
+}
+.w-ring {
+  transform-box: view-box;
+  animation: w-ring 0.7s ease-out both;
+}
+@keyframes w-smoke {
+  0% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: scale(1.8) translateY(-24px);
+    opacity: 0;
+  }
+}
+.w-smoke {
+  transform-box: view-box;
+  animation: w-smoke 1.4s ease-out both;
+}
+/* « BOUM ! » façon bande dessinée : il claque, tremble, puis s'envole. */
+@keyframes w-boom-word {
+  0% {
+    transform: scale(0.2) rotate(-12deg);
+    opacity: 0;
+  }
+  18% {
+    transform: scale(1.25) rotate(-6deg);
+    opacity: 1;
+  }
+  28% {
+    transform: scale(1) rotate(-8deg);
+  }
+  34% {
+    transform: scale(1) rotate(-5deg);
+  }
+  75% {
+    transform: scale(1) rotate(-7deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.4) translateY(-20px) rotate(-7deg);
+    opacity: 0;
+  }
+}
+.w-boom-word {
+  transform-box: view-box;
+  font-size: 54px;
+  fill: #f5b700;
+  stroke: #18181b;
+  stroke-width: 6px;
+  paint-order: stroke;
+  letter-spacing: -0.02em;
+  animation: w-boom-word 1.5s var(--ease-out) both;
+}
+/* La carte du plateau tremble fort au moment du boum. */
+@keyframes w-quake {
+  0%,
+  100% {
+    transform: none;
+  }
+  10% {
+    transform: translate(-7px, 3px) rotate(-0.6deg);
+  }
+  25% {
+    transform: translate(6px, -4px) rotate(0.5deg);
+  }
+  40% {
+    transform: translate(-5px, 2px);
+  }
+  55% {
+    transform: translate(4px, -1px);
+  }
+  75% {
+    transform: translate(-2px, 1px);
+  }
+}
+.w-quake {
+  animation: w-quake 0.5s linear;
+}
+/* Écart à la cible sous le verdict. */
+.w-gap {
+  animation: m-rise 0.35s 1.05s var(--ease-out) backwards;
 }
 
 /* Cartes « Bientôt » de l'accueil ------------------------------------------------------- */
@@ -726,4 +910,74 @@
 }
 .tel-seen {
   animation: none;
+}
+
+/* Lecture à voix haute de l'album ------------------------------------------------------- */
+
+/* Mot en cours de lecture : un surligneur jaune passe dessous, de gauche à droite. */
+.tel-word {
+  background: linear-gradient(color-mix(in srgb, var(--color-accent) 55%, transparent), color-mix(in srgb, var(--color-accent) 55%, transparent)) no-repeat 0 92% / 0 48%;
+  border-radius: 3px;
+  transition: background-size 0.25s var(--ease-out);
+}
+.tel-said {
+  background-size: 100% 48%;
+}
+/* Bouton voix : les ondes s'allument une à une, battent pendant la lecture, la croix
+   remplace les ondes quand on coupe. */
+.tel-voice .tel-wave,
+.tel-voice .tel-mute {
+  transition:
+    opacity 0.25s,
+    transform 0.35s var(--ease-spring);
+  transform-box: fill-box;
+  transform-origin: left center;
+}
+.tel-voice .tel-wave-2 {
+  transition-delay: 0.06s;
+}
+.tel-voice[aria-pressed='false'] .tel-wave {
+  opacity: 0;
+  transform: scale(0.4);
+}
+.tel-voice .tel-mute {
+  transform-origin: center;
+}
+.tel-voice[aria-pressed='true'] .tel-mute {
+  opacity: 0;
+  transform: scale(0.3) rotate(-45deg);
+}
+@keyframes tel-wave {
+  0%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+  50% {
+    opacity: 0.35;
+    transform: translateX(1.5px) scale(1.12);
+  }
+}
+.tel-voice.is-speaking .tel-wave {
+  animation: tel-wave 0.9s ease-in-out infinite;
+}
+.tel-voice.is-speaking .tel-wave-2 {
+  animation-delay: 0.18s;
+}
+/* Un halo s'échappe du bouton tant que le narrateur parle. */
+.tel-voice.is-speaking::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  animation: tel-voice-ring 1.4s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes tel-voice-ring {
+  from {
+    box-shadow: 0 0 0 0 rgb(124 58 237 / 0.45);
+  }
+  to {
+    box-shadow: 0 0 0 9px rgb(124 58 237 / 0);
+  }
 }

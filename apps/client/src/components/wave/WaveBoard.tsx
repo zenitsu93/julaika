@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { BEST_POINTS, DIAL_MAX, waveVerdict, type WaveRound, type WaveState } from '@julaika/shared';
+import { BEST_POINTS, DIAL_MAX, waveBoom, waveGap, waveVerdict, type WaveRound, type WaveState } from '@julaika/shared';
 import { avatarOf } from '../../lib/avatars';
 import { net } from '../../lib/net';
 import { store, useGame } from '../../lib/store';
 import { bump, confetti, Presence, shake, useCountUp, useFlip } from '../../motion';
 import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
-import { Dial } from './Dial';
+import { BOOM_AT, Dial } from './Dial';
 
 const POINT_COLOR: Record<number, string> = { 0: 'bg-bad/25', 2: 'bg-[#3b82f6]', 3: 'bg-[#f97316]', 4: 'bg-accent' };
 const POINT_LINE: Record<number, string> = {
@@ -155,17 +155,21 @@ function Stage() {
   const phase = room.phase;
   const movable = phase === 'guess' && !psychic;
   const lock = () => movable && net.send({ t: 'wave', lock: true });
+  const revealed = phase === 'reveal' && wave?.target != null && wave.points != null;
+  const boom = revealed && waveBoom(wave.target!, wave.dial);
 
   const box = useRef<HTMLDivElement>(null);
   const sparks = useRef<HTMLCanvasElement>(null);
-  // Révélation : confettis en plein dans le mille, petite secousse si c'est raté.
+  // Révélation : confettis en plein dans le mille, petite secousse si c'est raté, et le cadran
+  // explose (le plateau tremble, le téléphone vibre) quand on est à plus de 25 % de la cible.
   useEffect(() => {
     if (phase !== 'reveal' || wave?.points === null || wave?.points === undefined) return;
     let stop = () => {};
     const t = setTimeout(() => {
       if (wave.points === BEST_POINTS) stop = confetti(sparks.current, 110);
+      else if (boom) navigator.vibrate?.([90, 40, 180]);
       else if (wave.points === 0) shake(box.current);
-    }, 900);
+    }, boom ? BOOM_AT : 900);
     return () => {
       clearTimeout(t);
       stop();
@@ -173,7 +177,7 @@ function Stage() {
   }, [phase, wave?.turn]);
 
   return (
-    <div ref={box} className="relative flex min-h-[24rem] flex-col items-center gap-4 px-4 pb-5 pt-6 sm:px-8">
+    <div ref={box} className={`relative flex min-h-[24rem] flex-col items-center gap-4 px-4 pb-5 pt-6 sm:px-8 ${boom ? 'w-quake' : ''}`} style={boom ? { animationDelay: `${BOOM_AT}ms` } : undefined}>
       <canvas ref={sparks} className="pointer-events-none absolute inset-0 z-[5] size-full" aria-hidden />
       <Clue wave={wave} phase={phase} psychic={psychic} psychicName={psychicName} />
       <Dial
@@ -184,9 +188,10 @@ function Stage() {
         movable={movable}
         onMove={moveDial}
         onLock={lock}
+        boom={boom}
       />
-      {phase === 'reveal' && wave?.points != null ? (
-        <Verdict points={wave.points} />
+      {revealed ? (
+        <Verdict points={wave.points!} gap={waveGap(wave.target!, wave.dial)} boom={boom} />
       ) : (
         <Actions wave={wave} phase={phase} psychic={psychic} psychicName={psychicName} onLock={lock} />
       )}
@@ -289,13 +294,16 @@ function Actions({ wave, phase, psychic, psychicName, onLock }: { wave: WaveStat
   return null;
 }
 
-/** Points du tour : le tampon claque une fois le volet ouvert. */
-function Verdict({ points }: { points: number }) {
+/** Points du tour : le tampon claque une fois le volet ouvert, l'écart à la cible dessous. */
+function Verdict({ points, gap, boom }: { points: number; gap: number; boom: boolean }) {
   return (
-    <div className="flex min-h-14 justify-center">
-      <span className="w-stamp flex items-center gap-2 whitespace-nowrap rounded-full bg-surface px-4 py-2 shadow-lg ring-1 ring-edge" style={{ animationDelay: '850ms' }} role="status">
+    <div className="flex min-h-14 flex-col items-center gap-1.5">
+      <span className="w-stamp flex items-center gap-2 whitespace-nowrap rounded-full bg-surface px-4 py-2 shadow-lg ring-1 ring-edge" style={{ animationDelay: boom ? `${BOOM_AT + 300}ms` : '850ms' }} role="status">
         <span className={`grid size-8 place-items-center rounded-full font-mono font-bold ${points ? 'text-[#18181b]' : 'text-muted'} ${POINT_COLOR[points]}`}>+{points}</span>
-        <span className="font-semibold">{POINT_LINE[points]}</span>
+        <span className="font-semibold">{boom ? 'Boum ! Le cadran a sauté.' : POINT_LINE[points]}</span>
+      </span>
+      <span className={`w-gap font-mono text-sm tabular-nums ${boom ? 'font-semibold text-bad' : 'text-muted'}`} style={boom ? { animationDelay: `${BOOM_AT + 1300}ms` } : undefined}>
+        {gap === 0 ? 'Écart : 0 %, pile sur la cible' : `Écart : ${gap} %`}
       </span>
     </div>
   );
@@ -353,6 +361,10 @@ function RoundLine({ round, index }: { round: WaveRound; index: number }) {
         <span className="block truncate text-xs text-muted">
           {round.spectrum.left} ↔ {round.spectrum.right}
         </span>
+      </span>
+      <span className={`shrink-0 font-mono text-xs tabular-nums ${waveBoom(round.target, round.dial) ? 'text-bad' : 'text-muted'}`} title="Écart à la cible">
+        {waveBoom(round.target, round.dial) && <span aria-label="Explosion">💥 </span>}
+        {waveGap(round.target, round.dial)} %
       </span>
       {/* Mini-échelle : la cible (jaune) et l'aiguille (rouge). */}
       <span className="relative h-1.5 w-16 shrink-0 rounded-full bg-edge" aria-hidden>

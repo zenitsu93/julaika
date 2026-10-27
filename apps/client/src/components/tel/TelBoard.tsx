@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { CANVAS_H, CANVAS_W, TEL_PROMPTS, TEL_TEXT_MAX, type DrawPacket, type TelChain, type TelEntry, type TelKind, type TelState } from '@julaika/shared';
 import { avatarOf } from '../../lib/avatars';
 import { BoardCanvas, Pen, replay } from '../../lib/board';
 import { net } from '../../lib/net';
+import { canSpeak, useNarrator, type Line } from '../../lib/speech';
 import { serverNow, useGame } from '../../lib/store';
 import { attachWipe, bump, confetti, Presence, reducedMotion, shake, useFlip } from '../../motion';
 import { CallBar } from '../CallBar';
@@ -423,6 +424,28 @@ function Album() {
   const sparks = useRef<HTMLCanvasElement>(null);
   const last = chain ? page.entry === chain.entries.length - 1 : false;
   const lastChain = chains && page ? page.chain === chains.length - 1 : false;
+  const narrator = useNarrator();
+  const [word, setWord] = useState(-1);
+
+  // Chaque nouvelle page est lue à voix haute, la bulle suivie mot à mot ; en fin de chaîne,
+  // le narrateur rappelle d'où l'on est parti. Rallumer la voix relit la page en cours.
+  useEffect(() => {
+    setWord(-1);
+    const entry = chain?.entries[page!.entry];
+    if (!chain || !entry) return;
+    const lines: Line[] = [];
+    if (page!.entry === 0) lines.push({ text: `La chaîne de ${chain.name}.` });
+    if (entry.kind === 'drawing') lines.push({ text: `${entry.name} a dessiné ça…` });
+    else {
+      const lead = `${entry.name} ${page!.entry === 0 ? 'a écrit' : 'a vu'} : `;
+      lines.push({ text: lead + entry.text, track: { from: lead.length, onWord: setWord } });
+    }
+    const first = chain.entries[0];
+    if (last && first?.kind === 'text' && entry.kind === 'text' && chain.entries.length >= 3) lines.push({ text: `De « ${first.text} » à « ${entry.text} » !` });
+    // On laisse la bulle arriver avant de parler.
+    const t = setTimeout(() => narrator.say(lines), reducedMotion() ? 0 : 350);
+    return () => clearTimeout(t);
+  }, [page?.chain, page?.entry, chain, narrator.on]);
 
   // La nouvelle page glisse dans le champ ; en fin de chaîne, une pluie de confettis.
   useEffect(() => {
@@ -468,15 +491,18 @@ function Album() {
             <h2 className="truncate font-semibold">La chaîne de {chain.name}</h2>
           </div>
         </div>
-        <span className="flex gap-1" aria-hidden>
-          {chains.map((_, i) => (
-            <span key={i} className={`h-1.5 rounded-full transition-all duration-500 ${i === page.chain ? 'w-5 bg-[#7c3aed]' : i < page.chain ? 'w-1.5 bg-[#7c3aed]/50' : 'w-1.5 bg-edge'}`} />
-          ))}
-        </span>
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="flex gap-1 max-sm:hidden" aria-hidden>
+            {chains.map((_, i) => (
+              <span key={i} className={`h-1.5 rounded-full transition-all duration-500 ${i === page.chain ? 'w-5 bg-[#7c3aed]' : i < page.chain ? 'w-1.5 bg-[#7c3aed]/50' : 'w-1.5 bg-edge'}`} />
+            ))}
+          </span>
+          {canSpeak && <VoiceToggle on={narrator.on} speaking={narrator.speaking} onToggle={(e) => (bump(e.currentTarget), narrator.toggle())} />}
+        </div>
       </header>
       <div ref={scroller} key={`c${page.chain}`} className="flex-1 space-y-4 overflow-y-auto px-4 py-5">
         {chain.entries.slice(0, page.entry + 1).map((entry, i) => (
-          <Page key={i} entry={entry} index={i} fresh={i === page.entry} />
+          <Page key={i} entry={entry} index={i} fresh={i === page.entry} word={i === page.entry ? word : -1} />
         ))}
         {last && <Verdict chain={chain} />}
       </div>
@@ -501,7 +527,7 @@ function Album() {
 }
 
 /** Une page de l'album : bulle de texte, ou dessin qui se refait. Les pages paires à gauche, impaires à droite. */
-function Page({ entry, index, fresh }: { entry: TelEntry; index: number; fresh: boolean }) {
+function Page({ entry, index, fresh, word = -1 }: { entry: TelEntry; index: number; fresh: boolean; word?: number }) {
   const right = index % 2 === 1;
   const who = (
     <span className="flex items-center gap-1.5 text-xs text-muted">
@@ -519,7 +545,7 @@ function Page({ entry, index, fresh }: { entry: TelEntry; index: number; fresh: 
           {fresh
             ? entry.text.split(' ').map((w, i) => (
                 <span key={i} className="w-word" style={{ animationDelay: `${200 + i * 70}ms` }}>
-                  {w}&nbsp;
+                  <span className={`tel-word ${i === word ? 'tel-said' : ''}`}>{w}</span>&nbsp;
                 </span>
               ))
             : entry.text}
@@ -530,6 +556,28 @@ function Page({ entry, index, fresh }: { entry: TelEntry; index: number; fresh: 
         </div>
       )}
     </article>
+  );
+}
+
+/** Voix de l'album : haut-parleur et ondes qui battent quand ça parle, barré quand c'est coupé. */
+function VoiceToggle({ on, speaking, onToggle }: { on: boolean; speaking: boolean; onToggle: (e: MouseEvent<HTMLButtonElement>) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={on}
+      aria-label={on ? 'Couper la lecture à voix haute' : 'Lire l’album à voix haute'}
+      title={on ? 'Couper la voix' : 'Lire à voix haute'}
+      className={`tel-voice relative flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors duration-300 ${on ? 'border-[#7c3aed]/40 bg-[#7c3aed]/10 text-[#7c3aed]' : 'border-edge text-muted hover:text-ink'} ${on && speaking ? 'is-speaking' : ''}`}
+    >
+      <svg viewBox="0 0 24 24" className="size-5 overflow-visible" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M4 9.5v5h3.5L12 19V5L7.5 9.5z" fill="currentColor" fillOpacity=".15" />
+        <path className="tel-wave tel-wave-1" d="M15.5 9.2a4 4 0 0 1 0 5.6" />
+        <path className="tel-wave tel-wave-2" d="M18.3 6.6a7.6 7.6 0 0 1 0 10.8" />
+        <path className="tel-mute" d="M16 9l6 6M22 9l-6 6" />
+      </svg>
+      <span className="max-sm:hidden">{on ? 'Voix' : 'Muet'}</span>
+    </button>
   );
 }
 
