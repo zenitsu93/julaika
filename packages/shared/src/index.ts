@@ -18,3 +18,4 @@ export * from './interdits';
 export * from './motamot';
 export * from './agents';
 export * from './fredonne';
+export * from './alibi';

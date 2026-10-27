@@ -2,6 +2,7 @@
 // Messages de contrôle : JSON (frames texte). Dessin : binaire (voir draw.ts).
 
 import type { AgentsState } from './agents';
+import type { AlibiObjection, AlibiState } from './alibi';
 import type { BombEvent, BombState } from './bombe';
 import type { BrasState } from './brasdefer';
 import type { CadavreState, Creature } from './cadavre';
@@ -31,7 +32,7 @@ export const PALETTE = [
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 /** Jeux proposés : chaque salon en porte un, choisi à sa création. */
-export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre', 'interdits', 'motamot', 'agents', 'fredonne'] as const;
+export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre', 'interdits', 'motamot', 'agents', 'fredonne', 'alibi'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
@@ -49,6 +50,7 @@ export function isRoomGame(v: unknown): v is RoomGame {
  * Cadavre exquis : draw (tête, corps, jambes, tous en même temps) → reveal.
  * Mots interdits : faceoff (qui fait deviner) → explain (les cartes défilent) → verdict. Mot à mot : write (un mot chacun) → album (lecture).
  * Agents secrets : clue (l'espion donne son indice) → guess (on retourne les cartes) → reveal. Fredonne ! : pick (le chanteur choisit) → hum → reveal.
+ * L'Alibi : plot (les complices se concertent) → trial (les pièces tombent) → vote (le jury) → verdict.
  */
 export type Phase =
   | 'lobby'
@@ -75,6 +77,8 @@ export type Phase =
   | 'explain'
   | 'pick'
   | 'hum'
+  | 'plot'
+  | 'trial'
   | 'gameEnd';
 
 /** Difficulté des mots proposés : sert au tirage dans les listes intégrées et à la génération par IA. */
@@ -236,6 +240,8 @@ export interface RoomState {
   agents: AgentsState | null;
   /** État de Fredonne ! vu par ce joueur (la chanson reste secrète), null pour les autres jeux. */
   fred: FredState | null;
+  /** État de L'Alibi vu par ce joueur (le carnet reste aux complices), null pour les autres jeux. */
+  alibi: AlibiState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -329,6 +335,10 @@ export type ClientMsg =
   | { t: 'agents'; pass: true }
   | { t: 'fred'; pick: number }
   | { t: 'fred'; reroll: true }
+  | { t: 'alibi'; note: string }
+  | { t: 'alibi'; statement: string }
+  | { t: 'alibi'; object: AlibiObjection }
+  | { t: 'alibi'; vote: boolean }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =

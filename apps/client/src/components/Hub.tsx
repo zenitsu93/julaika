@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type JSX } from 'react';
 import { GAMES, SOON, matchesGame, matchesSoon, type GameId, type GameInfo, type SoonId } from '../lib/games';
 import { AgentsArt } from './agents/AgentsArt';
+import { AlibiArt } from './alibi/AlibiArt';
 import { BombGlyph } from './bombe/BombGlyph';
 import { BrasGlyph } from './bras/BrasGlyph';
 import { CadArt } from './cadavre/CadArt';
@@ -369,6 +370,7 @@ const ART: Record<GameId, JSX.Element> = {
   motamot: <StoryArt />,
   agents: <AgentsArt />,
   fredonne: <FredArt />,
+  alibi: <AlibiArt />,
 };
 
 /** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */

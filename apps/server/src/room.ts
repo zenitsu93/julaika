@@ -1,4 +1,5 @@
 import {
+  ALIBI_MIN_PLAYERS,
   DEFAULT_SETTINGS,
   DrawOp,
   INTRUS_MIN_PLAYERS,
@@ -36,6 +37,7 @@ import {
   type TurnKind,
 } from '@julaika/shared';
 import { Agents } from './agents';
+import { Alibi } from './alibi';
 import { Bombe } from './bombe';
 import { Cadavre } from './cadavre';
 import { Connait } from './connait';
@@ -127,6 +129,7 @@ export class Room {
   private interdits: Interdits | null = null;
   private mot: MotAMot | null = null;
   private fred: Fredonne | null = null;
+  private alibi: Alibi | null = null;
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -215,7 +218,7 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.bras || this.flash || this.cadavre || this.interdits || this.mot || this.agents || this.fred) {
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.bras || this.flash || this.cadavre || this.interdits || this.mot || this.agents || this.fred || this.alibi) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
       this.intrus?.onLeave(id);
@@ -231,6 +234,7 @@ export class Room {
       this.mot?.onLeave(id);
       this.agents?.onLeave(id);
       this.fred?.onLeave(id);
+      this.alibi?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -311,6 +315,9 @@ export class Room {
         break;
       case 'fred':
         if (msg && typeof msg === 'object') this.fred?.handle(id, msg);
+        break;
+      case 'alibi':
+        if (msg && typeof msg === 'object') this.alibi?.handle(id, msg);
         break;
       case 'sound':
         // Boîte à sons, dans tous les jeux : l'émetteur l'a déjà joué chez lui.
@@ -426,6 +433,7 @@ export class Room {
     if (this.game === 'motamot') return this.startMot();
     if (this.game === 'agents') return this.startAgents();
     if (this.game === 'fredonne') return this.startFred();
+    if (this.game === 'alibi') return this.startAlibi();
     this.usedWords.clear();
     this.shotCount = 0;
     this.nextRound();
@@ -1006,6 +1014,33 @@ export class Room {
     this.fred.start();
   }
 
+  private startAlibi(): void {
+    if (this.players.size < ALIBI_MIN_PLAYERS) {
+      this.sendTo(this.hostId!, { t: 'error', message: `Il faut au moins ${ALIBI_MIN_PLAYERS} joueurs pour L'Alibi.` });
+      return;
+    }
+    this.alibi?.dispose();
+    this.alibi = new Alibi({
+      playerIds: () => [...this.players.keys()],
+      name: (id) => this.players.get(id)?.name ?? '?',
+      rounds: () => this.settings.rounds,
+      random: this.random,
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      system: (text) => this.system(text),
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      endGame: () => this.endGame(),
+    });
+    this.alibi.start();
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -1054,6 +1089,8 @@ export class Room {
     this.agents = null;
     this.fred?.dispose();
     this.fred = null;
+    this.alibi?.dispose();
+    this.alibi = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -1180,6 +1217,7 @@ export class Room {
       motamot: this.mot?.state() ?? null,
       agents: this.agents?.stateFor(id) ?? null,
       fred: this.fred?.stateFor(id) ?? null,
+      alibi: this.alibi?.stateFor(id) ?? null,
     };
   }
 
@@ -1230,6 +1268,7 @@ export class Room {
     this.mot?.dispose();
     this.agents?.dispose();
     this.fred?.dispose();
+    this.alibi?.dispose();
   }
 }
 
