@@ -43,7 +43,7 @@ export interface MotState {
   playing: number;
 }
 
-export type MotError = 'longueur' | 'inconnu' | 'fini' | 'pseudo' | 'jour';
+export type MotError = 'longueur' | 'inconnu' | 'fini' | 'pseudo' | 'jour' | 'complet';
 
 /** Majuscules A-Z seulement : "élève" -> "ELEVE". */
 export function foldMot(s: string): string {

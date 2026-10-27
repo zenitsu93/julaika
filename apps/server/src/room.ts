@@ -606,7 +606,8 @@ export class Room {
   }
 
   private chat(player: Player, raw: string): void {
-    const text = raw.trim().slice(0, 120);
+    const text = stripInvisible(String(raw ?? '')).trim().slice(0, 120);
+    if (!VISIBLE.test(text)) return;
     if (!text) return;
     if (this.interdits?.chat(player.id, text)) return;
     if (this.fred?.chat(player.id, text)) return;
@@ -1502,9 +1503,20 @@ export class Room {
   }
 }
 
+/**
+ * Retire les caractères de contrôle et de format : espaces de largeur nulle, renversements du sens
+ * d'écriture… qui servent à imiter le pseudo de quelqu'un. Seul le liant des émojis composés reste.
+ */
+function stripInvisible(s: string): string {
+  return s.replace(/[\p{Cc}\p{Cs}\p{Co}]|(?!\u200d)\p{Cf}/gu, '');
+}
+
+/** Au moins un caractère qui se voit. */
+const VISIBLE = /[\p{L}\p{N}\p{P}\p{S}]/u;
+
 function sanitizeName(name: string): string {
-  const clean = String(name ?? '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 20);
-  return clean || `Artiste${Math.floor(Math.random() * 1000)}`;
+  const clean = stripInvisible(String(name ?? '')).trim().slice(0, 20);
+  return VISIBLE.test(clean) ? clean : `Artiste${Math.floor(Math.random() * 1000)}`;
 }
 
 function mergeSettings(cur: RoomSettings, patch: Partial<RoomSettings>): RoomSettings {

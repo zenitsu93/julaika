@@ -26,6 +26,18 @@ describe('Room', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
+  it('retire les caractères invisibles des pseudos et du chat', () => {
+    const room = new Room('TEST', undefined, () => 0);
+    const conn = new FakeConn();
+    const id = room.join(conn, 'Ju\u202Elaïka\u200B', 0)!;
+    expect(room.players.get(id)!.name).toBe('Julaïka');
+    expect(room.players.get(room.join(new FakeConn(), '\u200B\u200B', 0)!)!.name).toMatch(/^Artiste\d+$/);
+    room.handle(id, { t: 'chat', text: '\u200B\u2066' });
+    expect(conn.json.filter((m) => m.t === 'chat' && m.line.kind === 'msg')).toHaveLength(0);
+    room.handle(id, { t: 'chat', text: '👩‍❤️‍👨' });
+    expect(conn.last('chat')!.line.text).toBe('👩‍❤️‍👨');
+  });
+
   it('le premier joueur est hôte et seul lui peut lancer', () => {
     const { room, ids } = setup();
     room.handle(ids[1]!, { t: 'start' });

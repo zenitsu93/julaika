@@ -15,6 +15,10 @@ import { ANSWERS, DICTIONARY } from './mots5';
 /** Jour du mot n° 1. */
 export const FIRST_DAY = '2026-10-27';
 const DAY = 86_400_000;
+/** Joueurs classés par jour au plus : de quoi recevoir du monde, pas de quoi remplir le disque. */
+export const MAX_PLAYERS_PER_DAY = 5000;
+/** Chronos lancés sans essai gardés en mémoire (les plus anciens partent d'abord). */
+const MAX_PENDING_STARTS = 20_000;
 
 interface Entry {
   name: string;
@@ -61,11 +65,16 @@ export class MotDuJour {
   private days = new Map<string, Day>();
   private dirty = new Set<string>();
   private timer: NodeJS.Timeout | null = null;
+  // Départ du chrono des joueurs qui ont ouvert le mot sans encore jouer : rien n'est écrit tant
+  // qu'il n'y a pas d'essai, sinon chaque visite (ou un script) remplirait le fichier du jour.
+  private starts = new Map<string, number>();
+  private startsDate = '';
 
   constructor(
     private dir: string | null,
     private now: () => number = Date.now,
     private timeZone = 'Europe/Paris',
+    private maxPlayers = MAX_PLAYERS_PER_DAY,
   ) {
     if (dir) mkdirSync(dir, { recursive: true });
   }
@@ -103,11 +112,8 @@ export class MotDuJour {
     if (!this.valid(date)) return 'jour';
     const today = this.today();
     const day = this.day(date);
-    let entry = token ? day[token] : undefined;
-    if (token && !entry && date === today) {
-      entry = day[token] = { name: '', avatar: 0, guesses: [], startedAt: this.now() };
-      this.touch(date);
-    }
+    const entry = token ? day[token] : undefined;
+    if (token && !entry && date === today) this.startClock(token, today);
     const answer = this.answer(date);
     const done = Boolean(entry?.finishedAt);
     const board: MotBoardEntry[] = Object.entries(day)
@@ -146,7 +152,11 @@ export class MotDuJour {
     if (guess.length !== MOT_LENGTH) return 'longueur';
     if (!ACCEPTED.has(guess)) return 'inconnu';
     const day = this.day(date);
-    const entry = (day[token] ??= { name: clean, avatar: 0, guesses: [], startedAt: this.now() });
+    let entry = day[token];
+    if (!entry) {
+      if (Object.keys(day).length >= this.maxPlayers) return 'complet';
+      entry = day[token] = { name: clean, avatar: 0, guesses: [], startedAt: this.startedAt(token, date) };
+    }
     if (entry.finishedAt) return 'fini';
     entry.name = clean;
     entry.avatar = Number.isInteger(avatar) && avatar >= 0 && avatar < 64 ? avatar : 0;
@@ -158,6 +168,23 @@ export class MotDuJour {
     }
     this.touch(date);
     return this.state(token, date);
+  }
+
+  /** Lance le chrono d'un joueur qui ouvre le mot du jour, sans rien écrire. */
+  private startClock(token: string, today: string) {
+    if (this.startsDate !== today) {
+      this.starts.clear();
+      this.startsDate = today;
+    }
+    if (this.starts.has(token)) return;
+    if (this.starts.size >= MAX_PENDING_STARTS) this.starts.delete(this.starts.keys().next().value!);
+    this.starts.set(token, this.now());
+  }
+
+  private startedAt(token: string, date: string): number {
+    const at = this.startsDate === date ? this.starts.get(token) : undefined;
+    this.starts.delete(token);
+    return at ?? this.now();
   }
 
   private day(date: string): Day {
