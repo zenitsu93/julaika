@@ -1,4 +1,5 @@
 import { decodeDraw, type ClientMsg, type ServerMsg } from '@julaika/shared';
+import { wipeBoard } from '../motion';
 import { board } from './board';
 import { call } from './call';
 import { store } from './store';
@@ -97,6 +98,7 @@ class Net {
         store.set({ ranking: msg.ranking });
         break;
       case 'clear':
+        wipeBoard();
         board.reset();
         break;
       case 'undo':

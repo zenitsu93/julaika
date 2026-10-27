@@ -1,6 +1,8 @@
 import { SETTINGS_LIMITS, type Difficulty, type RoomSettings } from '@julaika/shared';
+import { useEffect, useRef } from 'react';
 import { net } from '../lib/net';
 import { useGame } from '../lib/store';
+import { bump, Ticker, useIndicator } from '../motion';
 
 const FIELDS: { key: keyof typeof SETTINGS_LIMITS; label: string; step?: number }[] = [
   { key: 'rounds', label: 'Manches' },
@@ -21,6 +23,14 @@ export function Lobby() {
   const isHost = useGame((s) => s.room!.players.find((p) => p.id === s.selfId)?.isHost ?? false);
   const error = useGame((s) => s.error);
   const set = (settings: Partial<RoomSettings>) => net.send({ t: 'settings', settings });
+  const level = useIndicator(LEVELS.findIndex((l) => l.value === room.settings.difficulty));
+  const canStart = room.players.length >= 2;
+  const start = useRef<HTMLButtonElement>(null);
+
+  // Le bouton s'éclaire quand le deuxième joueur arrive.
+  useEffect(() => {
+    if (canStart) bump(start.current, 1.04);
+  }, [canStart]);
 
   return (
     <div className="panel p-5 text-left shadow-sm">
@@ -31,6 +41,12 @@ export function Lobby() {
           return (
             <label key={key} className="text-sm">
               <span className="mb-1 block text-muted">{label}</span>
+              {/* Chez les invités, la valeur roule quand l'hôte la change. */}
+              {!isHost ? (
+                <div className="input font-mono opacity-80" aria-label={label}>
+                  <Ticker value={room.settings[key]} />
+                </div>
+              ) : (
               <input
                 type="number"
                 className="input font-mono tabular-nums"
@@ -41,24 +57,27 @@ export function Lobby() {
                 value={room.settings[key]}
                 onChange={(e) => set({ [key]: Number(e.target.value) })}
               />
+              )}
             </label>
           );
         })}
       </div>
       <div className="mt-3 text-sm">
         <span className="mb-1 block text-muted">Difficulté des mots</span>
-        <div role="group" aria-label="Difficulté des mots" className="grid grid-cols-3 gap-1 rounded-md border border-edge p-1">
+        <div ref={level.container} role="group" aria-label="Difficulté des mots" className="relative grid grid-cols-3 gap-1 rounded-md border border-edge p-1">
+          <span ref={level.indicator} className="m-indicator rounded bg-primary" />
           {LEVELS.map(({ value, label }) => {
             const active = room.settings.difficulty === value;
             return (
               <button
                 key={value}
                 type="button"
+                data-slot
                 aria-pressed={active}
                 disabled={!isHost}
                 onClick={() => set({ difficulty: value })}
-                className={`rounded px-3 py-1.5 font-medium transition outline-none focus-visible:ring-2 focus-visible:ring-info disabled:cursor-not-allowed ${
-                  active ? 'bg-primary text-on-primary' : 'text-muted enabled:hover:bg-edge/50'
+                className={`relative rounded px-3 py-1.5 font-medium transition outline-none focus-visible:ring-2 focus-visible:ring-info disabled:cursor-not-allowed ${
+                  active ? 'text-on-primary' : 'text-muted enabled:hover:bg-edge/50'
                 }`}
               >
                 {label}
@@ -81,13 +100,17 @@ export function Lobby() {
         Uniquement mes mots
       </label>
       {isHost ? (
-        <button className="btn-primary mt-5 w-full py-2.5" disabled={room.players.length < 2} onClick={() => net.send({ t: 'start' })}>
-          {room.players.length < 2 ? 'En attente de joueurs…' : 'Lancer la partie'}
+        <button ref={start} className="btn-primary mt-5 w-full py-2.5" disabled={!canStart} onClick={() => net.send({ t: 'start' })}>
+          {canStart ? 'Lancer la partie' : 'En attente de joueurs…'}
         </button>
       ) : (
         <p className="mt-5 text-center text-muted">L'hôte va lancer la partie…</p>
       )}
-      {error && <p className="mt-2 text-center text-sm text-bad">{error}</p>}
+      {error && (
+        <p key={error} className="m-rise mt-2 text-center text-sm text-bad">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
