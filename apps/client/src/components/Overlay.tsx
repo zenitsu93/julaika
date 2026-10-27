@@ -7,6 +7,7 @@ import { useGame } from '../lib/store';
 import { TRAP_INFO } from '../lib/traps';
 import { confetti, Presence, reducedMotion, useCountUp } from '../motion';
 import { Lobby } from './Lobby';
+import { Planche, TurnShots } from './mime/Planche';
 
 function Panel({ children, flow = false }: { children: React.ReactNode; flow?: boolean }) {
   // `flow` : sur téléphone, le panneau prend sa hauteur naturelle au lieu d'être coincé dans le cadre 4:3.
@@ -160,6 +161,7 @@ export function Overlay() {
   const choices = useGame((s) => s.choices);
   const turnEnd = useGame((s) => s.turnEnd);
   const ranking = useGame((s) => s.ranking);
+  const mimeShots = useGame((s) => s.mimeShots);
   const drawer = room.players.find((p) => p.id === room.drawerId);
   const choosing = room.phase === 'choosing' && room.drawerId === selfId && choices;
   // Mot cliqué : il grossit pendant que les autres s'effacent, le temps que le serveur réponde.
@@ -237,6 +239,7 @@ export function Overlay() {
         const trap = room.trap && TRAP_INFO[room.trap.kind];
         return (
           <Panel key="turnEnd">
+            {room.turnKind === 'mime' && <TurnShots shots={mimeShots.filter((s) => s.round === room.round && s.mimerId === room.drawerId)} />}
             <div className={drew ? 'flex items-start gap-4 text-left' : ''}>
               {drew && <Replay />}
               <div className="min-w-0 flex-1">
@@ -274,6 +277,11 @@ export function Overlay() {
         return (
           <Panel key="gameEnd">
             <Podium ranking={ranking} />
+            {mimeShots.length > 0 && (
+              <div className="mt-4">
+                <Planche shots={mimeShots} delay={1200} mini />
+              </div>
+            )}
           </Panel>
         );
       default:

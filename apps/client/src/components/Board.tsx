@@ -6,7 +6,7 @@ import { call, useCall } from '../lib/call';
 import { useGame } from '../lib/store';
 import { animate, attachWipe, Presence } from '../motion';
 import { CallBar } from './CallBar';
-import { MimeStage } from './MimeStage';
+import { MimeStage } from './mime/MimeStage';
 import { Overlay } from './Overlay';
 import { Reaction } from './Reaction';
 import { PlayerStrip } from './PlayerStrip';

@@ -4,6 +4,7 @@ import { net } from '../lib/net';
 import { TRAP_INFO, TRAP_MODE_LABELS } from '../lib/traps';
 import { useGame } from '../lib/store';
 import { bump, Ticker, useIndicator } from '../motion';
+import { Planche } from './mime/Planche';
 
 const FIELDS: { key: keyof typeof SETTINGS_LIMITS; label: string; step?: number; max?: number }[] = [
   { key: 'rounds', label: 'Manches' },
@@ -129,6 +130,7 @@ export function Lobby() {
   const rules = RULES[room.game];
   const isHost = useGame((s) => s.room!.players.find((p) => p.id === s.selfId)?.isHost ?? false);
   const error = useGame((s) => s.error);
+  const mimeShots = useGame((s) => s.mimeShots);
   const set = (settings: Partial<RoomSettings>) => net.send({ t: 'settings', settings });
   const level = useIndicator(LEVELS.findIndex((l) => l.value === room.settings.difficulty));
   const modeIndex = Math.max(0, MODES.findIndex((m) => m.value === room.settings.mode));
@@ -145,6 +147,11 @@ export function Lobby() {
 
   return (
     <div className="panel p-5 text-left shadow-sm">
+      {!rules && mimeShots.length > 0 && (
+        <div className="mb-5 border-b border-edge pb-4">
+          <Planche shots={mimeShots} />
+        </div>
+      )}
       <h2 className="mb-4 text-lg font-semibold">Réglages du salon <span className="font-mono text-muted">#{room.code}</span></h2>
       {!rules && (
       <div className="mb-3 text-sm">
@@ -171,6 +178,15 @@ export function Lobby() {
           })}
         </div>
         <p key={modeIndex} className="m-fade mt-1 text-xs text-muted">{MODES[modeIndex]!.hint}</p>
+        {room.settings.mode !== 'dessin' && (
+          <label className="m-rise mt-2 flex items-start gap-2 rounded-md border border-edge bg-surface px-3 py-2 text-sm">
+            <input type="checkbox" className="mt-0.5 accent-primary" disabled={!isHost} checked={room.settings.twists} onChange={(e) => set({ twists: e.target.checked })} />
+            <span>
+              <span className="font-medium">Consignes surprises</span>
+              <span className="block text-xs text-muted">Toutes les 20 s, le mimeur change de style : au ralenti, comme un robot, sur un pied…</span>
+            </span>
+          </label>
+        )}
       </div>
       )}
       <div className="grid grid-cols-2 gap-3">
@@ -238,6 +254,7 @@ export function Lobby() {
         </ol>
       ) : (
       <>
+      {room.settings.mode !== 'mime' && (
       <div className="mt-3 text-sm">
         <span className="mb-1 flex items-center gap-1.5 text-muted">
           Manches piégées
@@ -281,6 +298,7 @@ export function Lobby() {
           </ul>
         )}
       </div>
+      )}
       <label className="mt-3 block text-sm">
         <span className="mb-1 block text-muted">Mots perso (séparés par des virgules)</span>
         <textarea

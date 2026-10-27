@@ -4,6 +4,7 @@
 import type { BombEvent, BombState } from './bombe';
 import type { ConnaitState } from './connait';
 import type { IntrusState } from './intrus';
+import type { MimeShot, MimeTwist } from './mime';
 import type { BacState } from './petitbac';
 import type { PhotoShot, PhotoState } from './photomaton';
 import type { TelChain, TelEntry, TelState } from './telephone';
@@ -116,6 +117,8 @@ export interface RoomSettings {
   customWords: string[];
   customOnly: boolean;
   traps: TrapMode;
+  /** Mime : une consigne surprise toutes les 20 s (au ralenti, comme un robot…). */
+  twists: boolean;
 }
 
 export const DEFAULT_SETTINGS: RoomSettings = {
@@ -129,6 +132,7 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   customWords: [],
   customOnly: false,
   traps: 'jamais',
+  twists: true,
 };
 
 export const SETTINGS_LIMITS = {
@@ -185,6 +189,8 @@ export interface RoomState {
   meetUrl: string;
   /** Piège du tour de dessin en cours (dès le choix du mot), null sinon. */
   trap: Trap | null;
+  /** Mime : consigne surprise en cours pour le mimeur (null hors tour de mime). */
+  twist: MimeTwist | null;
   /** État de Wavelength, null pour les autres jeux. */
   wave: WaveState | null;
   /** État du Téléphone dessiné, null pour les autres jeux. */
@@ -261,6 +267,8 @@ export type ClientMsg =
   | { t: 'bomb'; typing: string }
   | { t: 'photo'; image: string | null }
   | { t: 'photo'; vote: string; stars: number }
+  /** Mime : le mimeur répond à `mimeSnap` avec l'image de sa caméra (null sans caméra). */
+  | { t: 'mimeShot'; finder: string; image: string | null }
   /** Boîte à sons : un bruitage joué chez tout le salon (dans tous les jeux). */
   | { t: 'sound'; id: SoundId }
   | { t: 'sourire'; smiled: true }
@@ -290,6 +298,10 @@ export type ServerMsg =
   | { t: 'bombEvent'; event: BombEvent }
   /** Photomaton : les polaroids de la manche, envoyés une fois toutes les photos reçues. */
   | { t: 'photos'; round: number; shots: PhotoShot[] }
+  /** Mime, au mimeur seul : quelqu'un vient de trouver, prends le polaroid. */
+  | { t: 'mimeSnap'; finder: string }
+  /** Mime : le polaroid d'une trouvaille, pour tout le salon. */
+  | { t: 'mimeShot'; shot: MimeShot }
   /** Bruitage envoyé par un joueur : chacun le synthétise chez lui (sauf s'il a coupé le son). */
   | { t: 'sound'; id: SoundId; by: string }
   | { t: 'pong'; at: number; now: number }

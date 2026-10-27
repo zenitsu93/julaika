@@ -2,6 +2,7 @@ import { decodeDraw, isSoundId, type ClientMsg, type GameMode, type RoomGame, ty
 import { wipeBoard } from '../motion';
 import { board } from './board';
 import { call } from './call';
+import { mimeSnapshot } from './mime';
 import { configureSounds, receive as receiveSound } from './sounds';
 import { store, type GameState } from './store';
 
@@ -90,6 +91,8 @@ class Net {
           bombEvent: msg.state.bomb ? s.bombEvent : null,
           photos: msg.state.photo && phase !== 'pose' ? s.photos : null,
           reel: msg.state.photo ? keepBest(s.reel, s.photos, msg.state) : [],
+          // Les polaroids du mime restent jusqu'au lancement de la partie suivante.
+          mimeShots: s.room?.phase === 'lobby' && phase !== 'lobby' ? [] : s.mimeShots,
         }));
         call.sync(msg.state.players);
         break;
@@ -127,6 +130,12 @@ class Net {
         break;
       case 'photos':
         store.set({ photos: { round: msg.round, shots: msg.shots } });
+        break;
+      case 'mimeSnap':
+        this.send({ t: 'mimeShot', finder: msg.finder, image: mimeSnapshot() });
+        break;
+      case 'mimeShot':
+        store.set((s) => ({ mimeShots: [...s.mimeShots, msg.shot] }));
         break;
       case 'dial':
         store.set({ dial: msg.value });

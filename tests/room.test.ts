@@ -221,3 +221,86 @@ describe('visio intégrée', () => {
     expect(room.settings.mode).toBe('mixte');
   });
 });
+
+describe('mime enrichi', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  const IMG = `data:image/jpeg;base64,${'A'.repeat(40)}`;
+
+  function mimeTurn(drawTime = 80) {
+    const s = setup();
+    s.room.handle(s.ids[0]!, { t: 'settings', settings: { mode: 'mime', drawTime, traps: 'toujours' } });
+    s.room.handle(s.ids[0]!, { t: 'start' });
+    s.room.handle(s.ids[0]!, { t: 'choose', index: 0 });
+    return s;
+  }
+
+  it('pas de manche piégée pendant un mime', () => {
+    const { room } = mimeTurn();
+    expect(room.trap).toBeNull();
+  });
+
+  it('une consigne surprise toutes les 20 s, jamais deux fois la même, pas en fin de tour', () => {
+    const { room, conns } = mimeTurn(60);
+    expect(conns[1]!.last('state')!.state.twist).toBeNull();
+    vi.advanceTimersByTime(20_000);
+    const first = conns[1]!.last('state')!.state.twist!;
+    expect(first.n).toBe(1);
+    vi.advanceTimersByTime(20_000);
+    const second = conns[1]!.last('state')!.state.twist!;
+    expect(second.n).toBe(2);
+    expect(second.text).not.toBe(first.text);
+    // 60 s de tour : rien à 60 s (marge de fin), le tour se termine.
+    vi.advanceTimersByTime(20_000);
+    expect(room.phase).toBe('turnEnd');
+    expect(room.twist?.n).toBe(2);
+    vi.advanceTimersByTime(TURN_END_TIME * 1000);
+    expect(room.twist).toBeNull();
+  });
+
+  it("consignes coupées par l'hôte : aucune", () => {
+    const { room, ids } = setup();
+    room.handle(ids[0]!, { t: 'settings', settings: { mode: 'mime', twists: false } });
+    room.handle(ids[0]!, { t: 'start' });
+    room.handle(ids[0]!, { t: 'choose', index: 0 });
+    vi.advanceTimersByTime(60_000);
+    expect(room.twist).toBeNull();
+  });
+
+  it('une trouvaille demande un polaroid au mimeur, diffusé une seule fois à tous', () => {
+    const { room, conns, ids } = mimeTurn();
+    room.handle(ids[1]!, { t: 'chat', text: room.word! });
+    expect(conns[0]!.last('mimeSnap')).toEqual({ t: 'mimeSnap', finder: ids[1] });
+    expect(conns[1]!.last('mimeSnap')).toBeUndefined();
+    // Seul le mimeur peut répondre, avec une vraie image.
+    room.handle(ids[2]!, { t: 'mimeShot', finder: ids[1]!, image: IMG });
+    room.handle(ids[0]!, { t: 'mimeShot', finder: ids[1]!, image: 'javascript:alert(1)' });
+    expect(conns[2]!.last('mimeShot')).toBeUndefined();
+    room.handle(ids[0]!, { t: 'mimeShot', finder: ids[1]!, image: IMG });
+    const shot = conns[2]!.last('mimeShot')!.shot;
+    expect(shot).toMatchObject({ id: 1, round: 1, word: room.word, mimerId: ids[0], finderId: ids[1], finderName: 'J1', image: IMG });
+    room.handle(ids[0]!, { t: 'mimeShot', finder: ids[1]!, image: IMG });
+    expect(conns[2]!.json.filter((m) => m.t === 'mimeShot')).toHaveLength(1);
+  });
+
+  it('le dernier à trouver a aussi son polaroid, même après la fin du tour', () => {
+    const { room, conns, ids } = mimeTurn();
+    const word = room.word!;
+    room.handle(ids[1]!, { t: 'chat', text: word });
+    room.handle(ids[2]!, { t: 'chat', text: word });
+    expect(room.phase).toBe('turnEnd');
+    room.handle(ids[0]!, { t: 'mimeShot', finder: ids[2]!, image: null });
+    expect(conns[1]!.last('mimeShot')!.shot).toMatchObject({ finderId: ids[2], image: null, word });
+  });
+
+  it('pas de polaroid en mode dessin', () => {
+    const { room, conns, ids } = setup();
+    room.handle(ids[0]!, { t: 'start' });
+    room.handle(ids[0]!, { t: 'choose', index: 0 });
+    room.handle(ids[1]!, { t: 'chat', text: room.word! });
+    expect(conns[0]!.last('mimeSnap')).toBeUndefined();
+    room.handle(ids[0]!, { t: 'mimeShot', finder: ids[1]!, image: IMG });
+    expect(conns[1]!.last('mimeShot')).toBeUndefined();
+  });
+});

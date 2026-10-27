@@ -2,6 +2,10 @@ import {
   DEFAULT_SETTINGS,
   DrawOp,
   INTRUS_MIN_PLAYERS,
+  MIME_MAX_SHOTS,
+  MIME_TWISTS,
+  MIME_TWIST_EVERY,
+  MIME_TWIST_MARGIN,
   MAX_CALL,
   SETTINGS_LIMITS,
   TRAPS,
@@ -10,6 +14,7 @@ import {
   decodeDraw,
   isDifficulty,
   isGameMode,
+  isPhotoDataUrl,
   isTrapMode,
   isSoundId,
   maskWord,
@@ -20,6 +25,7 @@ import {
   type Difficulty,
   type IceServer,
   type IntrusPair,
+  type MimeTwist,
   type Phase,
   type PlayerPublic,
   type RoomGame,
@@ -92,6 +98,8 @@ export class Room {
 
   /** Piège du tour en cours (manches piégées du Dessin). */
   trap: Trap | null = null;
+  /** Consigne surprise du mime en cours. */
+  twist: MimeTwist | null = null;
 
   private wave: Wavelength | null = null;
   private tel: Telephone | null = null;
@@ -121,6 +129,10 @@ export class Room {
   private generating = new Set<string>();
   private offered: string[] = [];
   private lastTrap: Trap['kind'] | null = null;
+  // Mime : trouvailles du tour qui attendent le polaroid du mimeur, et tirages de la partie.
+  private pendingSnaps = new Set<string>();
+  private shotCount = 0;
+  private twistCount = 0;
 
   constructor(
     code: string,
@@ -252,6 +264,9 @@ export class Room {
       case 'sourire':
         if (msg && typeof msg === 'object') this.sourire?.handle(id, msg);
         break;
+      case 'mimeShot':
+        this.mimeShot(id, msg.finder, msg.image);
+        break;
       case 'sound':
         // Boîte à sons, dans tous les jeux : l'émetteur l'a déjà joué chez lui.
         if (isSoundId(msg.id)) this.broadcast({ t: 'sound', id: msg.id, by: id }, id);
@@ -354,6 +369,7 @@ export class Room {
     if (this.game === 'photomaton') return this.startPhoto();
     if (this.game === 'sourire') return this.startSourire();
     this.usedWords.clear();
+    this.shotCount = 0;
     this.nextRound();
   }
 
@@ -386,6 +402,8 @@ export class Room {
       p.turnGain = 0;
     }
     this.broadcast({ t: 'clear' });
+    this.twist = null;
+    this.pendingSnaps.clear();
     const { mode } = this.settings;
     this.turnKind = mode === 'mime' ? 'mime' : mode === 'mixte' && this.random() < 0.5 ? 'mime' : 'draw';
     // Les manches piégées touchent le crayon : rien à piéger quand on mime.
@@ -416,8 +434,45 @@ export class Room {
       this.afterMs(drawMs * at, () => this.revealLetter(letters));
     }
     this.afterMs(drawMs, () => this.endTurn());
+    if (this.turnKind === 'mime' && this.settings.twists) {
+      for (let at = MIME_TWIST_EVERY; at <= this.settings.drawTime - MIME_TWIST_MARGIN; at += MIME_TWIST_EVERY) {
+        this.after(at, () => this.nextTwist());
+      }
+    }
     this.system(`${this.players.get(this.drawerId!)?.name} ${this.turnKind === 'mime' ? 'mime' : 'dessine'} !`);
     this.broadcastState();
+  }
+
+  /** Nouvelle consigne surprise pour le mimeur, jamais deux fois la même d'affilée. */
+  private nextTwist(): void {
+    const others = MIME_TWISTS.filter((t) => t.text !== this.twist?.text);
+    const pick = others[Math.floor(this.random() * others.length)]!;
+    this.twist = { n: ++this.twistCount, ...pick };
+    this.broadcastState();
+  }
+
+  /** Polaroid envoyé par le mimeur pour une trouvaille du tour en cours. */
+  private mimeShot(id: string, finder: unknown, image: unknown): void {
+    if (id !== this.drawerId || this.turnKind !== 'mime' || typeof finder !== 'string' || !this.pendingSnaps.has(finder)) return;
+    if (image !== null && !isPhotoDataUrl(image)) return;
+    this.pendingSnaps.delete(finder);
+    const mimer = this.players.get(id)!;
+    const found = this.players.get(finder);
+    if (!found || !this.word || this.shotCount >= MIME_MAX_SHOTS) return;
+    this.broadcast({
+      t: 'mimeShot',
+      shot: {
+        id: ++this.shotCount,
+        round: this.round,
+        word: this.word,
+        mimerId: id,
+        mimerName: mimer.name,
+        finderId: finder,
+        finderName: found.name,
+        image,
+        avatar: mimer.avatar,
+      },
+    });
   }
 
   private revealLetter(letters: number[]): void {
@@ -462,6 +517,11 @@ export class Room {
     player.turnGain = gain;
     player.score += gain;
     this.broadcast({ t: 'chat', line: { from: player.id, name: player.name, text: `${player.name} a trouvé le mot !`, kind: 'correct' } });
+    // Mime : la caméra du mimeur tire un polaroid de l'instant.
+    if (this.turnKind === 'mime' && this.drawerId) {
+      this.pendingSnaps.add(player.id);
+      this.sendTo(this.drawerId, { t: 'mimeSnap', finder: player.id });
+    }
     this.checkAllGuessed();
     this.broadcastState();
   }
@@ -718,6 +778,7 @@ export class Room {
     this.drawerId = null;
     this.turnKind = 'draw';
     this.trap = null;
+    this.twist = null;
     this.word = null;
     this.endsAt = Date.now() + GAME_END_TIME * 1000;
     const ranking = this.publicPlayers().sort((a, b) => b.score - a.score);
@@ -750,6 +811,7 @@ export class Room {
     this.turnKind = 'draw';
     this.word = null;
     this.trap = null;
+    this.twist = null;
     this.endsAt = null;
     this.strokes = [];
     this.strokeBytes = 0;
@@ -852,6 +914,7 @@ export class Room {
       endsAt: this.endsAt,
       hint,
       trap: this.trap,
+      twist: this.twist,
       meetUrl: this.meetUrl,
       wave: this.wave?.stateFor(id) ?? null,
       tel: this.tel?.state() ?? null,
@@ -928,5 +991,6 @@ function mergeSettings(cur: RoomSettings, patch: Partial<RoomSettings>): RoomSet
   if (isDifficulty(patch.difficulty)) next.difficulty = patch.difficulty;
   if (isGameMode(patch.mode)) next.mode = patch.mode;
   if (isTrapMode(patch.traps)) next.traps = patch.traps;
+  if (typeof patch.twists === 'boolean') next.twists = patch.twists;
   return next;
 }
