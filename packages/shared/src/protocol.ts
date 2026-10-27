@@ -18,6 +18,7 @@ import type { StoryState } from './motamot';
 import type { BacState } from './petitbac';
 import type { PhotoShot, PhotoState } from './photomaton';
 import type { PitchState } from './pitch';
+import type { QuizState } from './quiz';
 import type { TelChain, TelEntry, TelState } from './telephone';
 import type { AovKind, AovLevel, AovState } from './verite';
 import type { SoundId, SourireState, WarpId } from './sourire';
@@ -35,7 +36,7 @@ export const PALETTE = [
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 /** Jeux proposés : chaque salon en porte un, choisi à sa création. */
-export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre', 'interdits', 'motamot', 'agents', 'fredonne', 'alibi', 'pitch', 'cerveau', 'verite'] as const;
+export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre', 'interdits', 'motamot', 'agents', 'fredonne', 'alibi', 'pitch', 'cerveau', 'verite', 'quiz'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
@@ -89,6 +90,7 @@ export type Phase =
   | 'spin'
   | 'pick'
   | 'dare'
+  | 'prep'
   | 'gameEnd';
 
 /** Difficulté des mots proposés : sert au tirage dans les listes intégrées et à la génération par IA. */
@@ -152,6 +154,9 @@ export interface RoomSettings {
   cerveau: CerveauMode;
   /** Action ou vérité : niveau des cartes. */
   aovLevel: AovLevel;
+  /** Quiz : le ou les thèmes écrits par l'hôte (séparés par des virgules), et le nombre de questions. */
+  quizTheme: string;
+  questions: number;
 }
 
 export const DEFAULT_SETTINGS: RoomSettings = {
@@ -168,6 +173,8 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   twists: true,
   cerveau: 'mixte',
   aovLevel: 'lite',
+  quizTheme: '',
+  questions: 10,
 };
 
 export const SETTINGS_LIMITS = {
@@ -176,6 +183,7 @@ export const SETTINGS_LIMITS = {
   maxPlayers: [2, 16],
   wordChoices: [1, 5],
   hints: [0, 5],
+  questions: [5, 20],
 } as const;
 
 export interface PlayerPublic {
@@ -264,6 +272,8 @@ export interface RoomState {
   cerveau: CerveauState | null;
   /** État d'Action ou vérité, null pour les autres jeux. */
   aov: AovState | null;
+  /** État du quiz de culture générale vu par ce joueur, null pour les autres jeux. */
+  quiz: QuizState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -371,6 +381,7 @@ export type ClientMsg =
   | { t: 'aov'; choose: AovKind }
   | { t: 'aov'; pass: true }
   | { t: 'aov'; vote: boolean }
+  | { t: 'quiz'; pick: number }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =

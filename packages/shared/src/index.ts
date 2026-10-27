@@ -22,3 +22,4 @@ export * from './alibi';
 export * from './pitch';
 export * from './cerveau';
 export * from './verite';
+export * from './quiz';

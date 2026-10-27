@@ -4,7 +4,7 @@ import { extname, join, normalize as normalizePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { isGameMode, isRoomGame, type ClientMsg, type GameMode, type RoomGame } from '@julaika/shared';
-import { deepseekDares, deepseekPairs, deepseekWords } from './deepseek';
+import { deepseekDares, deepseekPairs, deepseekQuiz, deepseekWords } from './deepseek';
 import { warmDictionary } from './dico';
 import { iceServersFor } from './ice';
 import { MotDuJour, isToken } from './motdujour';
@@ -16,6 +16,7 @@ const rooms = new Map<string, Room>();
 const generateWords = deepseekWords();
 const generatePairs = deepseekPairs();
 const generateDares = deepseekDares();
+const generateQuiz = deepseekQuiz();
 const mot = new MotDuJour(process.env.MOT_DATA_DIR ?? 'data/mot', Date.now, process.env.MOT_TZ || 'Europe/Paris');
 const motBuckets = new Map<string, () => boolean>();
 
@@ -149,7 +150,7 @@ wss.on('connection', (ws: WebSocket & { alive?: boolean }) => {
     }
     if (!room || !playerId) return;
     if (msg.t === 'chat' && !chatBucket()) return;
-    if ((msg.t === 'wave' || msg.t === 'tel' || msg.t === 'intrus' || msg.t === 'bac' || msg.t === 'connait' || msg.t === 'bomb' || msg.t === 'sourire' || msg.t === 'bras' || msg.t === 'flash' || msg.t === 'interdits' || msg.t === 'agents' || msg.t === 'pitch' || msg.t === 'cerveau' || msg.t === 'aov') && !dialBucket()) return;
+    if ((msg.t === 'wave' || msg.t === 'tel' || msg.t === 'intrus' || msg.t === 'bac' || msg.t === 'connait' || msg.t === 'bomb' || msg.t === 'sourire' || msg.t === 'bras' || msg.t === 'flash' || msg.t === 'interdits' || msg.t === 'agents' || msg.t === 'pitch' || msg.t === 'cerveau' || msg.t === 'aov' || msg.t === 'quiz') && !dialBucket()) return;
     if (msg.t === 'sound' && !soundBucket()) return;
     room.handle(playerId, msg);
   });
@@ -185,6 +186,7 @@ function createRoom(game: RoomGame, mode: GameMode): Room {
     generateWords,
     generatePairs,
     generateDares,
+    generateQuiz,
   );
   room.game = game;
   // La carte « Mime » de l'accueil ouvre un salon de dessin réglé en mime.

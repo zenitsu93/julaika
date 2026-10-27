@@ -4,6 +4,7 @@ import { net } from '../lib/net';
 import { TRAP_INFO, TRAP_MODE_LABELS } from '../lib/traps';
 import { CerveauModes } from './cerveau/CerveauModes';
 import { useGame } from '../lib/store';
+import { QuizThemeField } from './quiz/QuizThemeField';
 import { bump, Ticker, useIndicator } from '../motion';
 import { Planche } from './mime/Planche';
 import { AovLevelPicker } from './verite/AovBoard';
@@ -63,6 +64,12 @@ const FLASH_FIELDS: typeof FIELDS = [
 const BAC_FIELDS: typeof FIELDS = [
   { key: 'rounds', label: 'Manches' },
   { key: 'drawTime', label: 'Temps par grille (s)', step: 10 },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
+// Quiz : le nombre de questions ; le thème et le niveau ont leurs propres champs.
+const QUIZ_FIELDS: typeof FIELDS = [
+  { key: 'questions', label: 'Questions' },
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
@@ -214,6 +221,12 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
     'L’indice : un seul mot et un nombre. Pointez une carte, puis « Démasquer ». Un passant rend la main, l’assassin fait perdre.',
   ],
 
+  quiz: [
+    'L’IA écrit les questions sur ton thème. Chaque question se lit 3 secondes, puis quatre réponses s’ouvrent.',
+    'Verrouille la tienne : de 1 000 points dès l’ouverture à 500 à la dernière seconde.',
+    'Bonnes réponses à la suite : +100 par question de la série. Le podium attend le champion !',
+  ],
+
   sourire: [
     'Un défenseur garde un visage de marbre pendant 30 s ; son attaquant a des bruitages, des grimaces à faire et peut déformer sa visio.',
     'Au moindre sourire, on appuie sur « Il a souri ! » (ou Espace) : plus il craque tôt, plus l’attaquant marque.',
@@ -330,7 +343,7 @@ export function Lobby() {
       )}
       {room.game === 'verite' && <AovLevelPicker isHost={isHost} />}
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'brasdefer' ? BRAS_FIELDS : room.game === 'flash' ? FLASH_FIELDS : room.game === 'cadavre' ? CAD_FIELDS : room.game === 'interdits' ? INTERDITS_FIELDS : room.game === 'motamot' ? STORY_FIELDS : room.game === 'agents' ? AGENTS_FIELDS : room.game === 'fredonne' ? FRED_FIELDS : room.game === 'alibi' ? ALIBI_FIELDS : room.game === 'pitch' ? PITCH_FIELDS : room.game === 'cerveau' ? CERVEAU_FIELDS : room.game === 'verite' ? AOV_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'brasdefer' ? BRAS_FIELDS : room.game === 'flash' ? FLASH_FIELDS : room.game === 'cadavre' ? CAD_FIELDS : room.game === 'interdits' ? INTERDITS_FIELDS : room.game === 'motamot' ? STORY_FIELDS : room.game === 'agents' ? AGENTS_FIELDS : room.game === 'fredonne' ? FRED_FIELDS : room.game === 'alibi' ? ALIBI_FIELDS : room.game === 'pitch' ? PITCH_FIELDS : room.game === 'cerveau' ? CERVEAU_FIELDS : room.game === 'verite' ? AOV_FIELDS : room.game === 'quiz' ? QUIZ_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
           const label = key === 'drawTime' && !rules && room.settings.mode !== 'dessin' ? 'Temps par tour (s)' : base;
           const [min, limit] = SETTINGS_LIMITS[key];
           const max = cap ?? limit;
@@ -358,9 +371,10 @@ export function Lobby() {
           );
         })}
       </div>
-      {(!rules || room.game === 'bombe' || room.game === 'interdits' || room.game === 'fredonne') && (
+      {room.game === 'quiz' && <QuizThemeField isHost={isHost} />}
+      {(!rules || room.game === 'bombe' || room.game === 'interdits' || room.game === 'fredonne' || room.game === 'quiz') && (
         <div className="mt-3 text-sm">
-          <span className="mb-1 block text-muted">{room.game === 'bombe' ? 'Difficulté des syllabes' : room.game === 'interdits' ? 'Mots interdits par carte (3, 4 ou 5)' : room.game === 'fredonne' ? 'Difficulté des chansons' : 'Difficulté des mots'}</span>
+          <span className="mb-1 block text-muted">{room.game === 'bombe' ? 'Difficulté des syllabes' : room.game === 'interdits' ? 'Mots interdits par carte (3, 4 ou 5)' : room.game === 'fredonne' ? 'Difficulté des chansons' : room.game === 'quiz' ? 'Niveau des questions' : 'Difficulté des mots'}</span>
           <div ref={level.container} role="group" aria-label="Difficulté" className="relative grid grid-cols-3 gap-1 rounded-md border border-edge p-1">
             <span ref={level.indicator} className="m-indicator rounded bg-primary" />
             {LEVELS.map(({ value, label }) => {
