@@ -3,6 +3,7 @@ import { GAMES, SOON, matchesGame, matchesSoon, type GameId, type GameInfo, type
 import { BombGlyph } from './bombe/BombGlyph';
 import { BrasGlyph } from './bras/BrasGlyph';
 import { ConnaitArt } from './connait/ConnaitArt';
+import { FlashArt } from './flash/FlashArt';
 import { LogoMark } from './Logo';
 import './photo/photo.css';
 
@@ -305,6 +306,7 @@ const ART: Record<GameId, JSX.Element> = {
   photomaton: <PhotoArt />,
   sourire: <SourireArt />,
   brasdefer: <BrasGlyph className="mx-auto max-h-36 w-full" />,
+  flash: <FlashArt />,
 };
 
 /** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */

@@ -1,0 +1,351 @@
+/* Flash : l'image qui éclate puis s'éteint, la feuille sous pression, la galerie autour de l'original. */
+
+/* ---- Mémorisation --------------------------------------------------------------- */
+
+/* Chaque chiffre du « 3, 2, 1 » tombe, grossi, puis se pose. */
+@keyframes fl-count {
+  from {
+    opacity: 0;
+    transform: scale(1.8);
+    filter: blur(6px);
+  }
+}
+.fl-count {
+  animation: fl-count 0.45s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) backwards;
+}
+
+/* L'image arrive surexposée et floue, puis se fixe : un vrai coup de flash. */
+@keyframes fl-shown {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+    filter: brightness(2.2) blur(10px);
+  }
+}
+.fl-shown {
+  animation: fl-shown 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+/* Au gong, elle s'éteint : elle rétrécit, floute et disparaît. */
+@keyframes fl-gone {
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+    filter: blur(8px) grayscale(1);
+  }
+}
+.fl-gone {
+  animation: fl-gone 0.26s ease-in forwards;
+}
+
+/* Halo blanc et or qui jaillit derrière l'image à son apparition. */
+@keyframes fl-burst {
+  from {
+    opacity: 0.95;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.12);
+  }
+}
+.fl-burst {
+  background: radial-gradient(closest-side, #fff 0%, color-mix(in oklab, var(--color-gold) 55%, #fff) 45%, transparent 75%);
+  animation: fl-burst 0.6s ease-out forwards;
+  z-index: -1;
+}
+
+/* Les trois pastilles tombent l'une après l'autre. */
+@keyframes fl-swatch {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.4);
+  }
+}
+.fl-swatch {
+  animation: fl-swatch 0.5s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) backwards;
+}
+
+/* L'ampoule de la manche en cours clignote doucement. */
+@keyframes fl-bulb {
+  50% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+}
+.fl-bulb {
+  animation: fl-bulb 1.2s ease-in-out infinite;
+}
+
+/* ---- Dessin ---------------------------------------------------------------------- */
+
+@keyframes fl-sheet {
+  from {
+    opacity: 0;
+    transform: translateY(24px) rotate(-1.5deg);
+  }
+}
+.fl-sheet {
+  animation: fl-sheet 0.45s 0.1s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) backwards;
+  transition: box-shadow 0.3s;
+}
+
+/* Les cinq dernières secondes : la feuille bat et s'entoure de rouge. */
+@keyframes fl-urgent {
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-bad) 45%, transparent);
+  }
+}
+.fl-urgent {
+  animation: fl-urgent 1s ease-in-out infinite;
+}
+
+/* Chaque seconde de la fin cogne. */
+@keyframes fl-tick {
+  from {
+    transform: scale(1.35);
+  }
+}
+.fl-tick {
+  display: inline-block;
+  animation: fl-tick 0.3s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+
+/* ---- Galerie --------------------------------------------------------------------- */
+
+/* Les croquis sont lancés sur la table, légèrement penchés. */
+@keyframes fl-card {
+  from {
+    opacity: 0;
+    transform: translateY(40px) rotate(calc(var(--tilt) * 4)) scale(0.9);
+  }
+}
+.fl-card {
+  --tilt: 0deg;
+  transform: rotate(var(--tilt));
+  animation: fl-card 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  transition:
+    transform 0.4s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    opacity 0.7s,
+    filter 0.7s;
+}
+.fl-card:hover {
+  transform: rotate(0deg) translateY(-4px);
+}
+
+/* L'original : cadre doré dont la lumière fait le tour (bordure « shine » recréée à la main). */
+@property --fl-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes fl-spin {
+  to {
+    --fl-angle: 360deg;
+  }
+}
+@keyframes fl-original {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+    filter: brightness(2);
+  }
+}
+.fl-original {
+  animation: fl-original 0.6s 0.15s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) backwards;
+  z-index: 1;
+}
+.fl-frame {
+  background: conic-gradient(from var(--fl-angle), var(--color-cacao), var(--color-gold), var(--color-butter), var(--color-gold), var(--color-cacao));
+  animation: fl-spin 4s linear infinite;
+  box-shadow: 0 24px 50px -26px rgb(40 20 10 / 0.7);
+}
+
+/* Calque de l'original posé sur un croquis. */
+.fl-ghost {
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.fl-ghost.is-on {
+  opacity: 0.38;
+}
+
+@keyframes fl-crown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -16px) scale(0.6) rotate(-10deg);
+  }
+}
+.fl-crown {
+  transform: translateX(-50%);
+  animation: fl-crown 0.5s 0.7s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) backwards;
+}
+@keyframes fl-halo {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+.fl-halo {
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--color-gold) 45%, transparent), transparent);
+  animation: fl-halo 0.8s 0.6s ease-out backwards;
+}
+
+/* ---- Accueil et attente ------------------------------------------------------------ */
+
+/* Teaser : l'original clignote comme un flash, la copie se gribouille. */
+@keyframes fl-teaser-a {
+  0%,
+  8% {
+    opacity: 0;
+    filter: brightness(2.5);
+  }
+  14%,
+  40% {
+    opacity: 1;
+    filter: none;
+  }
+  48%,
+  100% {
+    opacity: 0.15;
+    filter: blur(4px);
+  }
+}
+.fl-teaser-a {
+  animation: fl-teaser-a 5s ease-in-out infinite;
+}
+@keyframes fl-scribble {
+  0%,
+  45% {
+    stroke-dashoffset: 1;
+  }
+  70%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+.fl-scribble {
+  stroke-dasharray: 1;
+  animation: fl-scribble 5s ease-out infinite;
+}
+
+/* Carte de l'accueil : le cadre s'illumine, l'image apparaît, puis le crayon la recopie. */
+@keyframes fl-art-flash {
+  0%,
+  6% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  10% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  22%,
+  100% {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+}
+.fl-art-flash {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fl-art-flash 5s ease-out infinite;
+}
+@keyframes fl-art-image {
+  0%,
+  8% {
+    opacity: 0;
+  }
+  12%,
+  38% {
+    opacity: 1;
+  }
+  46%,
+  100% {
+    opacity: 0;
+  }
+}
+.fl-art-image {
+  animation: fl-art-image 5s ease-in-out infinite;
+}
+@keyframes fl-art-draw {
+  0%,
+  46% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  80%,
+  94% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+.fl-art-draw {
+  stroke-dasharray: 1;
+  animation: fl-art-draw 5s ease-in-out infinite;
+}
+@keyframes fl-art-pencil {
+  0%,
+  46% {
+    transform: translate(-40px, 20px) rotate(0);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  60% {
+    transform: translate(0, -18px) rotate(-6deg);
+  }
+  70% {
+    transform: translate(30px, 10px) rotate(4deg);
+  }
+  80% {
+    transform: translate(10px, -4px) rotate(0);
+    opacity: 1;
+  }
+  90%,
+  100% {
+    transform: translate(40px, 30px);
+    opacity: 0;
+  }
+}
+.fl-art-pencil {
+  animation: fl-art-pencil 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl-count,
+  .fl-shown,
+  .fl-gone,
+  .fl-burst,
+  .fl-swatch,
+  .fl-bulb,
+  .fl-sheet,
+  .fl-urgent,
+  .fl-tick,
+  .fl-card,
+  .fl-original,
+  .fl-frame,
+  .fl-crown,
+  .fl-halo,
+  .fl-teaser-a,
+  .fl-scribble,
+  .fl-art-flash,
+  .fl-art-image,
+  .fl-art-draw,
+  .fl-art-pencil {
+    animation: none;
+  }
+  .fl-art-flash,
+  .fl-art-pencil {
+    opacity: 0;
+  }
+  .fl-scribble,
+  .fl-art-draw {
+    stroke-dashoffset: 0;
+  }
+}

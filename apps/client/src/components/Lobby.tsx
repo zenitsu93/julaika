@@ -51,6 +51,12 @@ const PHOTO_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
+// Flash : une image par manche, les temps sont fixes.
+const FLASH_FIELDS: typeof FIELDS = [
+  { key: 'rounds', label: 'Images' },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
 // Petit Bac : des manches, le temps pour remplir la grille.
 const BAC_FIELDS: typeof FIELDS = [
   { key: 'rounds', label: 'Manches' },
@@ -121,6 +127,12 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
     'Une consigne absurde s’affiche : prépare ta plus belle tête devant la caméra.',
     '3, 2, 1… flash ! Ta caméra est figée en polaroid, en même temps que celle des autres.',
     'Les tirages se posent côte à côte : note ceux des autres de 1 à 5 étoiles.',
+  ],
+
+  flash: [
+    'Une image s’affiche trois secondes, pas une de plus : regarde bien !',
+    'Redessine-la de mémoire en 15 s, avec ses trois couleurs seulement.',
+    'Les croquis entourent l’original : note la ressemblance de 1 à 5 étoiles. Chaque étoile rapporte 20 points.',
   ],
 
   sourire: [
@@ -202,7 +214,7 @@ export function Lobby() {
       </div>
       )}
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'brasdefer' ? BRAS_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'brasdefer' ? BRAS_FIELDS : room.game === 'flash' ? FLASH_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
           const label = key === 'drawTime' && !rules && room.settings.mode !== 'dessin' ? 'Temps par tour (s)' : base;
           const [min, limit] = SETTINGS_LIMITS[key];
           const max = cap ?? limit;

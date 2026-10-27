@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { BombEvent, ChatLine, MimeShot, PhotoShot, PlayerPublic, RoomState, TelChain, TelEntry } from '@julaika/shared';
+import type { BombEvent, ChatLine, MimeShot, FlashSketch, PhotoShot, PlayerPublic, RoomState, TelChain, TelEntry } from '@julaika/shared';
 
 export interface GameState {
   status: 'idle' | 'connecting' | 'online' | 'closed';
@@ -23,6 +23,8 @@ export interface GameState {
   reel: { round: number; prompt: string; shot: PhotoShot }[];
   /** Mime : les polaroids des trouvailles de la partie (gardés au salon pour la planche). */
   mimeShots: MimeShot[];
+  /** Flash : les croquis de la manche, révélés au vote. */
+  sketches: { round: number; sketches: FlashSketch[] } | null;
   /** Décalage horloge serveur - horloge locale (ms). */
   clockOffset: number;
 }
@@ -44,6 +46,7 @@ const initial: GameState = {
   photos: null,
   reel: [],
   mimeShots: [],
+  sketches: null,
   clockOffset: 0,
 };
 

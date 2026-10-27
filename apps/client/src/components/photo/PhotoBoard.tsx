@@ -429,7 +429,7 @@ function Developing() {
 }
 
 /** Cinq étoiles : survol qui prévisualise, clic qui claque et lance des étincelles. */
-function Stars({ value, onRate }: { value: number; onRate: (n: number) => void }) {
+export function Stars({ value, onRate }: { value: number; onRate: (n: number) => void }) {
   const [hover, setHover] = useState(0);
   const [burst, setBurst] = useState<{ n: number; key: number } | null>(null);
   const shown = hover || value;
