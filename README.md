@@ -1,6 +1,34 @@
-# julaika
+<p align="center">
+  <img src="docs/brand/cover.png" alt="julaika : dessine, devine, marque des points" width="100%" />
+</p>
 
-Jeu de dessin et de devinettes multijoueur en temps réel, inspiré de skribbl.io, en plus léger.
+<p align="center">
+  <b>Jeu de dessin et de devinettes multijoueur en temps réel.</b><br />
+  Inspiré de skribbl.io, en plus léger. Dans le navigateur, sans compte.
+</p>
+
+<p align="center">
+  <a href="https://julaika.2nbdigital.com"><b>Jouer</b></a> ·
+  <a href="#démarrer">Démarrer en local</a> ·
+  <a href="#architecture">Architecture</a> ·
+  <a href="#déployer">Déployer</a>
+</p>
+
+<p align="center">
+  <img alt="React 19" src="https://img.shields.io/badge/React-19-18181b?logo=react&logoColor=f5b700" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.9-18181b?logo=typescript&logoColor=f5b700" />
+  <img alt="Vite" src="https://img.shields.io/badge/Vite-Tailwind%204-18181b?logo=vite&logoColor=f5b700" />
+  <img alt="Node + ws" src="https://img.shields.io/badge/Node-ws-18181b?logo=nodedotjs&logoColor=f5b700" />
+  <img alt="Tests Vitest" src="https://img.shields.io/badge/tests-Vitest-18181b?logo=vitest&logoColor=f5b700" />
+</p>
+
+## En bref
+
+- **Crée un salon, partage le lien** : les amis arrivent directement dans la partie, sans inscription.
+- **Un dessinateur, les autres devinent** dans le chat ; plus tu trouves vite, plus tu marques.
+- **Visio intégrée** sous le dessin pour se voir et s'entendre pendant la partie.
+- **Léger** : dessin encodé en binaire, un seul process Node pour le client et le WebSocket.
+- **Thème clair et sombre** qui suit le système, raccourcis clavier pour tout.
 
 ## Démarrer
 
@@ -78,3 +106,19 @@ Production : VPS OVH, derrière le Caddy de la pile `2nb-prospect` (seul à éco
 
 VPS neuf sans autre site : `DOMAIN=jeu.exemple.com docker compose -f docker-compose.standalone.yml up -d --build`
 (Caddy inclus, HTTPS automatique). Avec nginx à la place : `deploy/nginx.conf`.
+
+## Identité
+
+Le logo « crayon-J » : un crayon forme la barre du J, et le trait qu'il vient de tracer en dessine la boucle.
+Les fichiers sont dans [`docs/brand`](docs/brand) : `logo.svg` (fond clair), `logo-dark.svg` (fond sombre),
+`mark.svg` (picto seul) et `cover.png`. Le picto est aussi un composant React (`apps/client/src/components/Logo.tsx`)
+dont le corps suit la couleur du texte. Favicon, icônes d'appli, manifest et image d'aperçu pour les réseaux
+(`og-image.png`, 1200×630) sont dans `apps/client/public`.
+
+| Rôle | Couleur |
+| --- | --- |
+| Encre (thème clair) | `#18181b` |
+| Encre (thème sombre) | `#fafafa` |
+| Accent crayon | `#f5b700` |
+
+Police : Instrument Sans (lettrage en 600, approche serrée).
