@@ -1083,3 +1083,67 @@
 .pt-k-title .pt-sub {
   max-width: 70%;
 }
+
+/* ---- Téléphone : la diapo en grand ------------------------------------------- */
+
+.pt-zoom-hint {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  color: #f2e6b3;
+  background: rgb(28 17 12 / 0.7);
+  animation: m-pop 0.4s 0.6s var(--ease-spring) backwards;
+}
+.pt-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  background: rgb(18 11 8 / 0.92);
+  animation: m-fade 0.25s ease-out both;
+}
+.pt-zoom-frame {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: min(94vw, calc((100dvh - 4rem) * 16 / 9));
+  animation: pt-zoom-in 0.45s var(--ease-spring) both;
+}
+.pt-zoom-frame .pt-slide {
+  outline: 0.35rem solid #2a1a12;
+  box-shadow: 0 40px 90px -30px rgb(0 0 0 / 0.8);
+}
+.pt-zoom-close {
+  position: absolute;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  color: #f2e6b3;
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+/* Debout, la diapo se couche pour prendre toute la hauteur : on tourne le téléphone pour lire. */
+@media (orientation: portrait) {
+  .pt-zoom-frame {
+    width: min(calc(100dvh - 5rem), calc((100vw - 2rem) * 16 / 9));
+    rotate: 90deg;
+  }
+}
+@keyframes pt-zoom-in {
+  from {
+    scale: 0.4;
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pt-zoom,
+  .pt-zoom-frame {
+    animation: none;
+  }
+}

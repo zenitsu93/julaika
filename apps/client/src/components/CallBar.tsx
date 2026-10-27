@@ -69,7 +69,8 @@ export function CallBar() {
 
   if (!view.joined) {
     return (
-      <div className="panel flex flex-wrap items-center justify-center gap-2 p-2 text-sm">
+      // Téléphone : une seule ligne, le micro seul devient une icône.
+      <div className="panel flex flex-wrap items-center justify-center gap-2 p-2 text-sm max-sm:flex-nowrap">
         {inCall.length > 0 && (
           <span className="flex -space-x-2" aria-hidden>
             {inCall.slice(0, 4).map((p) => (
@@ -79,14 +80,15 @@ export function CallBar() {
             ))}
           </span>
         )}
-        <span className="text-muted">
-          {inCall.length ? `${inCall.length} en visio` : 'Visio'} · jusqu'à {MAX_CALL} personnes
+        <span className="text-muted max-sm:min-w-0 max-sm:truncate">
+          {inCall.length ? `${inCall.length} en visio` : 'Visio'}
+          <span className="max-sm:hidden"> · jusqu'à {MAX_CALL} personnes</span>
         </span>
-        <button className="btn-primary" disabled={full} onClick={() => call.join(true, true)}>
-          🎥 Rejoindre la visio
+        <button className="btn-primary max-sm:min-h-11 max-sm:shrink-0" disabled={full} onClick={() => call.join(true, true)}>
+          🎥 Rejoindre<span className="max-sm:hidden"> la visio</span>
         </button>
-        <button className="btn-ghost" disabled={full} onClick={() => call.join(false, true)}>
-          🎙️ Micro seulement
+        <button className="btn-ghost max-sm:min-h-11 max-sm:min-w-11 max-sm:shrink-0 max-sm:px-0" disabled={full} onClick={() => call.join(false, true)} aria-label="Micro seulement" title="Micro seulement">
+          🎙️<span className="max-sm:hidden"> Micro seulement</span>
         </button>
         {view.error && <p className="m-rise w-full text-center text-bad">{view.error}</p>}
       </div>

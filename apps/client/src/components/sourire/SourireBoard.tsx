@@ -103,7 +103,7 @@ function Role({ tone, children }: { tone: 'bad' | 'ink'; children: ReactNode }) 
 }
 
 /** Le visage d'un joueur : sa caméra s'il est en visio, sinon son avatar qui respire. */
-function Face({ id, big, label, tone }: { id: string; big?: boolean; label: string; tone: 'attack' | 'defend' }) {
+function Face({ id, big, pip, label, tone }: { id: string; big?: boolean; pip?: boolean; label: string; tone: 'attack' | 'defend' }) {
   const player = usePlayer(id);
   const selfId = useGame((s) => s.selfId);
   const view = useCall();
@@ -129,10 +129,18 @@ function Face({ id, big, label, tone }: { id: string; big?: boolean; label: stri
         </span>
       )}
       <figcaption className="absolute inset-x-2 bottom-2 flex items-center justify-between gap-2">
-        <span className="truncate rounded-full bg-black/55 px-2.5 py-0.5 text-xs text-white backdrop-blur-md">
-          {self ? 'Toi' : (player?.name ?? '…')} · {label}
+        {/* Une seule étiquette par visage ; la caméra coupée n'est plus qu'une icône (la petite vignette débordait). */}
+        <span className="flex min-w-0 items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-0.5 text-xs text-white backdrop-blur-md">
+          {!cam && (
+            <svg viewBox="0 0 24 24" className="size-3.5 shrink-0 opacity-80" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="caméra coupée">
+              <path d="M3 3l18 18M10.5 6H14l1.5 2H19a2 2 0 0 1 2 2v7M17 19H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h1" />
+            </svg>
+          )}
+          <span className="truncate">
+            {self ? 'Toi' : (player?.name ?? '…')}
+            {!pip && ` · ${label}`}
+          </span>
         </span>
-        {!cam && <span className="rounded-full bg-black/55 px-2 py-0.5 text-[11px] text-white/80 backdrop-blur-md">caméra coupée</span>}
       </figcaption>
     </figure>
   );
@@ -205,7 +213,7 @@ function Duel({ s }: { s: SourireState }) {
           </div>
           <div className="absolute right-3 top-3 w-24 sm:w-32">
             <div className="m-pop" style={{ animationDelay: '150ms' }}>
-              <Face id={other} label={other === s.defenderId ? 'défend' : 'attaque'} tone={other === s.defenderId ? 'defend' : 'attack'} />
+              <Face id={other} pip label={other === s.defenderId ? 'défend' : 'attaque'} tone={other === s.defenderId ? 'defend' : 'attack'} />
             </div>
           </div>
           <Ring endsAt={endsAt} left={left} />
@@ -305,7 +313,7 @@ function Weapons({ s }: { s: SourireState }) {
           {s.dare ?? '…'}
         </p>
         <button
-          className="btn mt-3 border border-on-primary/25 px-2.5 py-1 text-xs text-on-primary hover:bg-on-primary/10"
+          className="btn mt-3 border border-on-primary/25 px-2.5 py-1 text-xs text-on-primary hover:bg-on-primary/10 max-sm:min-h-11 max-sm:px-4 max-sm:text-sm"
           onClick={(e) => {
             bump(e.currentTarget);
             net.send({ t: 'sourire', dare: true });

@@ -384,12 +384,12 @@ function Holder({ s, role }: { s: InterditsState; role: 'explain' | 'guard' }) {
           </div>
           {ecouteSupported() && (
             <div className="panel p-3 text-sm">
-              <label className="flex cursor-pointer items-center justify-between gap-2">
+              <label className="flex min-h-11 cursor-pointer items-center justify-between gap-2">
                 <span className="flex items-center gap-2">
                   <span className={listen.listening ? 'ti-ear' : ''}>👂</span>
                   Oreille de l’arbitre
                 </span>
-                <input type="checkbox" className="size-4 accent-[var(--color-accent)]" checked={ear} onChange={(e) => setEar(e.target.checked)} />
+                <input type="checkbox" className="size-5 accent-[var(--color-accent)]" checked={ear} onChange={(e) => setEar(e.target.checked)} />
               </label>
               <p className="mt-1 text-xs text-muted">
                 {listen.denied

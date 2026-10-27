@@ -296,7 +296,7 @@ function Shoot({ photo }: { photo: PhotoState }) {
         ) : (
           <div className={`relative aspect-square overflow-hidden rounded-2xl bg-[#1c110c] shadow-[0_30px_60px_-30px_rgb(40_20_10/0.7)] ring-1 ring-black/10 ${counting ? 'pm-focus' : ''}`}>
             <video ref={video} autoPlay playsInline muted className={`size-full -scale-x-100 object-cover ${view.cam ? '' : 'invisible'}`} />
-            {!view.cam && <NoCamera joined={view.joined} avatar={self?.avatar ?? 0} />}
+            {!view.cam && <NoCamera joined={view.joined} avatar={self?.avatar ?? 0} counting={counting} />}
             <span className="pm-corner tl" />
             <span className="pm-corner tr" />
             <span className="pm-corner bl" />
@@ -351,14 +351,15 @@ function Shoot({ photo }: { photo: PhotoState }) {
 }
 
 /** Caméra éteinte : on propose de l'allumer, sinon le tirage portera l'avatar. */
-function NoCamera({ joined, avatar }: { joined: boolean; avatar: number }) {
+function NoCamera({ joined, avatar, counting }: { joined: boolean; avatar: number; counting: boolean }) {
   const btn = useRef<HTMLButtonElement>(null);
   useEffect(() => void bump(btn.current, 1.06), []);
   return (
     <div className="absolute inset-0 grid place-items-center p-6 text-center text-[#f4ead2]">
       <div>
         <span className="m-breathe inline-block text-5xl">{avatarOf(avatar)}</span>
-        <p className="mt-2 text-sm opacity-80">Sans caméra, ton polaroid restera dans le noir.</p>
+        {/* Pendant le décompte, la phrase s'efface : le gros chiffre ne se pose plus dessus. */}
+        <p className={`mt-2 text-sm transition-[opacity,filter] duration-300 ${counting ? 'opacity-0 blur-sm' : 'opacity-80'}`}>Sans caméra, ton polaroid restera dans le noir.</p>
         <button ref={btn} type="button" className="btn mt-3 bg-[#fbf8f1] text-[#2a1a12]" onClick={() => void (joined ? call.toggle('video') : call.join(true, false))}>
           📷 Allumer ma caméra
         </button>

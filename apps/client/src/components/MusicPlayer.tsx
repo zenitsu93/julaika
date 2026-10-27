@@ -16,6 +16,8 @@ export function MusicPlayer() {
   const sheet = useMusic((s) => s.open && s.view !== 'now');
   const salon = useGame(inRoom);
   const hostRef = useRef<HTMLDivElement>(null);
+  const away = useScrollAway(!open && !salon);
+  useAutoFold(open);
 
   useLayoutEffect(() => {
     attachHost(hostRef.current);
@@ -24,7 +26,7 @@ export function MusicPlayer() {
 
   return (
     <aside
-      className={`mp ${open ? 'mp-open' : 'mp-mini'} ${sheet ? 'mp-sheet' : ''} ${playing ? 'mp-playing' : ''} ${salon ? 'mp-salon' : ''}`}
+      className={`mp ${open ? 'mp-open' : 'mp-mini'} ${sheet ? 'mp-sheet' : ''} ${playing ? 'mp-playing' : ''} ${salon ? 'mp-salon' : ''} ${away ? 'mp-away' : ''}`}
       aria-label="Lecteur de musique"
       onPointerEnter={warm}
       onFocus={warm}
@@ -35,6 +37,55 @@ export function MusicPlayer() {
       <Notice />
     </aside>
   );
+}
+
+/**
+ * Le lecteur ouvert ne doit jamais rester posé sur le jeu : il se replie quand on touche ailleurs,
+ * avec Échap, quand la partie démarre et à chaque nouveau tour (palette du dessinateur, réponses…).
+ */
+function useAutoFold(open: boolean) {
+  const phase = useGame((s) => s.room?.phase ?? null);
+  const turn = useGame((s) => s.room?.drawerId ?? null);
+  const game = useGame((s) => s.room?.game ?? null);
+  useEffect(() => {
+    if (open) music.setOpen(false);
+  }, [phase, turn, game]);
+  useEffect(() => {
+    if (!open) return;
+    const down = (e: PointerEvent) => {
+      const el = e.target as Element | null;
+      if (el?.closest('.mp, .mp-dockbtn')) return;
+      music.setOpen(false);
+    };
+    const key = (e: KeyboardEvent) => e.key === 'Escape' && music.setOpen(false);
+    // Le toucher qui vient d'ouvrir le lecteur ne doit pas le refermer aussitôt.
+    const id = setTimeout(() => document.addEventListener('pointerdown', down, true));
+    addEventListener('keydown', key);
+    return () => {
+      clearTimeout(id);
+      document.removeEventListener('pointerdown', down, true);
+      removeEventListener('keydown', key);
+    };
+  }, [open]);
+}
+
+/** Accueil au téléphone : la capsule s'efface quand on descend (elle cachait les cartes), revient quand on remonte. */
+function useScrollAway(active: boolean): boolean {
+  const [away, setAway] = useState(false);
+  useEffect(() => {
+    if (!active) return setAway(false);
+    let last = scrollY;
+    const on = () => {
+      const y = scrollY;
+      const bottom = y + innerHeight >= document.documentElement.scrollHeight - 40;
+      if (Math.abs(y - last) < 8) return;
+      setAway(y > last && y > 80 && !bottom && innerWidth < 1024);
+      last = y;
+    };
+    addEventListener('scroll', on, { passive: true });
+    return () => removeEventListener('scroll', on);
+  }, [active]);
+  return away;
 }
 
 /**
@@ -118,9 +169,19 @@ function Card() {
   const shuffle = useMusic((s) => s.shuffle);
   const loading = useMusic((s) => s.loading);
   const sheet = view !== 'now' || !track;
+  // Feuille du téléphone : un glissé vers le bas sur l'en-tête la replie.
+  const grab = useRef<number | null>(null);
   return (
     <div className="mp-card">
-      <div className="mp-top">
+      <div
+        className="mp-top"
+        onPointerDown={(e) => (grab.current = e.clientY)}
+        onPointerUp={(e) => {
+          if (grab.current !== null && e.clientY - grab.current > 50) music.setOpen(false);
+          grab.current = null;
+        }}
+        onPointerCancel={() => (grab.current = null)}
+      >
         {track ? (
           <span className="mp-cover" key={track.id}>
             <img src={thumbOf(track.id)} alt="" />

@@ -43,12 +43,17 @@ export function ArcadeBoard() {
   const live = phase === 'faceoff' || phase === 'duel';
   const mirror = !!a && !ARCADE_COOP[a.kind] && side === 1;
   const press = useInput(live && side !== null, mirror);
+  const coarse = useCoarse();
+  const portrait = usePortrait();
+  // Téléphone couché, en piste : le terrain prend tout l'écran et la manette se pose dessus.
+  const full = coarse && !portrait && !!a && phase !== 'lobby' && side !== null;
 
   return (
-    <section className="flex min-w-0 flex-col gap-3">
+    <section className={full ? 'ar-full' : 'flex min-w-0 flex-col gap-3'}>
       {a && phase !== 'lobby' && <Header a={a} />}
-      <div className="panel relative overflow-hidden p-2 sm:p-3">
+      <div className={full ? 'ar-full-stage' : 'panel relative overflow-hidden p-2 sm:p-3'}>
         {phase === 'lobby' || !a ? <Teaser kind={game} /> : <Stage a={a} side={side} mirror={mirror} />}
+        {full && live && <Keys kind={a.kind} press={press} over />}
         <Presence>
           {phase === 'lobby' ? (
             <div key="lobby" className="m-veil absolute inset-0 z-10 grid place-items-center overflow-y-auto bg-page/85 p-4 backdrop-blur-[2px] max-sm:static max-sm:bg-transparent max-sm:p-0 max-sm:backdrop-blur-none">
@@ -59,8 +64,8 @@ export function ArcadeBoard() {
           ) : null}
         </Presence>
       </div>
-      {a && live && side !== null && <Pad kind={a.kind} press={press} />}
-      <CallBar />
+      {!full && a && live && side !== null && <Pad kind={a.kind} press={press} />}
+      {!full && <CallBar />}
     </section>
   );
 }
@@ -439,8 +444,7 @@ const ACTION: Record<ArcadeKind, { icon: string; label: string }> = {
 };
 
 /** Manette tactile : flèches à gauche, actions à droite ; plusieurs doigts à la fois. */
-function Pad({ kind, press }: { kind: ArcadeKind; press: (bit: number, down: boolean) => void }) {
-  const coarse = useCoarse();
+function usePortrait(): boolean {
   const [portrait, setPortrait] = useState(() => matchMedia('(orientation: portrait)').matches);
   useEffect(() => {
     const mq = matchMedia('(orientation: portrait)');
@@ -448,6 +452,12 @@ function Pad({ kind, press }: { kind: ArcadeKind; press: (bit: number, down: boo
     mq.addEventListener('change', on);
     return () => mq.removeEventListener('change', on);
   }, []);
+  return portrait;
+}
+
+function Pad({ kind, press }: { kind: ArcadeKind; press: (bit: number, down: boolean) => void }) {
+  const coarse = useCoarse();
+  const portrait = usePortrait();
   if (!coarse) return null;
   return (
     <div className="flex flex-col gap-2">
@@ -457,9 +467,10 @@ function Pad({ kind, press }: { kind: ArcadeKind; press: (bit: number, down: boo
   );
 }
 
-function Keys({ kind, press }: { kind: ArcadeKind; press: (bit: number, down: boolean) => void }) {
+/** `over` : posée sur le terrain (téléphone couché), boutons translucides dans les coins. */
+function Keys({ kind, press, over }: { kind: ArcadeKind; press: (bit: number, down: boolean) => void; over?: boolean }) {
   return (
-    <div className="ar-pad m-rise flex select-none items-center justify-between gap-3" onContextMenu={(e) => e.preventDefault()}>
+    <div className={`ar-pad m-rise flex select-none items-center justify-between gap-3 ${over ? 'ar-pad-over' : ''}`} onContextMenu={(e) => e.preventDefault()}>
       <div className="flex gap-2">
         <PadButton bit={Key.Left} press={press} label="Gauche">
           ◀

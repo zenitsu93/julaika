@@ -1,6 +1,6 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useGame } from '../lib/store';
-import { animate } from '../motion';
+import { animate, reducedMotion } from '../motion';
 import { AgentsBoard } from './agents/AgentsBoard';
 import { AlibiBoard } from './alibi/AlibiBoard';
 import { ArcadeBoard } from './arcade/ArcadeBoard';
@@ -31,6 +31,7 @@ import { WaveBoard } from './wave/WaveBoard';
 
 export function Game({ onQuit }: { onQuit: () => void }) {
   const game = useGame((s) => s.room!.game);
+  const inLobby = useGame((s) => s.room!.phase === 'lobby');
   const quit = useQuit(onQuit);
   const picker = useGamePicker();
   useSmiledKey();
@@ -44,9 +45,18 @@ export function Game({ onQuit }: { onQuit: () => void }) {
     setSwaps((n) => n + 1);
     animate(board.current?.firstElementChild, [{ opacity: 0, transform: 'translateY(14px) scale(.985)', filter: 'blur(6px)' }, { opacity: 1, transform: 'none', filter: 'none' }], { duration: 460 });
   }, [game]);
+  // « Lancer la partie » est en bas du salon : la partie, elle, commence en haut (chrono, question, mot).
+  const wasLobby = useRef(inLobby);
+  useEffect(() => {
+    if (wasLobby.current !== inLobby && scrollY > 0) scrollTo({ top: 0, behavior: reducedMotion() ? 'auto' : 'smooth' });
+    wasLobby.current = inLobby;
+  }, [inLobby]);
+  useEffect(() => {
+    if (swaps > 0 && scrollY > 0) scrollTo({ top: 0, behavior: reducedMotion() ? 'auto' : 'smooth' });
+  }, [swaps]);
   return (
     <PickerProvider value={picker.open}>
-    <div className="mx-auto flex min-h-full max-w-[1400px] flex-col gap-3 p-3">
+    <div className="safe-x mx-auto flex min-h-full max-w-[1400px] flex-col gap-3 p-3">
       {swaps > 0 && <div key={swaps} className="page-breath" aria-hidden />}
       <ReconnectBanner />
       <TopBar onQuit={quit.ask} onSwitch={picker.isHost ? picker.open : undefined} />
