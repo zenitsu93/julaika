@@ -3,6 +3,7 @@ import { GAMES, SOON, matchesGame, matchesSoon, type GameId, type GameInfo, type
 import { BombGlyph } from './bombe/BombGlyph';
 import { ConnaitArt } from './connait/ConnaitArt';
 import { LogoMark } from './Logo';
+import './photo/photo.css';
 
 // L'entrée animée ne se joue qu'une fois par visite, comme sur l'écran du pseudo.
 let introPlayed = false;
@@ -217,6 +218,30 @@ const IntrusArt = () => (
   </svg>
 );
 
+/** L'appareil instantané : le flash éclate, puis le polaroid sort de la fente et se révèle. */
+const PhotoArt = () => (
+  <svg viewBox="0 0 200 150" className="mx-auto max-h-36 w-full" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <g className="pm-art-print">
+      <rect x="66" y="66" width="68" height="78" rx="3" className="fill-butter" />
+      <rect className="pm-art-develop" x="72" y="72" width="56" height="52" rx="1" fill="#2a1a12" />
+      <path className="pm-art-develop stroke-gold" d="M84 104q16 12 32 0" strokeWidth="4" />
+      <circle className="pm-art-develop fill-gold" cx="88" cy="90" r="3.5" />
+      <circle className="pm-art-develop fill-gold" cx="112" cy="90" r="3.5" />
+    </g>
+    <rect x="44" y="18" width="112" height="56" rx="12" fill="currentColor" />
+    <rect x="58" y="66" width="84" height="5" rx="2.5" fill="#000" fillOpacity=".35" />
+    <circle cx="100" cy="46" r="19" className="fill-cacao" stroke="#000" strokeOpacity=".2" strokeWidth="3" />
+    <circle cx="100" cy="46" r="10" className="fill-cacao-2" />
+    <circle cx="95" cy="41" r="3.5" fill="#fff" fillOpacity=".7" />
+    <rect x="128" y="27" width="18" height="11" rx="3" className="fill-gold" />
+    <g className="pm-art-flash" style={{ transformOrigin: '137px 32px' }}>
+      {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => (
+        <path key={a} d="M137 18v-8" className="stroke-gold" strokeWidth="4" transform={`rotate(${a} 137 32)`} />
+      ))}
+    </g>
+  </svg>
+);
+
 /** La bombe qui bat, l'étincelle qui crépite, et une syllabe posée dessus. */
 const BombArt = () => (
   <span className="bomb-art relative mx-auto block w-36" aria-hidden>
@@ -259,6 +284,7 @@ const ART: Record<GameId, JSX.Element> = {
   petitbac: <BacArt />,
   connait: <ConnaitArt />,
   bombe: <BombArt />,
+  photomaton: <PhotoArt />,
 };
 
 /** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */

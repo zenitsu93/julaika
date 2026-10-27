@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton';
 
 export interface GameInfo {
   id: GameId;
@@ -84,6 +84,14 @@ export const GAMES: GameInfo[] = [
     players: '2 à 16 joueurs',
     badge: 'Nouveau',
     keywords: ['bombe', 'bombparty', 'syllabe', 'mot', 'mots', 'rapidite', 'vies', 'clavier', 'explosion'],
+  },
+  {
+    id: 'photomaton',
+    name: 'Photomaton',
+    pitch: 'Une grimace sur commande, un flash, un polaroid.',
+    players: 'En visio · à deux ou plus',
+    badge: 'Nouveau',
+    keywords: ['photomaton', 'photo', 'polaroid', 'camera', 'visio', 'grimace', 'expression', 'selfie', 'vote', 'duo', 'deux'],
   },
 ];
 

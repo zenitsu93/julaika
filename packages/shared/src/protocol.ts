@@ -5,6 +5,7 @@ import type { BombEvent, BombState } from './bombe';
 import type { ConnaitState } from './connait';
 import type { IntrusState } from './intrus';
 import type { BacState } from './petitbac';
+import type { PhotoShot, PhotoState } from './photomaton';
 import type { TelChain, TelEntry, TelState } from './telephone';
 import type { WaveState } from './wavelength';
 
@@ -20,7 +21,7 @@ export const PALETTE = [
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 /** Jeux proposés : chaque salon en porte un, choisi à sa création. */
-export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe'] as const;
+export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
@@ -33,7 +34,7 @@ export function isRoomGame(v: unknown): v is RoomGame {
  * → draw… (tous en même temps) → album. L'Intrus : clue (indices à tour de rôle) → vote
  * → steal (l'intrus démasqué tente le mot) → reveal. Petit Bac : fill (la grille) → vote → reveal.
  * Qui me connaît le mieux : answer (la vedette répond, les autres parient) → reveal.
- * Bombe à mots : bomb, jusqu'au dernier survivant.
+ * Bombe à mots : bomb, jusqu'au dernier survivant. Photomaton : pose (consigne puis flash) → vote → reveal.
  */
 export type Phase =
   | 'lobby'
@@ -52,6 +53,7 @@ export type Phase =
   | 'fill'
   | 'answer'
   | 'bomb'
+  | 'pose'
   | 'gameEnd';
 
 /** Difficulté des mots proposés : sert au tirage dans les listes intégrées et à la génération par IA. */
@@ -146,6 +148,8 @@ export interface RoomState {
   connait: ConnaitState | null;
   /** État de la Bombe à mots, null pour les autres jeux. */
   bomb: BombState | null;
+  /** État du Photomaton, null pour les autres jeux. */
+  photo: PhotoState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -204,6 +208,8 @@ export type ClientMsg =
   | { t: 'connait'; reroll: true }
   | { t: 'bomb'; word: string }
   | { t: 'bomb'; typing: string }
+  | { t: 'photo'; image: string | null }
+  | { t: 'photo'; vote: string; stars: number }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =
@@ -226,5 +232,7 @@ export type ServerMsg =
   | { t: 'bombTyping'; by: string; text: string }
   /** Bombe à mots : mot validé, refusé, explosion ou vie gagnée. */
   | { t: 'bombEvent'; event: BombEvent }
+  /** Photomaton : les polaroids de la manche, envoyés une fois toutes les photos reçues. */
+  | { t: 'photos'; round: number; shots: PhotoShot[] }
   | { t: 'pong'; at: number; now: number }
   | { t: 'error'; message: string };

@@ -28,6 +28,7 @@ import type { PairGenerator, WordGenerator } from './deepseek';
 import { Intrus } from './intrus';
 import { INTRUS_PAIRS } from './intrusPairs';
 import { PetitBac } from './petitbac';
+import { Photomaton } from './photomaton';
 import { Telephone } from './telephone';
 import { Wavelength } from './wavelength';
 import { WORDS_FR } from './words';
@@ -87,6 +88,7 @@ export class Room {
   private bac: PetitBac | null = null;
   private connait: Connait | null = null;
   private bomb: Bombe | null = null;
+  private photo: Photomaton | null = null;
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -135,6 +137,7 @@ export class Room {
     for (const stroke of this.strokes) for (const packet of stroke) conn.send(packet);
     if (this.phase === 'choosing' && this.drawerId === id) this.sendTo(id, { t: 'choices', words: this.choices });
     this.tel?.onJoin(id);
+    this.photo?.onJoin(id);
     this.system(`${player.name} a rejoint la partie.`);
     this.broadcastState(id);
     // Les mots sont commandés dès qu'une partie devient possible, pour être prêts au lancement.
@@ -163,13 +166,14 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb) {
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
       this.intrus?.onLeave(id);
       this.bac?.onLeave(id);
       this.connait?.onLeave(id);
       this.bomb?.onLeave(id);
+      this.photo?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -220,6 +224,9 @@ export class Room {
         break;
       case 'bomb':
         if (msg && typeof msg === 'object') this.bomb?.handle(id, msg);
+        break;
+      case 'photo':
+        if (msg && typeof msg === 'object') this.photo?.handle(id, msg);
         break;
       case 'clear':
         if (this.tel) this.tel.clear(id);
@@ -314,6 +321,7 @@ export class Room {
     if (this.game === 'petitbac') return this.startBac();
     if (this.game === 'connait') return this.startConnait();
     if (this.game === 'bombe') return this.startBomb();
+    if (this.game === 'photomaton') return this.startPhoto();
     this.usedWords.clear();
     this.nextRound();
   }
@@ -621,6 +629,31 @@ export class Room {
     this.bomb.start();
   }
 
+  private startPhoto(): void {
+    this.photo?.dispose();
+    this.photo = new Photomaton({
+      playerIds: () => [...this.players.keys()],
+      player: (id) => this.players.get(id),
+      rounds: () => this.settings.rounds,
+      random: this.random,
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      broadcast: (msg, except) => this.broadcast(msg, except),
+      sendTo: (id, msg) => this.sendTo(id, msg),
+      system: (text) => this.system(text),
+      endGame: () => this.endGame(),
+    });
+    this.photo.start();
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -647,6 +680,8 @@ export class Room {
     this.connait = null;
     this.bomb?.dispose();
     this.bomb = null;
+    this.photo?.dispose();
+    this.photo = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -737,6 +772,7 @@ export class Room {
       bac: this.bac?.state() ?? null,
       connait: this.connait?.stateFor(id) ?? null,
       bomb: this.bomb?.state() ?? null,
+      photo: this.photo?.state() ?? null,
     };
   }
 
@@ -778,6 +814,7 @@ export class Room {
     this.bac?.dispose();
     this.connait?.dispose();
     this.bomb?.dispose();
+    this.photo?.dispose();
   }
 }
 

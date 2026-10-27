@@ -37,6 +37,12 @@ const INTRUS_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
+// Photomaton : une consigne par manche, rien d'autre à régler.
+const PHOTO_FIELDS: typeof FIELDS = [
+  { key: 'rounds', label: 'Manches' },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
 // Petit Bac : des manches, le temps pour remplir la grille.
 const BAC_FIELDS: typeof FIELDS = [
   { key: 'rounds', label: 'Manches' },
@@ -90,6 +96,12 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
     'Personne ne sait quand elle explose : celui qui la tient perd une vie.',
     'Place toutes les lettres bonus pour regagner une vie. Le dernier debout gagne !',
   ],
+
+  photomaton: [
+    'Une consigne absurde s’affiche : prépare ta plus belle tête devant la caméra.',
+    '3, 2, 1… flash ! Ta caméra est figée en polaroid, en même temps que celle des autres.',
+    'Les tirages se posent côte à côte : note ceux des autres de 1 à 5 étoiles.',
+  ],
 };
 
 export function Lobby() {
@@ -113,7 +125,7 @@ export function Lobby() {
     <div className="panel p-5 text-left shadow-sm">
       <h2 className="mb-4 text-lg font-semibold">Réglages du salon <span className="font-mono text-muted">#{room.code}</span></h2>
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : FIELDS).map(({ key, label, step, max: cap }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : FIELDS).map(({ key, label, step, max: cap }) => {
           const [min, limit] = SETTINGS_LIMITS[key];
           const max = cap ?? limit;
           return (

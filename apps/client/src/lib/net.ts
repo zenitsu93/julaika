@@ -1,8 +1,8 @@
-import { decodeDraw, type ClientMsg, type RoomGame, type ServerMsg } from '@julaika/shared';
+import { decodeDraw, type ClientMsg, type RoomGame, type RoomState, type ServerMsg } from '@julaika/shared';
 import { wipeBoard } from '../motion';
 import { board } from './board';
 import { call } from './call';
-import { store } from './store';
+import { store, type GameState } from './store';
 
 const MAX_CHAT = 120;
 
@@ -87,6 +87,8 @@ class Net {
           // La bombe change de main : ce que tapait l'ancien porteur disparaît.
           bombTyping: msg.state.bomb && s.bombTyping?.by === msg.state.bomb.holder ? s.bombTyping : null,
           bombEvent: msg.state.bomb ? s.bombEvent : null,
+          photos: msg.state.photo && phase !== 'pose' ? s.photos : null,
+          reel: msg.state.photo ? keepBest(s.reel, s.photos, msg.state) : [],
         }));
         call.sync(msg.state.players);
         break;
@@ -122,6 +124,9 @@ class Net {
       case 'bombEvent':
         store.set((s) => ({ bombEvent: { ...msg.event, seq: (s.bombEvent?.seq ?? 0) + 1 } }));
         break;
+      case 'photos':
+        store.set({ photos: { round: msg.round, shots: msg.shots } });
+        break;
       case 'dial':
         store.set({ dial: msg.value });
         break;
@@ -146,3 +151,13 @@ class Net {
 }
 
 export const net = new Net();
+
+/** À la révélation d'une manche du Photomaton, garde sa meilleure photo pour le final. */
+function keepBest(reel: GameState['reel'], photos: GameState['photos'], state: RoomState): GameState['reel'] {
+  const photo = state.photo!;
+  if (state.phase !== 'reveal' || !photos || photos.round !== photo.round || reel.some((r) => r.round === photo.round)) return reel;
+  const best = photos.shots
+    .filter((s) => s.image && photo.stars[s.by]?.votes)
+    .sort((a, b) => photo.stars[b.by]!.total - photo.stars[a.by]!.total)[0];
+  return best ? [...reel, { round: photo.round, prompt: photo.prompt, shot: best }] : reel;
+}
