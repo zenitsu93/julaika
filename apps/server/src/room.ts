@@ -15,6 +15,7 @@ import {
   decodeDraw,
   isCerveauMode,
   isAovLevel,
+  isArcadeKind,
   isDifficulty,
   isGameMode,
   isPhotoDataUrl,
@@ -46,6 +47,7 @@ import {
   type RoomMusic,
 } from '@julaika/shared';
 import { Agents } from './agents';
+import { Arcade } from './arcade';
 import { Alibi } from './alibi';
 import { Bombe } from './bombe';
 import { Cadavre } from './cadavre';
@@ -137,6 +139,9 @@ export class Room {
   private photo: Photomaton | null = null;
   private sourire: Sourire | null = null;
   private bras: BrasDeFer | null = null;
+  private arcade: Arcade | null = null;
+  /** Record du Drap tendu, gardé d'une partie à l'autre. */
+  private drapBest = 0;
   private flash: Flash | null = null;
   private cadavre: Cadavre | null = null;
   private interdits: Interdits | null = null;
@@ -257,7 +262,7 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.bras || this.flash || this.cadavre || this.interdits || this.mot || this.agents || this.fred || this.alibi || this.pitch || this.cerveau || this.aov || this.quiz) {
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.bras || this.arcade || this.flash || this.cadavre || this.interdits || this.mot || this.agents || this.fred || this.alibi || this.pitch || this.cerveau || this.aov || this.quiz) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
       this.intrus?.onLeave(id);
@@ -267,6 +272,7 @@ export class Room {
       this.photo?.onLeave(id);
       this.sourire?.onLeave(id);
       this.bras?.onLeave(id);
+      this.arcade?.onLeave(id);
       this.flash?.onLeave(id);
       this.cadavre?.onLeave(id);
       this.interdits?.onLeave(id);
@@ -347,6 +353,9 @@ export class Room {
         break;
       case 'bras':
         if (msg && typeof msg === 'object') this.bras?.handle(id, msg);
+        break;
+      case 'arcade':
+        if (msg && typeof msg === 'object') this.arcade?.handle(id, msg);
         break;
       case 'flash':
         if (msg && typeof msg === 'object') this.flash?.handle(id, msg);
@@ -502,6 +511,7 @@ export class Room {
     if (this.game === 'photomaton') return this.startPhoto();
     if (this.game === 'sourire') return this.startSourire();
     if (this.game === 'brasdefer') return this.startBras();
+    if (isArcadeKind(this.game)) return this.startArcade(this.game);
     if (this.game === 'flash') return this.startFlash();
     if (this.game === 'cadavre') return this.startCadavre();
     if (this.game === 'interdits') return this.startInterdits();
@@ -995,6 +1005,35 @@ export class Room {
     this.bras.start();
   }
 
+  private startArcade(kind: 'foot' | 'oreillers' | 'drap'): void {
+    this.arcade?.dispose();
+    this.arcade = new Arcade(kind, {
+      playerIds: () => [...this.players.keys()],
+      player: (id) => this.players.get(id),
+      rounds: () => this.settings.rounds,
+      random: this.random,
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      sendFrame: (frame) => {
+        for (const p of this.players.values()) p.conn.send(frame);
+      },
+      sendEvents: (ev) => this.broadcast({ t: 'arcadeEv', ev }),
+      system: (text) => this.system(text),
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      best: () => this.drapBest,
+      setBest: (score) => (this.drapBest = score),
+      endGame: () => this.endGame(),
+    });
+    this.arcade.start();
+  }
+
   private startFlash(): void {
     this.flash?.dispose();
     this.flash = new Flash({
@@ -1313,6 +1352,8 @@ export class Room {
     this.sourire = null;
     this.bras?.dispose();
     this.bras = null;
+    this.arcade?.dispose();
+    this.arcade = null;
     this.flash?.dispose();
     this.flash = null;
     this.cadavre?.dispose();
@@ -1456,6 +1497,7 @@ export class Room {
       photo: this.photo?.state() ?? null,
       sourire: this.sourire?.stateFor(id) ?? null,
       bras: this.bras?.stateFor(id) ?? null,
+      arcade: this.arcade?.stateFor() ?? null,
       flash: this.flash?.state() ?? null,
       cadavre: this.cadavre?.state() ?? null,
       interdits: this.interdits?.stateFor(id) ?? null,
@@ -1511,6 +1553,7 @@ export class Room {
     this.photo?.dispose();
     this.sourire?.dispose();
     this.bras?.dispose();
+    this.arcade?.dispose();
     this.flash?.dispose();
     this.cadavre?.dispose();
     this.interdits?.dispose();

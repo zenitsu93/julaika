@@ -3,6 +3,7 @@
 
 import type { AgentsState } from './agents';
 import type { AlibiObjection, AlibiState } from './alibi';
+import type { ArcadeEvent, ArcadeState } from './arcade';
 import type { BombEvent, BombState } from './bombe';
 import type { BrasState } from './brasdefer';
 import type { CadavreState, Creature } from './cadavre';
@@ -37,7 +38,7 @@ export const PALETTE = [
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 /** Jeux proposés : chaque salon en porte un, choisi à sa création. */
-export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre', 'interdits', 'motamot', 'agents', 'fredonne', 'alibi', 'pitch', 'cerveau', 'verite', 'quiz'] as const;
+export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre', 'interdits', 'motamot', 'agents', 'fredonne', 'alibi', 'pitch', 'cerveau', 'verite', 'quiz', 'foot', 'oreillers', 'drap'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
@@ -58,6 +59,7 @@ export function isRoomGame(v: unknown): v is RoomGame {
  * L'Alibi : plot (les complices se concertent) → trial (les pièces tombent) → vote (le jury) → verdict.
  * Pitch saboté : brief (le produit) → pitch → vote (les offres) → verdict. Cerveau coupé : draw → reveal → … → album.
  * Action ou vérité : spin (la bouteille) → pick (action ou vérité) → dare (la carte) → verdict.
+ * Jeux d'action (Tête-à-tête, Bataille d'oreillers, Drap tendu) : faceoff (3, 2, 1) → duel → verdict.
  */
 export type Phase =
   | 'lobby'
@@ -275,6 +277,8 @@ export interface RoomState {
   aov: AovState | null;
   /** État du quiz de culture générale vu par ce joueur, null pour les autres jeux. */
   quiz: QuizState | null;
+  /** État d'un jeu d'action (score, qui joue) ; le monde lui-même circule en images binaires. */
+  arcade: ArcadeState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -386,6 +390,8 @@ export type ClientMsg =
   | { t: 'aov'; pass: true }
   | { t: 'aov'; vote: boolean }
   | { t: 'quiz'; pick: number }
+  /** Jeux d'action : les touches enfoncées (bits de Key), envoyées à chaque changement. */
+  | { t: 'arcade'; k: number }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =
@@ -428,5 +434,7 @@ export type ServerMsg =
   | { t: 'storyTyping'; by: string; text: string }
   /** Cerveau coupé : un des deux calques du dessin annulé ou effacé par son dessinateur. */
   | { t: 'cerveauInk'; layer: number; op: 'undo' | 'clear' }
+  /** Jeux d'action : ce qui vient de se passer (but, coup, cœur attrapé), pour les effets. */
+  | { t: 'arcadeEv'; ev: ArcadeEvent[] }
   | { t: 'pong'; at: number; now: number }
   | { t: 'error'; message: string };

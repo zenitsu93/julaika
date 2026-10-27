@@ -38,7 +38,7 @@ const connections = connectionCounter(MAX_CONNECTIONS_PER_IP);
 /** Messages propres à chaque jeu, qui partagent le seau de l'aiguille de Wavelength. */
 const GAME_MESSAGES = new Set<string>([
   'wave', 'tel', 'intrus', 'bac', 'connait', 'bomb', 'photo', 'sourire', 'bras', 'flash', 'cadavre', 'interdits',
-  'motamot', 'agents', 'fred', 'alibi', 'pitch', 'cerveau', 'aov', 'quiz', 'mimeShot',
+  'motamot', 'agents', 'fred', 'alibi', 'pitch', 'cerveau', 'aov', 'quiz', 'mimeShot', 'arcade',
 ]);
 const joinBuckets = keyedBuckets(20, 1 / 3); // 20 salons rejoints d'un coup par IP, puis un toutes les 3 s
 

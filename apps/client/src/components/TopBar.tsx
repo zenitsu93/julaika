@@ -109,6 +109,8 @@ export function TopBar() {
             ? `Duel ${room.sourire.turn + 1}/${room.sourire.turns}`
           : room.bras
             ? `Duel ${room.bras.turn + 1}/${room.bras.turns}`
+          : room.arcade
+            ? `Partie ${room.arcade.turn + 1}/${room.arcade.turns}`
           : room.cadavre
             ? room.phase === 'reveal'
               ? 'Dévoilement'
