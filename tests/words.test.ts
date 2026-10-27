@@ -101,7 +101,7 @@ describe('mots selon la difficulté', () => {
       return Array.from({ length: 10 }, (_, i) => `lot${calls} mot${i}`);
     });
     // Commandés dès le deuxième joueur, avant même le lancement.
-    expect(gen).toHaveBeenCalledWith('moyen', WORD_BATCH, []);
+    expect(gen).toHaveBeenCalledWith('moyen', WORD_BATCH, [], 'draw');
     await flush();
     room.handle(ids[0]!, { t: 'start' });
     const offered = conns[0]!.choices()!.words;
@@ -123,7 +123,7 @@ describe('mots selon la difficulté', () => {
     room.handle(ids[0]!, { t: 'settings', settings: { difficulty: 'facile' } });
     await flush();
     room.handle(ids[0]!, { t: 'start' });
-    expect(gen).toHaveBeenCalledWith('facile', WORD_BATCH, expect.any(Array));
+    expect(gen).toHaveBeenCalledWith('facile', WORD_BATCH, expect.any(Array), 'draw');
     for (const w of conns[0]!.choices()!.words) expect(WORDS_FR.facile).toContain(w);
     room.dispose();
   });

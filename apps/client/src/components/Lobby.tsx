@@ -1,9 +1,10 @@
-import { BOMB_MAX_LIVES, INTRUS_MIN_PLAYERS, SETTINGS_LIMITS, TRAPS, type Difficulty, type RoomGame, type RoomSettings } from '@julaika/shared';
+import { BOMB_MAX_LIVES, INTRUS_MIN_PLAYERS, SETTINGS_LIMITS, TRAPS, type Difficulty, type GameMode, type RoomGame, type RoomSettings } from '@julaika/shared';
 import { useEffect, useRef } from 'react';
 import { net } from '../lib/net';
 import { TRAP_INFO, TRAP_MODE_LABELS } from '../lib/traps';
 import { useGame } from '../lib/store';
 import { bump, Ticker, useIndicator } from '../motion';
+import { Planche } from './mime/Planche';
 
 const FIELDS: { key: keyof typeof SETTINGS_LIMITS; label: string; step?: number; max?: number }[] = [
   { key: 'rounds', label: 'Manches' },
@@ -11,6 +12,12 @@ const FIELDS: { key: keyof typeof SETTINGS_LIMITS; label: string; step?: number;
   { key: 'maxPlayers', label: 'Joueurs max' },
   { key: 'wordChoices', label: 'Mots proposés' },
   { key: 'hints', label: 'Indices' },
+];
+
+const MODES: { value: GameMode; label: string; hint: string }[] = [
+  { value: 'dessin', label: '✏️ Dessin', hint: 'On dessine le mot, les autres devinent.' },
+  { value: 'mime', label: '🎭 Mime', hint: 'On mime le mot devant la caméra (ou en vrai), sans parler.' },
+  { value: 'mixte', label: '🎲 Mixte', hint: 'Chaque tour, dessin ou mime au hasard.' },
 ];
 
 const LEVELS: { value: Difficulty; label: string }[] = [
@@ -123,8 +130,11 @@ export function Lobby() {
   const rules = RULES[room.game];
   const isHost = useGame((s) => s.room!.players.find((p) => p.id === s.selfId)?.isHost ?? false);
   const error = useGame((s) => s.error);
+  const mimeShots = useGame((s) => s.mimeShots);
   const set = (settings: Partial<RoomSettings>) => net.send({ t: 'settings', settings });
   const level = useIndicator(LEVELS.findIndex((l) => l.value === room.settings.difficulty));
+  const modeIndex = Math.max(0, MODES.findIndex((m) => m.value === room.settings.mode));
+  const mode = useIndicator(modeIndex);
   const trapMode = useIndicator(TRAP_MODE_LABELS.findIndex((l) => l.value === room.settings.traps));
   const minPlayers = room.game === 'intrus' ? INTRUS_MIN_PLAYERS : 2;
   const canStart = room.players.length >= minPlayers;
@@ -137,9 +147,51 @@ export function Lobby() {
 
   return (
     <div className="panel p-5 text-left shadow-sm">
+      {!rules && mimeShots.length > 0 && (
+        <div className="mb-5 border-b border-edge pb-4">
+          <Planche shots={mimeShots} />
+        </div>
+      )}
       <h2 className="mb-4 text-lg font-semibold">Réglages du salon <span className="font-mono text-muted">#{room.code}</span></h2>
+      {!rules && (
+      <div className="mb-3 text-sm">
+        <span className="mb-1 block text-muted">Mode de jeu</span>
+        <div ref={mode.container} role="group" aria-label="Mode de jeu" className="relative grid grid-cols-3 gap-1 rounded-md border border-edge p-1">
+          <span ref={mode.indicator} className="m-indicator rounded bg-primary" />
+          {MODES.map(({ value, label }) => {
+            const active = room.settings.mode === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                data-slot
+                aria-pressed={active}
+                disabled={!isHost}
+                onClick={() => set({ mode: value })}
+                className={`relative rounded px-2 py-1.5 font-medium transition outline-none focus-visible:ring-2 focus-visible:ring-info disabled:cursor-not-allowed ${
+                  active ? 'text-on-primary' : 'text-muted enabled:hover:bg-edge/50'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+        <p key={modeIndex} className="m-fade mt-1 text-xs text-muted">{MODES[modeIndex]!.hint}</p>
+        {room.settings.mode !== 'dessin' && (
+          <label className="m-rise mt-2 flex items-start gap-2 rounded-md border border-edge bg-surface px-3 py-2 text-sm">
+            <input type="checkbox" className="mt-0.5 accent-primary" disabled={!isHost} checked={room.settings.twists} onChange={(e) => set({ twists: e.target.checked })} />
+            <span>
+              <span className="font-medium">Consignes surprises</span>
+              <span className="block text-xs text-muted">Toutes les 20 s, le mimeur change de style : au ralenti, comme un robot, sur un pied…</span>
+            </span>
+          </label>
+        )}
+      </div>
+      )}
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : FIELDS).map(({ key, label, step, max: cap }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
+          const label = key === 'drawTime' && !rules && room.settings.mode !== 'dessin' ? 'Temps par tour (s)' : base;
           const [min, limit] = SETTINGS_LIMITS[key];
           const max = cap ?? limit;
           return (
@@ -202,6 +254,7 @@ export function Lobby() {
         </ol>
       ) : (
       <>
+      {room.settings.mode !== 'mime' && (
       <div className="mt-3 text-sm">
         <span className="mb-1 flex items-center gap-1.5 text-muted">
           Manches piégées
@@ -245,6 +298,7 @@ export function Lobby() {
           </ul>
         )}
       </div>
+      )}
       <label className="mt-3 block text-sm">
         <span className="mb-1 block text-muted">Mots perso (séparés par des virgules)</span>
         <textarea

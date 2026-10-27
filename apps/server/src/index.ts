@@ -3,7 +3,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize as normalizePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, type WebSocket } from 'ws';
-import { isRoomGame, type ClientMsg, type RoomGame } from '@julaika/shared';
+import { isGameMode, isRoomGame, type ClientMsg, type GameMode, type RoomGame } from '@julaika/shared';
 import { deepseekPairs, deepseekWords } from './deepseek';
 import { warmDictionary } from './dico';
 import { iceServersFor } from './ice';
@@ -138,7 +138,7 @@ wss.on('connection', (ws: WebSocket & { alive?: boolean }) => {
         ws.send(JSON.stringify({ t: 'error', message: 'Salon introuvable.' }));
         return;
       }
-      room = code ? rooms.get(code)! : createRoom(isRoomGame(msg.game) ? msg.game : 'dessin');
+      room = code ? rooms.get(code)! : createRoom(isRoomGame(msg.game) ? msg.game : 'dessin', isGameMode(msg.mode) ? msg.mode : 'dessin');
       playerId = room.join(ws, msg.name, msg.avatar);
       if (!playerId) {
         room = null;
@@ -169,7 +169,7 @@ setInterval(() => {
   }
 }, 20_000).unref();
 
-function createRoom(game: RoomGame): Room {
+function createRoom(game: RoomGame, mode: GameMode): Room {
   let code: string;
   do code = randomCode();
   while (rooms.has(code));
@@ -185,6 +185,8 @@ function createRoom(game: RoomGame): Room {
     generatePairs,
   );
   room.game = game;
+  // La carte « Mime » de l'accueil ouvre un salon de dessin réglé en mime.
+  if (game === 'dessin') room.settings = { ...room.settings, mode };
   rooms.set(code, room);
   if (game === 'bombe') setImmediate(warmDictionary);
   return room;

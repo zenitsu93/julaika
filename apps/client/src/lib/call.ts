@@ -24,14 +24,20 @@ interface Peer {
 }
 
 const VIDEO: MediaTrackConstraints = { width: { ideal: 320 }, height: { ideal: 240 }, frameRate: { max: 15 } };
+/** Pendant son mime, on est affiché en grand : image plus fine et plus fluide, débit relevé. */
+const VIDEO_MIME: MediaTrackConstraints = { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { max: 24 } };
 const AUDIO: MediaTrackConstraints = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
 /** Plafond par flux vidéo sortant : 8 personnes × 250 kb/s restent sous 2 Mb/s montants. */
 const VIDEO_BITRATE = 250_000;
+/** Un seul mimeur à la fois : 7 × 600 kb/s, le temps d'un tour. */
+const VIDEO_BITRATE_MIME = 600_000;
 
 export interface CallView {
   joined: boolean;
   cam: boolean;
   mic: boolean;
+  /** Micro coupé d'office pendant son tour de mime. */
+  hushed: boolean;
   local: MediaStream | null;
   /** Déformation choisie, appliquée dès que la caméra est allumée. */
   warp: WarpId | null;
@@ -49,10 +55,13 @@ class Call {
   private send: Send = () => {};
   private announce: (inCall: boolean, cam: boolean, mic: boolean) => void = () => {};
   private listeners = new Set<() => void>();
-  private view: CallView = { joined: false, cam: false, mic: false, local: null, warp: null, remotes: {}, error: null };
+  /** Tour de mime en cours : micro coupé (pas le droit de parler) et vidéo en haute qualité. */
+  private miming = false;
+  private view: CallView = { joined: false, cam: false, mic: false, hushed: false, local: null, warp: null, remotes: {}, error: null };
 
   configure(opts: { selfId: string; ice: IceServer[]; send: Send; announce: Call['announce'] }) {
     this.leave(false);
+    this.miming = false;
     this.selfId = opts.selfId;
     this.ice = opts.ice;
     this.send = opts.send;
@@ -74,13 +83,24 @@ class Call {
     for (const t of Object.values(this.tracks)) t?.stop();
     this.tracks = {};
     const was = this.view.joined;
-    this.update({ joined: false, cam: false, mic: false, local: null, warp: null, remotes: {} });
+    this.update({ joined: false, cam: false, mic: false, hushed: false, local: null, warp: null, remotes: {} });
     if (notify && was) this.announce(false, false, false);
   }
 
   async toggle(kind: Kind) {
+    if (kind === 'audio' && this.miming) return;
     if (this.tracks[kind]) this.disable(kind);
     else await this.enable(kind);
+    this.publish();
+  }
+
+  /** Début ou fin de son tour de mime. Le micro reste ouvert côté navigateur, sa piste est juste muette. */
+  setMiming(on: boolean) {
+    if (this.miming === on) return;
+    this.miming = on;
+    if (this.tracks.audio) this.tracks.audio.enabled = !on;
+    void this.tracks.video?.applyConstraints(on ? VIDEO_MIME : VIDEO).catch(() => {});
+    for (const { pc } of this.peers.values()) void this.capBitrate(pc);
     this.publish();
   }
 
@@ -180,7 +200,7 @@ class Call {
       if (sender.track?.kind !== 'video') continue;
       const params = sender.getParameters();
       if (!params.encodings?.length) continue;
-      params.encodings[0]!.maxBitrate = VIDEO_BITRATE;
+      params.encodings[0]!.maxBitrate = this.miming ? VIDEO_BITRATE_MIME : VIDEO_BITRATE;
       await sender.setParameters(params).catch(() => {});
     }
   }
@@ -189,8 +209,9 @@ class Call {
 
   private async enable(kind: Kind) {
     try {
-      const media = await navigator.mediaDevices.getUserMedia(kind === 'video' ? { video: VIDEO } : { audio: AUDIO });
+      const media = await navigator.mediaDevices.getUserMedia(kind === 'video' ? { video: this.miming ? VIDEO_MIME : VIDEO } : { audio: AUDIO });
       const track = media.getTracks()[0]!;
+      if (kind === 'audio' && this.miming) track.enabled = false;
       this.tracks[kind] = track;
       if (kind === 'video') await this.syncWarp();
       else await this.replace(kind);
@@ -250,9 +271,9 @@ class Call {
 
   private publish() {
     const cam = Boolean(this.tracks.video);
-    const mic = Boolean(this.tracks.audio);
+    const mic = Boolean(this.tracks.audio?.enabled);
     const local = cam ? new MediaStream([this.outVideo()!]) : null;
-    this.update({ cam, mic, local });
+    this.update({ cam, mic, local, hushed: this.miming && Boolean(this.tracks.audio) });
     if (this.view.joined) this.announce(true, cam, mic);
   }
 

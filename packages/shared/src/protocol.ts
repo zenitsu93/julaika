@@ -4,6 +4,7 @@
 import type { BombEvent, BombState } from './bombe';
 import type { ConnaitState } from './connait';
 import type { IntrusState } from './intrus';
+import type { MimeShot, MimeTwist } from './mime';
 import type { BacState } from './petitbac';
 import type { PhotoShot, PhotoState } from './photomaton';
 import type { TelChain, TelEntry, TelState } from './telephone';
@@ -69,6 +70,17 @@ export function isDifficulty(v: unknown): v is Difficulty {
   return (DIFFICULTIES as readonly unknown[]).includes(v);
 }
 
+/** Mode de jeu du salon : dessin, mime, ou les deux au hasard d'un tour à l'autre. */
+export const GAME_MODES = ['dessin', 'mime', 'mixte'] as const;
+export type GameMode = (typeof GAME_MODES)[number];
+
+export function isGameMode(v: unknown): v is GameMode {
+  return (GAME_MODES as readonly unknown[]).includes(v);
+}
+
+/** Nature du tour en cours : on dessine sur le tableau, ou on mime devant la caméra. */
+export type TurnKind = 'draw' | 'mime';
+
 /**
  * Manches piégées du Dessin : une contrainte tirée au sort pour le dessinateur.
  * invisible : il ne voit pas ce qu'il trace ; shifty : la couleur change à chaque levé de crayon ;
@@ -95,6 +107,7 @@ export function isTrapMode(v: unknown): v is TrapMode {
 export const TRAP_COLORS = [2, 3, 5, 6, 7, 8, 9, 10, 12, 15, 17, 18] as const;
 
 export interface RoomSettings {
+  mode: GameMode;
   rounds: number;
   drawTime: number; // secondes
   maxPlayers: number;
@@ -104,9 +117,12 @@ export interface RoomSettings {
   customWords: string[];
   customOnly: boolean;
   traps: TrapMode;
+  /** Mime : une consigne surprise toutes les 20 s (au ralenti, comme un robot…). */
+  twists: boolean;
 }
 
 export const DEFAULT_SETTINGS: RoomSettings = {
+  mode: 'dessin',
   rounds: 3,
   drawTime: 80,
   maxPlayers: 10,
@@ -116,6 +132,7 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   customWords: [],
   customOnly: false,
   traps: 'jamais',
+  twists: true,
 };
 
 export const SETTINGS_LIMITS = {
@@ -161,15 +178,19 @@ export interface RoomState {
   settings: RoomSettings;
   players: PlayerPublic[];
   drawerId: string | null;
+  /** Dessin ou mime pour le tour en cours (dessin hors partie). */
+  turnKind: TurnKind;
   round: number;
   /** Timestamp serveur (ms) de fin de phase ; le client calcule le compte à rebours. */
   endsAt: number | null;
-  /** Mot masqué ("_ _ a _"), ou mot complet pour le dessinateur. */
+  /** Mot masqué ("_ _ a _"), ou mot complet pour le dessinateur ou le mimeur. */
   hint: string | null;
   /** Lien Google Meet du salon, partagé par l'hôte (vide si aucun). */
   meetUrl: string;
   /** Piège du tour de dessin en cours (dès le choix du mot), null sinon. */
   trap: Trap | null;
+  /** Mime : consigne surprise en cours pour le mimeur (null hors tour de mime). */
+  twist: MimeTwist | null;
   /** État de Wavelength, null pour les autres jeux. */
   wave: WaveState | null;
   /** État du Téléphone dessiné, null pour les autres jeux. */
@@ -214,7 +235,7 @@ export interface ChatLine {
 }
 
 export type ClientMsg =
-  | { t: 'join'; name: string; avatar: number; room?: string; game?: RoomGame }
+  | { t: 'join'; name: string; avatar: number; room?: string; game?: RoomGame; mode?: GameMode }
   | { t: 'settings'; settings: Partial<RoomSettings> }
   | { t: 'start' }
   | { t: 'choose'; index: number }
@@ -246,6 +267,8 @@ export type ClientMsg =
   | { t: 'bomb'; typing: string }
   | { t: 'photo'; image: string | null }
   | { t: 'photo'; vote: string; stars: number }
+  /** Mime : le mimeur répond à `mimeSnap` avec l'image de sa caméra (null sans caméra). */
+  | { t: 'mimeShot'; finder: string; image: string | null }
   /** Boîte à sons : un bruitage joué chez tout le salon (dans tous les jeux). */
   | { t: 'sound'; id: SoundId }
   | { t: 'sourire'; smiled: true }
@@ -275,6 +298,10 @@ export type ServerMsg =
   | { t: 'bombEvent'; event: BombEvent }
   /** Photomaton : les polaroids de la manche, envoyés une fois toutes les photos reçues. */
   | { t: 'photos'; round: number; shots: PhotoShot[] }
+  /** Mime, au mimeur seul : quelqu'un vient de trouver, prends le polaroid. */
+  | { t: 'mimeSnap'; finder: string }
+  /** Mime : le polaroid d'une trouvaille, pour tout le salon. */
+  | { t: 'mimeShot'; shot: MimeShot }
   /** Bruitage envoyé par un joueur : chacun le synthétise chez lui (sauf s'il a coupé le son). */
   | { t: 'sound'; id: SoundId; by: string }
   | { t: 'pong'; at: number; now: number }
