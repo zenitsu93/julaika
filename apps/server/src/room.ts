@@ -22,6 +22,7 @@ import {
   type RoomState,
   type ServerMsg,
 } from '@julaika/shared';
+import { Bombe } from './bombe';
 import { Connait } from './connait';
 import type { PairGenerator, WordGenerator } from './deepseek';
 import { Intrus } from './intrus';
@@ -85,6 +86,7 @@ export class Room {
   private usedPairs = new Set<string>();
   private bac: PetitBac | null = null;
   private connait: Connait | null = null;
+  private bomb: Bombe | null = null;
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -161,12 +163,13 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel || this.intrus || this.bac || this.connait) {
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
       this.intrus?.onLeave(id);
       this.bac?.onLeave(id);
       this.connait?.onLeave(id);
+      this.bomb?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -214,6 +217,9 @@ export class Room {
         break;
       case 'connait':
         if (msg && typeof msg === 'object') this.connait?.handle(id, msg);
+        break;
+      case 'bomb':
+        if (msg && typeof msg === 'object') this.bomb?.handle(id, msg);
         break;
       case 'clear':
         if (this.tel) this.tel.clear(id);
@@ -307,6 +313,7 @@ export class Room {
     if (this.game === 'intrus') return this.startIntrus();
     if (this.game === 'petitbac') return this.startBac();
     if (this.game === 'connait') return this.startConnait();
+    if (this.game === 'bombe') return this.startBomb();
     this.usedWords.clear();
     this.nextRound();
   }
@@ -589,6 +596,31 @@ export class Room {
     this.connait.start();
   }
 
+  private startBomb(): void {
+    this.bomb?.dispose();
+    this.bomb = new Bombe({
+      playerIds: () => [...this.players.keys()],
+      name: (id) => this.players.get(id)?.name ?? '?',
+      lives: () => this.settings.rounds,
+      difficulty: () => this.settings.difficulty,
+      random: this.random,
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      broadcast: (msg, except) => this.broadcast(msg, except),
+      system: (text) => this.system(text),
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      endGame: () => this.endGame(),
+    });
+    this.bomb.start();
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -613,6 +645,8 @@ export class Room {
     this.bac = null;
     this.connait?.dispose();
     this.connait = null;
+    this.bomb?.dispose();
+    this.bomb = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -702,6 +736,7 @@ export class Room {
       intrus: this.intrus?.stateFor(id) ?? null,
       bac: this.bac?.state() ?? null,
       connait: this.connait?.stateFor(id) ?? null,
+      bomb: this.bomb?.state() ?? null,
     };
   }
 
@@ -742,6 +777,7 @@ export class Room {
     this.intrus?.dispose();
     this.bac?.dispose();
     this.connait?.dispose();
+    this.bomb?.dispose();
   }
 }
 

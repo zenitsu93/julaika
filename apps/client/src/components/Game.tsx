@@ -1,4 +1,5 @@
 import { useGame } from '../lib/store';
+import { BombBoard } from './bombe/BombBoard';
 import { Board } from './Board';
 import { BacBoard } from './bac/BacBoard';
 import { Chat } from './Chat';
@@ -14,7 +15,7 @@ export function Game() {
     <div className="mx-auto flex min-h-full max-w-[1400px] flex-col gap-3 p-3">
       <TopBar />
       <div className="grid flex-1 gap-3 lg:grid-cols-[1fr_20rem]">
-        {game === 'wavelength' ? <WaveBoard /> : game === 'telephone' ? <TelBoard /> : game === 'intrus' ? <IntrusBoard /> : game === 'petitbac' ? <BacBoard /> : game === 'connait' ? <ConnaitBoard /> : <Board />}
+        {game === 'wavelength' ? <WaveBoard /> : game === 'telephone' ? <TelBoard /> : game === 'intrus' ? <IntrusBoard /> : game === 'petitbac' ? <BacBoard /> : game === 'connait' ? <ConnaitBoard /> : game === 'bombe' ? <BombBoard /> : <Board />}
         <Chat />
       </div>
     </div>

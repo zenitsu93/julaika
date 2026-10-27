@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { isRoomGame, type ClientMsg, type RoomGame } from '@julaika/shared';
 import { deepseekPairs, deepseekWords } from './deepseek';
+import { warmDictionary } from './dico';
 import { iceServersFor } from './ice';
 import { MotDuJour, isToken } from './motdujour';
 import { Room } from './room';
@@ -146,7 +147,7 @@ wss.on('connection', (ws: WebSocket & { alive?: boolean }) => {
     }
     if (!room || !playerId) return;
     if (msg.t === 'chat' && !chatBucket()) return;
-    if ((msg.t === 'wave' || msg.t === 'tel' || msg.t === 'intrus' || msg.t === 'bac' || msg.t === 'connait') && !dialBucket()) return;
+    if ((msg.t === 'wave' || msg.t === 'tel' || msg.t === 'intrus' || msg.t === 'bac' || msg.t === 'connait' || msg.t === 'bomb') && !dialBucket()) return;
     room.handle(playerId, msg);
   });
 
@@ -183,6 +184,7 @@ function createRoom(game: RoomGame): Room {
   );
   room.game = game;
   rooms.set(code, room);
+  if (game === 'bombe') setImmediate(warmDictionary);
   return room;
 }
 

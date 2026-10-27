@@ -91,6 +91,8 @@ export function TopBar() {
           ? 'Salon'
           : room.connait
             ? `Question ${room.connait.turn}/${room.connait.turns}`
+          : room.bomb
+            ? `${Object.values(room.bomb.lives).filter(Boolean).length} en lice`
             : room.tel
             ? room.phase === 'album'
               ? 'Album'

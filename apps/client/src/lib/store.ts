@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { ChatLine, PlayerPublic, RoomState, TelChain, TelEntry } from '@julaika/shared';
+import type { BombEvent, ChatLine, PlayerPublic, RoomState, TelChain, TelEntry } from '@julaika/shared';
 
 export interface GameState {
   status: 'idle' | 'connecting' | 'online' | 'closed';
@@ -15,6 +15,9 @@ export interface GameState {
   /** Téléphone dessiné : ce qu'on a reçu à dessiner ou décrire, et l'album une fois révélé. */
   telPrompt: { step: number; prompt: TelEntry | null } | null;
   album: TelChain[] | null;
+  /** Bombe à mots : ce que tape celui qui tient la bombe, et le dernier événement (numéroté pour rejouer l'animation). */
+  bombTyping: { by: string; text: string } | null;
+  bombEvent: (BombEvent & { seq: number }) | null;
   /** Décalage horloge serveur - horloge locale (ms). */
   clockOffset: number;
 }
@@ -31,6 +34,8 @@ const initial: GameState = {
   dial: null,
   telPrompt: null,
   album: null,
+  bombTyping: null,
+  bombEvent: null,
   clockOffset: 0,
 };
 

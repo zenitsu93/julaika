@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type JSX } from 'react';
 import { GAMES, SOON, matchesGame, matchesSoon, type GameId, type GameInfo, type SoonId } from '../lib/games';
+import { BombGlyph } from './bombe/BombGlyph';
 import { ConnaitArt } from './connait/ConnaitArt';
 import { LogoMark } from './Logo';
 
@@ -216,6 +217,14 @@ const IntrusArt = () => (
   </svg>
 );
 
+/** La bombe qui bat, l'étincelle qui crépite, et une syllabe posée dessus. */
+const BombArt = () => (
+  <span className="bomb-art relative mx-auto block w-36" aria-hidden>
+    <BombGlyph lit beat={0.9} className="w-full" />
+    <span className="absolute left-[47%] top-[60%] -translate-x-1/2 -translate-y-1/2 rounded-md bg-butter px-2 font-mono text-xl font-bold text-cacao">TION</span>
+  </span>
+);
+
 /** La grille du Petit Bac : la lettre tourne, les cases se remplissent, puis le tampon « Stop ! ». */
 const BacArt = () => (
   <svg viewBox="0 0 220 140" className="mx-auto max-h-36 w-full" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -249,6 +258,7 @@ const ART: Record<GameId, JSX.Element> = {
   intrus: <IntrusArt />,
   petitbac: <BacArt />,
   connait: <ConnaitArt />,
+  bombe: <BombArt />,
 };
 
 /** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */
