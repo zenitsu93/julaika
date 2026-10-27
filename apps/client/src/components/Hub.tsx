@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type JSX, type PointerEvent } from 'react';
 import { GAMES, SOON, matchesGame, matchesSoon, type GameId, type GameInfo, type SoonId } from '../lib/games';
 import { reducedMotion } from '../motion';
+import { ConnaitArt } from './connait/ConnaitArt';
 import { LogoMark } from './Logo';
 
 // L'entrée animée ne se joue qu'une fois par visite, comme sur l'écran du pseudo.
@@ -114,6 +115,7 @@ const SKINS: Record<GameId, string> = {
   wavelength: 'border-edge bg-surface text-ink',
   motdujour: 'border-[#15803d] bg-[#16a34a] text-white',
   telephone: 'border-[#6d28d9] bg-[#7c3aed] text-white',
+  connait: 'border-[#be185d] bg-[#db2777] text-white',
 };
 
 function GameCard({ game, className, style, onPick }: { game: GameInfo; className: string; style: CSSProperties; onPick: () => void }) {
@@ -210,7 +212,7 @@ const TelArt = () => (
   </svg>
 );
 
-const ART: Record<GameId, JSX.Element> = { dessin: <DrawArt />, mime: <MimeArt />, wavelength: <WaveArt />, motdujour: <MotArt />, telephone: <TelArt /> };
+const ART: Record<GameId, JSX.Element> = { dessin: <DrawArt />, mime: <MimeArt />, wavelength: <WaveArt />, motdujour: <MotArt />, telephone: <TelArt />, connait: <ConnaitArt /> };
 
 /** Carte d'un jeu en préparation : même mise en scène, en pointillés et sans clic. */
 function SoonCard({ game, className, style }: { game: (typeof SOON)[number]; className: string; style: CSSProperties }) {
@@ -294,16 +296,6 @@ const SOON_ART: Record<SoonId, JSX.Element> = {
         <path key={i} className="soon-note" style={{ animationDelay: `${i * 600}ms` }} d="M150 100v-18l12-4" stroke="#f5b700" strokeWidth="5" />
       ))}
     </>,
-  ),
-  // Un cœur qui bat.
-  connait: svg(
-    <path
-      className="soon-beat"
-      style={{ transformOrigin: '100px 72px' }}
-      d="M100 112S48 82 48 52a24 24 0 0 1 52-6 24 24 0 0 1 52 6c0 30-52 60-52 60z"
-      fill="#f5b700"
-      stroke="none"
-    />,
   ),
   // La grille des agents : les cases changent d'équipe.
   agents: svg(
