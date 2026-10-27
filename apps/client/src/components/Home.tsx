@@ -68,6 +68,7 @@ export function Home({ game, onBack }: { game: GameId | null; onBack: () => void
           <LogoMark className="h-12 w-auto" animated={intro} />
           <div>
             <h1 style={after(300)} className={`text-3xl font-semibold leading-tight tracking-[-0.04em] ${rise}`}>
+              <span className="accroche text-3xl text-muted">on joue à</span>
               {info?.name ?? 'julaïka'}
             </h1>
             <p style={after(360)} className={`text-sm text-muted ${rise}`}>
