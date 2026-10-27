@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { BombEvent, ChatLine, MimeShot, FlashSketch, PhotoShot, PlayerPublic, RoomState, TelChain, TelEntry } from '@julaika/shared';
+import type { BombEvent, ChatLine, MimeShot, FlashSketch, Creature, DrawPacket, PhotoShot, PlayerPublic, RoomState, TelChain, TelEntry } from '@julaika/shared';
 
 export interface GameState {
   status: 'idle' | 'connecting' | 'online' | 'closed';
@@ -25,6 +25,9 @@ export interface GameState {
   mimeShots: MimeShot[];
   /** Flash : les croquis de la manche, révélés au vote. */
   sketches: { round: number; sketches: FlashSketch[] } | null;
+  /** Cadavre exquis : la bande de jonction du morceau d'au-dessus, et les créatures au dévoilement. */
+  cadPrompt: { step: number; above: { name: string; strokes: DrawPacket[] } | null } | null;
+  creatures: Creature[] | null;
   /** Décalage horloge serveur - horloge locale (ms). */
   clockOffset: number;
 }
@@ -47,6 +50,8 @@ const initial: GameState = {
   reel: [],
   mimeShots: [],
   sketches: null,
+  cadPrompt: null,
+  creatures: null,
   clockOffset: 0,
 };
 

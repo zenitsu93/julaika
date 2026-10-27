@@ -13,3 +13,4 @@ export * from './sourire';
 export * from './mime';
 export * from './brasdefer';
 export * from './flash';
+export * from './cadavre';

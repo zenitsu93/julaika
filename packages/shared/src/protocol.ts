@@ -3,6 +3,8 @@
 
 import type { BombEvent, BombState } from './bombe';
 import type { BrasState } from './brasdefer';
+import type { CadavreState, Creature } from './cadavre';
+import type { DrawPacket } from './draw';
 import type { ConnaitState } from './connait';
 import type { FlashSketch, FlashState } from './flash';
 import type { IntrusState } from './intrus';
@@ -25,7 +27,7 @@ export const PALETTE = [
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 /** Jeux proposés : chaque salon en porte un, choisi à sa création. */
-export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash'] as const;
+export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
@@ -40,6 +42,7 @@ export function isRoomGame(v: unknown): v is RoomGame {
  * Qui me connaît le mieux : answer (la vedette répond, les autres parient) → reveal.
  * Bombe à mots : bomb, jusqu'au dernier survivant. Photomaton : pose (consigne puis flash) → vote → reveal.
  * Pas un sourire ! : faceoff (3, 2, 1) → duel → verdict. Bras de fer : pareil. Flash : memorize (l'image 3 s) → draw → vote → reveal.
+ * Cadavre exquis : draw (tête, corps, jambes, tous en même temps) → reveal.
  */
 export type Phase =
   | 'lobby'
@@ -214,6 +217,8 @@ export interface RoomState {
   bras: BrasState | null;
   /** État de Flash, null pour les autres jeux. */
   flash: FlashState | null;
+  /** État du Cadavre exquis, null pour les autres jeux. */
+  cadavre: CadavreState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -287,6 +292,11 @@ export type ClientMsg =
   | { t: 'flash'; done: true }
   | { t: 'flash'; edit: true }
   | { t: 'flash'; vote: string; stars: number }
+  | { t: 'cadavre'; done: true }
+  | { t: 'cadavre'; edit: true }
+  | { t: 'cadavre'; name: string }
+  | { t: 'cadavre'; heart: string }
+  | { t: 'cadavre'; next: true }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =
@@ -319,5 +329,9 @@ export type ServerMsg =
   | { t: 'sound'; id: SoundId; by: string }
   /** Flash : les croquis de la manche, envoyés une fois au début du vote. */
   | { t: 'sketches'; round: number; sketches: FlashSketch[] }
+  /** Cadavre exquis : le morceau à dessiner, et la bande de jonction de celui d'au-dessus. */
+  | { t: 'cadPrompt'; step: number; above: { name: string; strokes: DrawPacket[] } | null }
+  /** Cadavre exquis : toutes les créatures, envoyées une fois au dévoilement. */
+  | { t: 'creatures'; creatures: Creature[] }
   | { t: 'pong'; at: number; now: number }
   | { t: 'error'; message: string };

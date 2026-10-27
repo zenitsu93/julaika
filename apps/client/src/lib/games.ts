@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash' | 'cadavre';
 
 export interface GameInfo {
   id: GameId;
@@ -116,6 +116,14 @@ export const GAMES: GameInfo[] = [
     players: 'À deux ou plus',
     badge: 'Nouveau',
     keywords: ['flash', 'memoire', 'dessin', 'dessiner', 'image', 'rapidite', 'couleurs', 'vote', 'duo', 'deux', 'flash draw'],
+  },
+  {
+    id: 'cadavre',
+    name: 'Cadavre exquis',
+    pitch: 'Tête, corps, jambes : chacun son morceau, sans voir le reste.',
+    players: 'À deux ou plus',
+    badge: 'À deux',
+    keywords: ['cadavre exquis', 'creature', 'monstre', 'dessin', 'dessiner', 'tete', 'corps', 'jambes', 'plier', 'duo', 'deux', 'couple', 'franken'],
   },
 ];
 

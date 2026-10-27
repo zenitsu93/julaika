@@ -98,6 +98,10 @@ export function TopBar() {
             ? `Duel ${room.sourire.turn + 1}/${room.sourire.turns}`
           : room.bras
             ? `Duel ${room.bras.turn + 1}/${room.bras.turns}`
+          : room.cadavre
+            ? room.phase === 'reveal'
+              ? 'Dévoilement'
+              : `Morceau ${room.cadavre.step + 1}/3`
             : room.tel
             ? room.phase === 'album'
               ? 'Album'

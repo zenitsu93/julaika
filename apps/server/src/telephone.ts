@@ -1,9 +1,7 @@
 import {
-  DrawOp,
   TEL_PROMPTS,
   TEL_TEXT_MAX,
   TEL_WRITE_TIME,
-  decodeDraw,
   telChainFor,
   telKind,
   type ClientMsg,
@@ -14,6 +12,7 @@ import {
   type TelEntry,
   type TelState,
 } from '@julaika/shared';
+import { Sketches } from './sketches';
 
 /** Ce dont le jeu a besoin du salon : les joueurs, l'hôte, la diffusion et la phase commune. */
 export interface TelHost {
@@ -29,9 +28,6 @@ export interface TelHost {
   system(text: string): void;
   toLobby(): void;
 }
-
-/** Octets de dessin gardés par joueur et par étape. */
-const MAX_DRAWING_BYTES = 400_000;
 
 type TelMsg = Extract<ClientMsg, { t: 'tel' }>;
 interface Seat {
@@ -54,8 +50,7 @@ export class Telephone {
   readonly done = new Set<string>();
   album: { chain: number; entry: number } | null = null;
 
-  private drawings = new Map<string, Uint8Array[][]>();
-  private drawingBytes = new Map<string, number>();
+  private sketches = new Sketches();
   private timers: ReturnType<typeof setTimeout>[] = [];
 
   constructor(private readonly host: TelHost) {
@@ -92,32 +87,15 @@ export class Telephone {
 
   /** Paquet de dessin d'un joueur : gardé pour sa chaîne, jamais relayé (c'est une surprise). */
   draw(id: string, data: Uint8Array): void {
-    if (!this.canDraw(id)) return;
-    const packet = decodeDraw(data);
-    if (!packet) return;
-    const bytes = this.drawingBytes.get(id) ?? 0;
-    if (bytes + data.byteLength > MAX_DRAWING_BYTES) return;
-    const strokes = this.drawings.get(id) ?? [];
-    const copy = new Uint8Array(data);
-    if (packet.op === DrawOp.Extend) {
-      const last = strokes.at(-1);
-      if (!last) return;
-      last.push(copy);
-    } else strokes.push([copy]);
-    this.drawings.set(id, strokes);
-    this.drawingBytes.set(id, bytes + copy.byteLength);
+    if (this.canDraw(id)) this.sketches.draw(id, data);
   }
 
   undo(id: string): void {
-    if (!this.canDraw(id)) return;
-    const removed = this.drawings.get(id)?.pop();
-    if (removed) this.drawingBytes.set(id, (this.drawingBytes.get(id) ?? 0) - removed.reduce((n, p) => n + p.byteLength, 0));
+    if (this.canDraw(id)) this.sketches.undo(id);
   }
 
   clear(id: string): void {
-    if (!this.canDraw(id)) return;
-    this.drawings.delete(id);
-    this.drawingBytes.delete(id);
+    if (this.canDraw(id)) this.sketches.clear(id);
   }
 
   /** Un joueur arrive en cours de partie : il regarde, et voit l'album s'il est ouvert. */
@@ -151,8 +129,7 @@ export class Telephone {
     this.clearTimers();
     this.step = step;
     this.done.clear();
-    this.drawings.clear();
-    this.drawingBytes.clear();
+    this.sketches.clear();
     const kind = telKind(step);
     this.phase = kind;
     const seconds = kind === 'draw' ? this.host.drawTime() : TEL_WRITE_TIME;
@@ -172,7 +149,7 @@ export class Telephone {
     this.seats.forEach((_, i) => {
       const chain = this.chainAt(i);
       if (kind === 'draw') {
-        chain.entries[this.step] = this.entry(i, { kind: 'drawing', strokes: this.strokesOf(this.seats[i]!.id) });
+        chain.entries[this.step] = this.entry(i, { kind: 'drawing', strokes: this.sketches.strokesOf(this.seats[i]!.id) });
       } else if (!chain.entries[this.step]) {
         const text = kind === 'write' ? TEL_PROMPTS[Math.floor(this.host.random() * TEL_PROMPTS.length)]! : '… (pas de réponse)';
         chain.entries[this.step] = this.entry(i, { kind: 'text', text });
@@ -227,15 +204,6 @@ export class Telephone {
   private entry(seat: number, body: { kind: 'text'; text: string } | { kind: 'drawing'; strokes: DrawPacket[] }): TelEntry {
     const s = this.seats[seat]!;
     return { ...body, by: s.id, name: s.name, avatar: s.avatar } as TelEntry;
-  }
-
-  /** Les paquets d'un trait (début + suites) fusionnés en un seul, pour l'album. */
-  private strokesOf(id: string): DrawPacket[] {
-    return (this.drawings.get(id) ?? []).flatMap((packets) => {
-      const [first, ...rest] = packets.map((p) => decodeDraw(p)!);
-      if (!first) return [];
-      return [{ ...first, points: [...first.points, ...rest.flatMap((p) => p.points)] }];
-    });
   }
 
   private clearTimers(): void {

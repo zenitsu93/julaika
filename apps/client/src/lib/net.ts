@@ -94,6 +94,8 @@ class Net {
           // Les polaroids du mime restent jusqu'au lancement de la partie suivante.
           mimeShots: s.room?.phase === 'lobby' && phase !== 'lobby' ? [] : s.mimeShots,
           sketches: msg.state.flash && (phase === 'vote' || phase === 'reveal') ? s.sketches : null,
+          cadPrompt: msg.state.cadavre ? s.cadPrompt : null,
+          creatures: msg.state.cadavre && phase === 'reveal' ? s.creatures : null,
         }));
         call.sync(msg.state.players);
         break;
@@ -140,6 +142,12 @@ class Net {
         break;
       case 'sketches':
         store.set({ sketches: { round: msg.round, sketches: msg.sketches } });
+        break;
+      case 'cadPrompt':
+        store.set({ cadPrompt: { step: msg.step, above: msg.above } });
+        break;
+      case 'creatures':
+        store.set({ creatures: msg.creatures });
         break;
       case 'dial':
         store.set({ dial: msg.value });

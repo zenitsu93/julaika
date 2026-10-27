@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type JSX } from 'react
 import { GAMES, SOON, matchesGame, matchesSoon, type GameId, type GameInfo, type SoonId } from '../lib/games';
 import { BombGlyph } from './bombe/BombGlyph';
 import { BrasGlyph } from './bras/BrasGlyph';
+import { CadArt } from './cadavre/CadArt';
 import { ConnaitArt } from './connait/ConnaitArt';
 import { FlashArt } from './flash/FlashArt';
 import { LogoMark } from './Logo';
@@ -307,6 +308,7 @@ const ART: Record<GameId, JSX.Element> = {
   sourire: <SourireArt />,
   brasdefer: <BrasGlyph className="mx-auto max-h-36 w-full" />,
   flash: <FlashArt />,
+  cadavre: <CadArt />,
 };
 
 /** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */
