@@ -386,6 +386,113 @@
   scale: 1;
 }
 /* Lueur chocolat et or qui dérive lentement derrière le titre. */
+/* Changement de page, « la respiration » : un fil d'or file en haut de l'écran, la page monte de
+   quelques pixels, le sourire du logo s'élargit à peine et la tête hoche. */
+.page-breath {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 60;
+  height: 2px;
+  background: var(--color-accent);
+  transform-origin: left;
+  pointer-events: none;
+  animation: page-breath 0.75s var(--ease-out) forwards;
+}
+@keyframes page-breath {
+  0% {
+    transform: scaleX(0);
+  }
+  55% {
+    transform: scaleX(0.85);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+.page-in {
+  animation: page-in 0.4s 0.1s var(--ease-out) backwards;
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.m-breath {
+  transform-origin: 20% 80%;
+  animation: m-nod 0.5s 0.45s var(--ease-out) backwards;
+}
+.m-breath .m-smile {
+  transform-box: fill-box;
+  transform-origin: center top;
+  animation: m-grin 0.9s ease-in-out;
+}
+@keyframes m-nod {
+  40% {
+    transform: translateY(1.5px) rotate(-2deg);
+  }
+}
+@keyframes m-grin {
+  50% {
+    transform: scaleX(1.18);
+  }
+}
+
+/* Attente, « le clin d'œil » : les points du tréma rebondissent comme quelqu'un qui écrit,
+   puis le sourire se dessine quand tout est prêt. */
+.trema {
+  display: inline-block;
+  height: 1.4em;
+  width: auto;
+  vertical-align: -0.35em;
+  overflow: visible;
+  fill: var(--color-accent);
+}
+.trema circle {
+  animation: trema-hop 0.9s ease-in-out infinite;
+}
+.trema circle + circle {
+  animation-delay: 0.15s;
+}
+.trema path {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 0.4s var(--ease-out);
+}
+.trema.is-done circle {
+  animation: trema-squish 0.45s var(--ease-spring);
+}
+.trema.is-done path {
+  stroke-dashoffset: 0;
+}
+@keyframes trema-hop {
+  0%,
+  100% {
+    transform: none;
+  }
+  35% {
+    transform: translateY(-4px);
+  }
+  55% {
+    transform: translateY(0.6px);
+  }
+}
+@keyframes trema-squish {
+  50% {
+    transform: translateY(1px) scale(1.15, 0.7);
+  }
+}
+.trema circle {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
 /* Titre de l'accueil, façon 21st.dev : l'accroche s'écrit à la main de gauche à droite, chaque mot
    sort du flou en montant, « quoi ? » se souligne d'un trait d'or puis un reflet le traverse.
    Exception assumée à la règle du haut : un flou (filter) et un masque (clip-path) le temps de l'entrée. */

@@ -3,16 +3,19 @@
 const ACCENT = { fill: 'var(--color-accent)' };
 const ACCENT_STROKE = { stroke: 'var(--color-accent)' };
 
-/** Picto carré (favicon, icône d'appli). `animated` : les yeux tombent, puis le sourire se dessine. */
+/** Picto carré (favicon, icône d'appli). `animated` : les yeux tombent, puis le sourire se dessine.
+ *  Sinon, à chaque arrivée sur une page, le logo « respire » : le sourire s'élargit à peine, la tête hoche. */
 export function LogoMark({ className = '', animated = false }: { className?: string; animated?: boolean }) {
   return (
-    <svg viewBox="0 0 64 64" className={`${animated ? 'm-logo' : ''} ${className}`} aria-hidden>
+    <svg viewBox="0 0 64 64" className={`${animated ? 'm-logo' : 'm-breath'} ${className}`} aria-hidden>
       <rect width="64" height="64" rx="14" style={{ fill: 'var(--color-primary)' }} />
       <g className="m-pencil" style={{ fill: 'var(--color-logo-eye)' }}>
         <circle cx="24" cy="25" r="5.5" />
         <circle cx="40" cy="25" r="5.5" />
       </g>
-      <path className="m-stroke" pathLength={1} d="M18 37Q32 51 46 37" fill="none" style={{ stroke: 'var(--color-on-primary)' }} strokeWidth="6" strokeLinecap="round" />
+      <g className="m-smile">
+        <path className="m-stroke" pathLength={1} d="M18 37Q32 51 46 37" fill="none" style={{ stroke: 'var(--color-on-primary)' }} strokeWidth="6" strokeLinecap="round" />
+      </g>
     </svg>
   );
 }
@@ -23,13 +26,26 @@ const LETTERS =
 /** Lettrage « julaïka » : les lettres suivent la couleur du texte, le tréma et le sourire prennent l'or du thème. */
 export function Wordmark({ className = '', animated = false }: { className?: string; animated?: boolean }) {
   return (
-    <svg viewBox="-99 -1641 6237 2126" className={`${animated ? 'm-logo' : ''} ${className}`} role="img" aria-label="julaïka">
+    <svg viewBox="-99 -1641 6237 2126" className={`${animated ? 'm-logo' : 'm-breath'} ${className}`} role="img" aria-label="julaïka">
       <path d={LETTERS} fill="currentColor" />
       <g className="m-pencil" style={ACCENT}>
         <circle cx="3433.8" cy="-1418" r="143" />
         <circle cx="3821.8" cy="-1418" r="143" />
       </g>
-      <path className="m-stroke" pathLength={1} d="M3224.1 91.3Q3627.8 405.3 4031.6 91.3" fill="none" style={ACCENT_STROKE} strokeWidth="112.2" strokeLinecap="round" />
+      <g className="m-smile">
+        <path className="m-stroke" pathLength={1} d="M3224.1 91.3Q3627.8 405.3 4031.6 91.3" fill="none" style={ACCENT_STROKE} strokeWidth="112.2" strokeLinecap="round" />
+      </g>
+    </svg>
+  );
+}
+
+/** Attente : les deux points du tréma rebondissent l'un après l'autre ; `done` dessine le sourire dessous. */
+export function TremaLoader({ className = '', done = false }: { className?: string; done?: boolean }) {
+  return (
+    <svg viewBox="0 0 24 20" className={`trema ${done ? 'is-done' : ''} ${className}`} aria-hidden>
+      <circle cx="7.5" cy="6.5" r="3.8" />
+      <circle cx="16.5" cy="6.5" r="3.8" />
+      <path pathLength={1} d="M5 14.5Q12 20 19 14.5" />
     </svg>
   );
 }

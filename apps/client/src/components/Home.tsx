@@ -5,7 +5,7 @@ import { GAMES, type GameId } from '../lib/games';
 import { net } from '../lib/net';
 import { useGame } from '../lib/store';
 import { bump, shake, useIndicator } from '../motion';
-import { LogoMark } from './Logo';
+import { LogoMark, TremaLoader } from './Logo';
 
 export const codeFromUrl = () => location.pathname.match(/^\/r\/([A-Z0-9]{4,8})/i)?.[1]?.toUpperCase() ?? '';
 
@@ -153,7 +153,14 @@ export function Home({ game, onBack }: { game: GameId | null; onBack: () => void
             disabled={status === 'connecting'}
             onClick={() => play()}
           >
-            {status === 'connecting' ? 'Connexion…' : 'Créer un salon privé'}
+            {status === 'connecting' ? (
+              <span className="inline-flex items-center gap-2">
+                <TremaLoader />
+                Connexion…
+              </span>
+            ) : (
+              'Créer un salon privé'
+            )}
           </button>
 
           {error && (
