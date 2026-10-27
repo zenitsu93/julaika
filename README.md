@@ -55,3 +55,18 @@ Concept « Studio Pro » : tableau au centre, joueurs en pastilles au-dessus, do
 thème clair et sombre selon le système. Raccourcis : `1`–`5` choisir le mot, `B`/`E`/`F` outils,
 `Ctrl+Z` annuler, `/` ou `Entrée` aller au chat. Les couleurs sont des variables dans
 `apps/client/src/index.css` (`@theme`) : changer de concept se fait essentiellement là.
+
+## Déployer
+
+Production : VPS OVH, derrière le Caddy de la pile `2nb-prospect` (seul à écouter sur 80/443).
+
+1. DNS (cPanel o2switch > Zone Editor) : `julaika` en `A` vers l'IP du VPS.
+2. Sur le VPS : cloner le dépôt dans `~/julaika`, puis `deploy/deploy.sh` (construit l'image et
+   lance le conteneur `julaika` sur le réseau `2nb-prospect_frontend`).
+3. Copier `deploy/julaika.caddy` dans `~/caddy-sites/` et recharger Caddy (commande dans le fichier).
+4. CI/CD : chaque push sur la branche par défaut déploie via `.github/workflows/ci.yml`, une fois
+   `VPS_HOST`, `VPS_USER` (variables) et `VPS_SSH_KEY`, `VPS_KNOWN_HOSTS` (secrets) renseignés.
+   La clé est déclarée sur le serveur avec `command="/home/christian/julaika/deploy/deploy.sh",restrict`.
+
+VPS neuf sans autre site : `DOMAIN=jeu.exemple.com docker compose -f docker-compose.standalone.yml up -d --build`
+(Caddy inclus, HTTPS automatique). Avec nginx à la place : `deploy/nginx.conf`.

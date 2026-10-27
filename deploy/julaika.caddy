@@ -1,0 +1,6 @@
+# À copier dans CADDY_SITES_DIR (/home/christian/caddy-sites) puis :
+#   docker compose -f ~/2nb-prospect/docker-compose.yml exec caddy caddy reload --config /etc/caddy/Caddyfile
+julaika.2nbdigital.com {
+	encode zstd gzip
+	reverse_proxy julaika:3001
+}
