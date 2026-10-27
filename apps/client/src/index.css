@@ -4,7 +4,12 @@
 /* Concept « Studio Pro » : outil de création épuré, le tableau d'abord.
    Tous les tons passent par ces variables : changer de concept = changer ce bloc. */
 @theme {
-  --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+  /* Duo de polices : Inter pour l'interface et les titres, un script fin en accroche.
+     Tempting (RGB Studio) n'est gratuite qu'en usage personnel : Imperial Script (OFL) la remplace. */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-script: 'Imperial Script', cursive;
+  /* Le lettrage du logo garde sa police d'origine. */
+  --font-logo: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --color-page: #fafafa;
   --color-surface: #ffffff;
@@ -53,6 +58,16 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Titres en Inter grasse et serrée. Hors couche, la règle passe devant les font-semibold
+   des composants ; un titre qui veut une autre graisse la force avec `!`. */
+h1 {
+  font-weight: 800;
+}
+
+h2 {
+  font-weight: 700;
+}
+
 @utility panel {
   @apply rounded-lg border border-edge bg-surface;
 }
@@ -78,4 +93,10 @@ body {
 /* Petite touche de clavier, pour afficher les raccourcis. */
 @utility kbd {
   @apply rounded border border-edge px-1 font-mono text-[10px] leading-4 text-muted;
+}
+
+/* Mot d'accroche en script, posé au-dessus d'un titre et qui le chevauche un peu.
+   La taille se règle avec text-* comme pour n'importe quel texte. */
+@utility accroche {
+  @apply relative z-10 block font-script font-normal leading-[0.8] tracking-normal -mb-[0.12em] -rotate-3;
 }

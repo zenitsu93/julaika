@@ -36,7 +36,7 @@ export function Hub({ onPick, onCode }: { onPick: (id: GameId) => void; onCode: 
       <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <div className="flex items-center gap-2.5">
           <LogoMark className="h-9 w-auto" animated={intro} />
-          <span style={after(300)} className={`text-2xl font-semibold tracking-[-0.04em] ${rise}`}>
+          <span style={after(300)} className={`font-logo text-2xl font-semibold tracking-[-0.04em] ${rise}`}>
             julaïka
           </span>
         </div>
@@ -47,6 +47,7 @@ export function Hub({ onPick, onCode }: { onPick: (id: GameId) => void; onCode: 
 
       <section className="px-4 pt-8 text-center sm:pt-12">
         <h1 style={after(340)} className={`text-4xl font-semibold leading-none tracking-[-0.045em] sm:text-6xl ${rise}`}>
+          <span className="accroche text-5xl text-muted sm:text-7xl">entre amis</span>
           Salut ! On joue à quoi ?
         </h1>
         <p style={after(400)} className={`mx-auto mt-3 max-w-md text-base text-muted sm:text-lg ${rise}`}>

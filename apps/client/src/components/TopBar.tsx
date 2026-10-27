@@ -84,7 +84,7 @@ export function TopBar() {
       </span>
       <span className="hidden items-center gap-1.5 sm:flex">
         <LogoMark className="h-6 w-auto" />
-        <b className="font-semibold tracking-[-0.035em]">julaïka</b>
+        <b className="font-logo font-semibold tracking-[-0.035em]">julaïka</b>
       </span>
       <span className="text-sm text-muted">
         {room.phase === 'lobby'

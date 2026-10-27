@@ -178,7 +178,10 @@ export function MotDuJour({ onBack }: { onBack: () => void }) {
         <section className="flex flex-col items-center">
           <div className="m-rise mb-5 text-center">
             <p className="font-mono text-xs uppercase tracking-widest text-muted">{state ? `n° ${state.number}` : '…'}</p>
-            <h1 className="text-4xl font-semibold leading-none tracking-[-0.045em] sm:text-5xl">Mot du jour</h1>
+            <h1 className="text-4xl font-semibold leading-none tracking-[-0.045em] sm:text-5xl">
+              <span className="accroche text-4xl text-muted sm:text-5xl">devine le</span>
+              Mot du jour
+            </h1>
           </div>
 
           {editing && (

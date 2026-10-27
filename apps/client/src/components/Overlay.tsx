@@ -44,7 +44,10 @@ function Podium({ ranking }: { ranking: PlayerPublic[] }) {
   return (
     <>
       <canvas ref={canvas} className="pointer-events-none absolute inset-0 z-10 size-full" aria-hidden />
-      <h2 className="mb-6 text-2xl font-semibold">Fin de partie</h2>
+      <h2 className="mb-6 text-2xl font-semibold">
+        <span className="accroche text-4xl text-muted">bravo à tous</span>
+        Fin de partie
+      </h2>
       <ol className="flex items-end justify-center gap-4">
         {[ranking[1], ranking[0], ranking[2]].map((p, i) => {
           if (!p) return null;
