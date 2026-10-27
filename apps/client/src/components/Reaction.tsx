@@ -24,10 +24,15 @@ export function Reaction() {
     else if (phase === 'turnEnd' && before.phase === 'drawing' && !me.guessed) setKind('lose');
   }, [me?.guessed, phase, drawing, me]);
 
+  return kind ? <PencilReaction kind={kind} onDone={() => setKind(null)} /> : null;
+}
+
+/** Le crayon dessine un visage qui sourit (`win`) ou fait la moue, puis s'efface. */
+export function PencilReaction({ kind, onDone }: { kind: Kind; onDone: () => void }) {
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = root.current;
-    if (!kind || !el) return;
+    if (!el) return;
     const q = <T extends Element>(s: string) => el.querySelector<T>(s)!;
     const abort = new AbortController();
     void playReaction(
@@ -43,13 +48,13 @@ export function Reaction() {
       },
       kind === 'win',
       abort.signal,
-    ).then(() => !abort.signal.aborted && setKind(null));
+    ).then(() => !abort.signal.aborted && onDone());
     return () => abort.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind]);
 
-  if (!kind) return null;
   const win = kind === 'win';
-  const line = win ? '#18181b' : '#71717a';
+  const line = win ? '#4b2e21' : '#71717a';
 
   return (
     <div ref={root} className="pointer-events-none absolute inset-0 z-20 grid place-items-center" aria-hidden>
@@ -61,9 +66,9 @@ export function Reaction() {
             <path data-head d="M100 28c40 0 72 30 72 72s-32 72-72 72-72-30-72-72c0-38 28-70 68-72" stroke={line} strokeWidth="5" pathLength={1} />
             <path data-eye d="M74 82v10" stroke={line} strokeWidth="7" pathLength={1} />
             <path data-eye d="M126 82v10" stroke={line} strokeWidth="7" pathLength={1} />
-            <path data-mouth d={win ? SMILE : FROWN} stroke={win ? '#f5b700' : '#a1a1aa'} strokeWidth="8" pathLength={1} />
+            <path data-mouth d={win ? SMILE : FROWN} stroke={win ? '#b07d2c' : '#a1a1aa'} strokeWidth="8" pathLength={1} />
             <path data-drop d="M150 70c6 10 8 16 3 19s-9-3-3-19z" fill="#60a5fa" stroke="none" opacity="0" />
-            <g data-joy stroke="#f5b700" strokeWidth="5" opacity="0" style={{ transformOrigin: '100px 100px' }}>
+            <g data-joy stroke="#b07d2c" strokeWidth="5" opacity="0" style={{ transformOrigin: '100px 100px' }}>
               <path d="M30 30 16 16" />
               <path d="M100 10V-8" />
               <path d="m170 30 14-14" />
@@ -74,9 +79,9 @@ export function Reaction() {
           {/* Le crayon du logo ; sa pointe suit le trait dessiné. */}
           <div data-pencil className="absolute left-0 top-0 h-16 w-[26px] opacity-0" style={{ offsetAnchor: '50% 100%', offsetRotate: '0deg' }}>
             <svg viewBox="30 2 18 44" className="size-full origin-bottom rotate-[28deg]">
-              <rect x="32" y="4" width="14" height="7" rx="3" fill="#f5b700" />
-              <rect x="32" y="13" width="14" height="22" fill="#18181b" />
-              <path d="M32 37.5H46L42.4 43.6H35.6Z" fill="#18181b" />
+              <rect x="32" y="4" width="14" height="7" rx="3" fill="#b07d2c" />
+              <rect x="32" y="13" width="14" height="22" fill="#4b2e21" />
+              <path d="M32 37.5H46L42.4 43.6H35.6Z" fill="#4b2e21" />
             </svg>
           </div>
         </div>

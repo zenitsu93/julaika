@@ -3,6 +3,7 @@ import { serverNow, useGame } from '../lib/store';
 import { animate, Ticker } from '../motion';
 import { LogoMark } from './Logo';
 import { MeetButton } from './MeetButton';
+import { SoundButton } from './SoundBoard';
 
 function useCountdown(endsAt: number | null): number {
   const [now, setNow] = useState(serverNow);
@@ -59,7 +60,7 @@ export function TopBar() {
   const room = useGame((s) => s.room!);
   const left = useCountdown(room.endsAt);
   const [copied, setCopied] = useState(false);
-  const urgent = room.phase === 'drawing' && left <= 10;
+  const urgent = (room.phase === 'drawing' || room.phase === 'guess' || room.phase === 'draw' || room.phase === 'write' || room.phase === 'describe' || room.phase === 'clue' || room.phase === 'vote' || room.phase === 'steal' || room.phase === 'fill' || room.phase === 'answer' || room.phase === 'duel') && left <= 10;
   const timer = useRef<HTMLSpanElement>(null);
 
   // Sous 10 s, la pastille bat doucement à chaque seconde.
@@ -84,10 +85,22 @@ export function TopBar() {
       </span>
       <span className="hidden items-center gap-1.5 sm:flex">
         <LogoMark className="h-6 w-auto" />
-        <b className="font-semibold tracking-[-0.035em]">julaïka</b>
+        <b className="font-logo font-semibold tracking-[-0.035em]">julaïka</b>
       </span>
       <span className="text-sm text-muted">
-        {room.phase === 'lobby' ? 'Salon' : `Manche ${Math.min(room.round, room.settings.rounds)}/${room.settings.rounds}`}
+        {room.phase === 'lobby'
+          ? 'Salon'
+          : room.connait
+            ? `Question ${room.connait.turn}/${room.connait.turns}`
+          : room.bomb
+            ? `${Object.values(room.bomb.lives).filter(Boolean).length} en lice`
+          : room.sourire
+            ? `Duel ${room.sourire.turn + 1}/${room.sourire.turns}`
+            : room.tel
+            ? room.phase === 'album'
+              ? 'Album'
+              : `Étape ${room.tel.step + 1}/${room.tel.steps}`
+            : `Manche ${Math.min(room.round, room.settings.rounds)}/${room.settings.rounds}`}
       </span>
       <div className="order-last min-w-0 basis-full truncate text-center font-mono text-lg font-bold tracking-[0.2em] empty:hidden sm:order-none sm:flex-1 sm:basis-auto sm:text-xl sm:tracking-[0.3em]" aria-live="polite">
         {room.hint ? (
@@ -100,6 +113,7 @@ export function TopBar() {
       </div>
       <div className="ml-auto flex items-center gap-2 sm:ml-0">
         <MeetButton />
+        <SoundButton />
         <button className="btn-ghost relative overflow-hidden px-2.5 py-1.5 font-mono" onClick={copy} title="Copier le lien d'invitation">
           {/* Le code glisse vers le haut et laisse place à une coche qui se dessine. */}
           <span key={String(copied)} className="m-rise inline-flex items-center gap-1.5" aria-live="polite">

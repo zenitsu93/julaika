@@ -1,0 +1,164 @@
+/* Qui me connaît le mieux : projecteur sur la vedette, faisceau autour de la réponse choisie,
+   cartes qui se retournent à la révélation. Préfixe « k- » pour ne rien croiser. */
+
+@property --k-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes k-spin {
+  to {
+    --k-angle: 360deg;
+  }
+}
+
+/* Halo tournant autour de l'avatar de la vedette. */
+.k-spot {
+  background: conic-gradient(from var(--k-angle), transparent 0 55%, var(--color-accent) 80%, transparent 100%);
+  animation: k-spin 3.2s linear infinite;
+}
+
+/* Faisceau qui court sur le bord de la carte choisie. */
+.k-beam::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  padding: 2px;
+  border-radius: inherit;
+  background: conic-gradient(from var(--k-angle), transparent 0 60%, var(--color-accent) 82%, transparent 96%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: k-spin 2.4s linear infinite;
+  pointer-events: none;
+}
+
+/* Lumière qui suit le pointeur sur les cartes de réponse. */
+.k-option:enabled:hover {
+  background-image: radial-gradient(18rem circle at var(--kx, 50%) var(--ky, 50%), color-mix(in srgb, var(--color-accent) 12%, transparent), transparent 60%);
+}
+
+/* Révélation : chaque carte se retourne, la bonne s'allume. */
+@keyframes k-flip {
+  0% {
+    transform: perspective(700px) rotateY(0);
+  }
+  50% {
+    transform: perspective(700px) rotateY(90deg);
+  }
+  100% {
+    transform: perspective(700px) rotateY(0);
+  }
+}
+.k-flip {
+  animation: k-flip 0.7s cubic-bezier(0.65, 0, 0.35, 1) backwards;
+}
+@keyframes k-win {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 70%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 18px transparent;
+  }
+}
+.k-win {
+  animation: k-win 1s ease-out 2 backwards;
+}
+
+/* Suspense : le cœur bat de plus en plus vite avant la révélation. */
+@keyframes k-drum {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.25);
+  }
+}
+.k-drum {
+  animation: k-drum 0.45s ease-in-out infinite;
+}
+
+/* Barre de temps : elle se vide sur la durée de la question. */
+@keyframes k-deplete {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+.k-deplete {
+  transform-origin: left;
+  animation: k-deplete linear forwards;
+}
+
+/* Carte de l'accueil : la question se retourne et laisse voir le cœur. */
+@keyframes k-art-card {
+  0%,
+  35% {
+    transform: rotateY(0);
+  }
+  50%,
+  85% {
+    transform: rotateY(180deg);
+  }
+  100% {
+    transform: rotateY(360deg);
+  }
+}
+.k-art-card {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: k-art-card 4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@keyframes k-art-swap {
+  0%,
+  42% {
+    opacity: 1;
+  }
+  43%,
+  92% {
+    opacity: 0;
+  }
+  93%,
+  100% {
+    opacity: 1;
+  }
+}
+.k-art-q {
+  animation: k-art-swap 4s infinite;
+}
+@keyframes k-art-swap-back {
+  0%,
+  42% {
+    opacity: 0;
+  }
+  43%,
+  92% {
+    opacity: 1;
+  }
+  93%,
+  100% {
+    opacity: 0;
+  }
+}
+.k-art-h {
+  opacity: 0;
+  animation: k-art-swap-back 4s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .k-spot,
+  .k-beam::before,
+  .k-flip,
+  .k-win,
+  .k-drum,
+  .k-art-card,
+  .k-art-q,
+  .k-art-h {
+    animation: none;
+  }
+}

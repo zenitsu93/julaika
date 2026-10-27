@@ -7,3 +7,4 @@ export { useFlip } from './useFlip';
 export { useIndicator } from './useIndicator';
 export { useSpeaking } from './useSpeaking';
 export { attachWipe, wipeBoard } from './wipe';
+export { useSpring } from './useSpring';

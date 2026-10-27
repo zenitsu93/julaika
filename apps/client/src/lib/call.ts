@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
-import type { IceServer, PlayerPublic, RtcSignal } from '@julaika/shared';
+import type { IceServer, PlayerPublic, RtcSignal, WarpId } from '@julaika/shared';
+import { createWarp, type Warp } from './warp';
 
 /**
  * Visio intégrée : maillage WebRTC pair à pair, signalisation via le WebSocket du jeu.
@@ -7,6 +8,9 @@ import type { IceServer, PlayerPublic, RtcSignal } from '@julaika/shared';
  * Pour éviter les offres croisées, seul le joueur à l'identifiant le plus petit initie la
  * connexion ; il crée d'emblée un transceiver audio et un vidéo en `sendrecv`. Activer ou couper
  * la caméra remplace juste la piste (`replaceTrack`), sans renégociation.
+ *
+ * Une déformation (`setWarp`) intercale un canvas entre la caméra et l'envoi : la piste vidéo
+ * envoyée et affichée en local est alors celle du canvas (voir `outVideo`).
  */
 
 type Send = (to: string, data: RtcSignal) => void;
@@ -35,6 +39,8 @@ export interface CallView {
   /** Micro coupé d'office pendant son tour de mime. */
   hushed: boolean;
   local: MediaStream | null;
+  /** Déformation choisie, appliquée dès que la caméra est allumée. */
+  warp: WarpId | null;
   remotes: Record<string, MediaStream>;
   error: string | null;
 }
@@ -42,6 +48,8 @@ export interface CallView {
 class Call {
   private peers = new Map<string, Peer>();
   private tracks: Partial<Record<Kind, MediaStreamTrack>> = {};
+  /** Déformation en cours et la piste caméra qu'elle lit. */
+  private warper: { warp: Warp; source: MediaStreamTrack } | null = null;
   private ice: IceServer[] = [];
   private selfId: string | null = null;
   private send: Send = () => {};
@@ -49,7 +57,7 @@ class Call {
   private listeners = new Set<() => void>();
   /** Tour de mime en cours : micro coupé (pas le droit de parler) et vidéo en haute qualité. */
   private miming = false;
-  private view: CallView = { joined: false, cam: false, mic: false, hushed: false, local: null, remotes: {}, error: null };
+  private view: CallView = { joined: false, cam: false, mic: false, hushed: false, local: null, warp: null, remotes: {}, error: null };
 
   configure(opts: { selfId: string; ice: IceServer[]; send: Send; announce: Call['announce'] }) {
     this.leave(false);
@@ -70,10 +78,12 @@ class Call {
 
   leave(notify = true) {
     for (const id of [...this.peers.keys()]) this.drop(id);
+    this.warper?.warp.stop();
+    this.warper = null;
     for (const t of Object.values(this.tracks)) t?.stop();
     this.tracks = {};
     const was = this.view.joined;
-    this.update({ joined: false, cam: false, mic: false, hushed: false, local: null, remotes: {} });
+    this.update({ joined: false, cam: false, mic: false, hushed: false, local: null, warp: null, remotes: {} });
     if (notify && was) this.announce(false, false, false);
   }
 
@@ -92,6 +102,17 @@ class Call {
     void this.tracks.video?.applyConstraints(on ? VIDEO_MIME : VIDEO).catch(() => {});
     for (const { pc } of this.peers.values()) void this.capBitrate(pc);
     this.publish();
+  }
+
+  /** Choisit (ou retire, avec null) la déformation de sa caméra, chez soi comme chez les autres. */
+  async setWarp(effect: WarpId | null) {
+    if (effect && typeof HTMLCanvasElement.prototype.captureStream !== 'function') {
+      this.update({ error: 'Déformations non prises en charge par ce navigateur.' });
+      return;
+    }
+    this.update({ warp: effect });
+    await this.syncWarp();
+    if (this.tracks.video) this.publish();
   }
 
   // ---- Synchronisation avec l'état du salon ----------------------------------
@@ -114,7 +135,7 @@ class Call {
         // Côté répondant : les transceivers viennent de l'offre, on y branche nos pistes.
         for (const t of pc.getTransceivers()) {
           t.direction = 'sendrecv';
-          await t.sender.replaceTrack(this.tracks[t.receiver.track.kind as Kind] ?? null);
+          await t.sender.replaceTrack(this.out(t.receiver.track.kind as Kind));
         }
         await pc.setLocalDescription(await pc.createAnswer());
         this.send(from, { sdp: pc.localDescription!.toJSON() as { type: 'answer'; sdp: string } });
@@ -137,7 +158,7 @@ class Call {
 
     if (initiator) {
       for (const kind of ['audio', 'video'] as const) {
-        pc.addTransceiver(this.tracks[kind] ?? kind, { direction: 'sendrecv' });
+        pc.addTransceiver(this.out(kind) ?? kind, { direction: 'sendrecv' });
       }
     }
     pc.onicecandidate = (e) => {
@@ -192,7 +213,8 @@ class Call {
       const track = media.getTracks()[0]!;
       if (kind === 'audio' && this.miming) track.enabled = false;
       this.tracks[kind] = track;
-      await this.replace(kind, track);
+      if (kind === 'video') await this.syncWarp();
+      else await this.replace(kind);
     } catch {
       this.update({ error: kind === 'video' ? "Caméra indisponible ou refusée par le navigateur." : "Micro indisponible ou refusé par le navigateur." });
     }
@@ -201,10 +223,44 @@ class Call {
   private disable(kind: Kind) {
     this.tracks[kind]?.stop(); // coupe aussi le voyant de la caméra
     delete this.tracks[kind];
-    void this.replace(kind, null);
+    if (kind === 'video') void this.syncWarp();
+    else void this.replace(kind);
   }
 
-  private async replace(kind: Kind, track: MediaStreamTrack | null) {
+  /** Piste vidéo envoyée : la déformée si un effet est actif sur la caméra, sinon la brute. */
+  private outVideo(): MediaStreamTrack | null {
+    const cam = this.tracks.video ?? null;
+    return cam && this.warper?.source === cam ? this.warper.warp.track : cam;
+  }
+
+  private out(kind: Kind): MediaStreamTrack | null {
+    return kind === 'video' ? this.outVideo() : (this.tracks.audio ?? null);
+  }
+
+  /** Aligne le canvas de déformation sur l'effet choisi et la caméra, puis met à jour l'envoi. */
+  private async syncWarp() {
+    const effect = this.view.warp;
+    const cam = this.tracks.video;
+    const old = this.warper;
+    if (effect && cam && old?.source === cam) {
+      old.warp.set(effect);
+      return;
+    }
+    this.warper = null;
+    if (effect && cam) {
+      try {
+        this.warper = { warp: createWarp(cam, effect), source: cam };
+      } catch {
+        this.update({ warp: null, error: 'Déformations non prises en charge par ce navigateur.' });
+      }
+    }
+    await this.replace('video');
+    // Arrêtée seulement une fois remplacée chez les pairs.
+    old?.warp.stop();
+  }
+
+  private async replace(kind: Kind) {
+    const track = this.out(kind);
     for (const { pc } of this.peers.values()) {
       for (const t of pc.getTransceivers()) {
         if (t.receiver.track.kind === kind) await t.sender.replaceTrack(track).catch(() => {});
@@ -216,7 +272,7 @@ class Call {
   private publish() {
     const cam = Boolean(this.tracks.video);
     const mic = Boolean(this.tracks.audio?.enabled);
-    const local = cam ? new MediaStream([this.tracks.video!]) : null;
+    const local = cam ? new MediaStream([this.outVideo()!]) : null;
     this.update({ cam, mic, local, hushed: this.miming && Boolean(this.tracks.audio) });
     if (this.view.joined) this.announce(true, cam, mic);
   }

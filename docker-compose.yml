@@ -14,6 +14,9 @@ services:
     env_file:
       - path: .env
         required: false
+    # Classements du mot du jour (un fichier JSON par jour).
+    volumes:
+      - data:/app/data
 
   # Relais TURN de la visio, pour les joueurs derrière un NAT strict (4G, réseaux d'entreprise).
   # Désactivé par défaut : `COMPOSE_PROFILES=turn` dans .env l'active, une fois les ports ouverts.
@@ -30,6 +33,10 @@ services:
     entrypoint: ['sh', '-c', 'exec turnserver -c /etc/coturn/turnserver.conf --static-auth-secret="$$TURN_SECRET"']
     volumes:
       - ./deploy/turnserver.conf:/etc/coturn/turnserver.conf:ro
+
+volumes:
+  data:
+    name: julaika-data
 
 networks:
   frontend:

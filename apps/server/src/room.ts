@@ -1,26 +1,44 @@
 import {
   DEFAULT_SETTINGS,
   DrawOp,
+  INTRUS_MIN_PLAYERS,
   MAX_CALL,
   SETTINGS_LIMITS,
+  TRAPS,
+  TRAP_COLORS,
   checkGuess,
   decodeDraw,
   isDifficulty,
   isGameMode,
+  isTrapMode,
+  isSoundId,
   maskWord,
   parseMeetUrl,
+  normalize,
   type ChatLine,
   type ClientMsg,
   type Difficulty,
   type IceServer,
+  type IntrusPair,
   type Phase,
   type PlayerPublic,
+  type RoomGame,
   type RoomSettings,
   type RoomState,
   type ServerMsg,
+  type Trap,
   type TurnKind,
 } from '@julaika/shared';
-import type { WordGenerator } from './deepseek';
+import { Bombe } from './bombe';
+import { Connait } from './connait';
+import type { PairGenerator, WordGenerator } from './deepseek';
+import { Intrus } from './intrus';
+import { INTRUS_PAIRS } from './intrusPairs';
+import { PetitBac } from './petitbac';
+import { Photomaton } from './photomaton';
+import { Sourire } from './sourire';
+import { Telephone } from './telephone';
+import { Wavelength } from './wavelength';
 import { MIME_FR, WORDS_FR } from './words';
 
 export interface Conn {
@@ -41,7 +59,10 @@ interface Player {
 }
 
 export const CHOOSE_TIME = 15;
-export const TURN_END_TIME = 6;
+/** Fin de tour : le temps du mot révélé, du ralenti du dessin et des gains. */
+export const TURN_END_TIME = 8;
+/** Mode « parfois » : environ un tour sur trois est piégé. */
+export const TRAP_CHANCE = 0.35;
 export const GAME_END_TIME = 12;
 const MAX_STROKE_BYTES = 2_000_000;
 /** Mots demandés à l'IA par appel, et nombre de mots déjà proposés qu'on lui demande d'éviter. */
@@ -66,7 +87,24 @@ export class Room {
   word: string | null = null;
   endsAt: number | null = null;
   meetUrl = '';
+  /** Jeu du salon, fixé à sa création. */
+  game: RoomGame = 'dessin';
 
+  /** Piège du tour en cours (manches piégées du Dessin). */
+  trap: Trap | null = null;
+
+  private wave: Wavelength | null = null;
+  private tel: Telephone | null = null;
+  private intrus: Intrus | null = null;
+  // Paires de L'Intrus générées par l'IA, et mots déjà sortis dans ce salon.
+  private pairs: IntrusPair[] = [];
+  private pairing = false;
+  private usedPairs = new Set<string>();
+  private bac: PetitBac | null = null;
+  private connait: Connait | null = null;
+  private bomb: Bombe | null = null;
+  private photo: Photomaton | null = null;
+  private sourire: Sourire | null = null;
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -82,6 +120,7 @@ export class Room {
   };
   private generating = new Set<string>();
   private offered: string[] = [];
+  private lastTrap: Trap['kind'] | null = null;
 
   constructor(
     code: string,
@@ -89,6 +128,7 @@ export class Room {
     private readonly random: () => number = Math.random,
     private readonly iceServers: (playerId: string) => IceServer[] = () => [],
     private readonly generateWords: WordGenerator | null = null,
+    private readonly generatePairs: PairGenerator | null = null,
   ) {
     this.code = code;
   }
@@ -116,10 +156,15 @@ export class Room {
     this.sendTo(id, { t: 'welcome', selfId: id, state: this.stateFor(id), now: Date.now(), ice: this.iceServers(id) });
     for (const stroke of this.strokes) for (const packet of stroke) conn.send(packet);
     if (this.phase === 'choosing' && this.drawerId === id) this.sendTo(id, { t: 'choices', words: this.choices });
+    this.tel?.onJoin(id);
+    this.photo?.onJoin(id);
     this.system(`${player.name} a rejoint la partie.`);
     this.broadcastState(id);
     // Les mots sont commandés dès qu'une partie devient possible, pour être prêts au lancement.
-    if (this.players.size >= 2) this.refillWords();
+    if (this.players.size >= 2) {
+      this.refillWords();
+      this.refillPairs();
+    }
     return id;
   }
 
@@ -139,6 +184,18 @@ export class Room {
     if (this.phase !== 'lobby' && this.players.size < 2) {
       this.system('Pas assez de joueurs, retour au salon.');
       this.toLobby();
+      return;
+    }
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire) {
+      this.wave?.onLeave(id);
+      this.tel?.onLeave(id);
+      this.intrus?.onLeave(id);
+      this.bac?.onLeave(id);
+      this.connait?.onLeave(id);
+      this.bomb?.onLeave(id);
+      this.photo?.onLeave(id);
+      this.sourire?.onLeave(id);
+      this.broadcastState();
       return;
     }
     if (this.drawerId === id && (this.phase === 'choosing' || this.phase === 'drawing')) {
@@ -171,15 +228,45 @@ export class Room {
       case 'chat':
         this.chat(player, msg.text);
         break;
+      case 'wave':
+        if (msg && typeof msg === 'object') this.wave?.handle(id, msg);
+        break;
+      case 'tel':
+        if (msg && typeof msg === 'object') this.tel?.handle(id, msg);
+        break;
+      case 'intrus':
+        if (msg && typeof msg === 'object') this.intrus?.handle(id, msg);
+        break;
+      case 'bac':
+        if (msg && typeof msg === 'object') this.bac?.handle(id, msg);
+        break;
+      case 'connait':
+        if (msg && typeof msg === 'object') this.connait?.handle(id, msg);
+        break;
+      case 'bomb':
+        if (msg && typeof msg === 'object') this.bomb?.handle(id, msg);
+        break;
+      case 'photo':
+        if (msg && typeof msg === 'object') this.photo?.handle(id, msg);
+        break;
+      case 'sourire':
+        if (msg && typeof msg === 'object') this.sourire?.handle(id, msg);
+        break;
+      case 'sound':
+        // Boîte à sons, dans tous les jeux : l'émetteur l'a déjà joué chez lui.
+        if (isSoundId(msg.id)) this.broadcast({ t: 'sound', id: msg.id, by: id }, id);
+        break;
       case 'clear':
-        if (this.isDrawing(id)) {
+        if (this.tel) this.tel.clear(id);
+        else if (this.isDrawing(id)) {
           this.strokes = [];
           this.strokeBytes = 0;
           this.broadcast({ t: 'clear' }, id);
         }
         break;
       case 'undo':
-        if (this.isDrawing(id) && this.strokes.length) {
+        if (this.tel) this.tel.undo(id);
+        else if (this.isDrawing(id) && this.strokes.length) {
           const removed = this.strokes.pop()!;
           this.strokeBytes -= removed.reduce((n, p) => n + p.byteLength, 0);
           this.broadcast({ t: 'undo' }, id);
@@ -226,11 +313,14 @@ export class Room {
 
   /** Paquet de dessin binaire : validé, archivé puis relayé tel quel aux autres. */
   handleDraw(id: string, data: Uint8Array): void {
+    if (this.tel) return this.tel.draw(id, data);
     if (!this.isDrawing(id)) return;
     const packet = decodeDraw(data);
     if (!packet) return;
     if (this.strokeBytes + data.byteLength > MAX_STROKE_BYTES) return;
     const copy = new Uint8Array(data);
+    // Une seule couleur : tout ce qui n'est pas la gomme prend la couleur imposée.
+    if (this.trap?.kind === 'mono' && packet.color !== 0) copy[1] = this.trap.color;
     if (packet.op === DrawOp.Extend) {
       const last = this.strokes.at(-1);
       if (!last) return;
@@ -255,6 +345,14 @@ export class Room {
     }
     for (const p of this.players.values()) p.score = 0;
     this.round = 0;
+    if (this.game === 'wavelength') return this.startWave();
+    if (this.game === 'telephone') return this.startTel();
+    if (this.game === 'intrus') return this.startIntrus();
+    if (this.game === 'petitbac') return this.startBac();
+    if (this.game === 'connait') return this.startConnait();
+    if (this.game === 'bombe') return this.startBomb();
+    if (this.game === 'photomaton') return this.startPhoto();
+    if (this.game === 'sourire') return this.startSourire();
     this.usedWords.clear();
     this.nextRound();
   }
@@ -288,9 +386,10 @@ export class Room {
       p.turnGain = 0;
     }
     this.broadcast({ t: 'clear' });
-
     const { mode } = this.settings;
     this.turnKind = mode === 'mime' ? 'mime' : mode === 'mixte' && this.random() < 0.5 ? 'mime' : 'draw';
+    // Les manches piégées touchent le crayon : rien à piéger quand on mime.
+    this.trap = this.turnKind === 'draw' ? this.pickTrap() : null;
     this.phase = 'choosing';
     this.choices = this.pickWords(this.settings.wordChoices);
     this.endsAt = Date.now() + CHOOSE_TIME * 1000;
@@ -392,11 +491,233 @@ export class Room {
     this.after(TURN_END_TIME, () => this.nextTurn());
   }
 
+  private startWave(): void {
+    this.wave?.dispose();
+    this.wave = new Wavelength({
+      playerIds: () => [...this.players.keys()],
+      name: (id) => this.players.get(id)?.name ?? '?',
+      turnTime: () => this.settings.drawTime,
+      rounds: () => this.settings.rounds,
+      random: this.random,
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      broadcast: (msg, except) => this.broadcast(msg, except),
+      system: (text) => this.system(text),
+      endGame: () => this.endGame(),
+    });
+    this.wave.start();
+  }
+
+  private startTel(): void {
+    this.tel?.dispose();
+    this.tel = new Telephone({
+      playerIds: () => [...this.players.keys()],
+      player: (id) => this.players.get(id),
+      isHost: (id) => id === this.hostId,
+      drawTime: () => this.settings.drawTime,
+      random: this.random,
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      sendTo: (id, msg) => this.sendTo(id, msg),
+      system: (text) => this.system(text),
+      toLobby: () => this.toLobby(),
+    });
+    this.tel.start();
+  }
+
+  private startIntrus(): void {
+    if (this.players.size < INTRUS_MIN_PLAYERS) {
+      this.sendTo(this.hostId!, { t: 'error', message: `Il faut au moins ${INTRUS_MIN_PLAYERS} joueurs pour L'Intrus.` });
+      return;
+    }
+    this.intrus?.dispose();
+    this.intrus = new Intrus({
+      playerIds: () => [...this.players.keys()],
+      name: (id) => this.players.get(id)?.name ?? '?',
+      rounds: () => this.settings.rounds,
+      random: this.random,
+      nextPair: () => this.nextPair(),
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      error: (id, message) => this.sendTo(id, { t: 'error', message }),
+      system: (text) => this.system(text),
+      endGame: () => this.endGame(),
+      toLobby: () => this.toLobby(),
+    });
+    this.intrus.start();
+  }
+
+  /** Paire suivante : celles de l'IA d'abord, sinon la liste intégrée, jamais deux fois le même mot. */
+  private nextPair(): IntrusPair {
+    const fresh = (p: IntrusPair) => !this.usedPairs.has(normalize(p.civil)) && !this.usedPairs.has(normalize(p.intrus));
+    let pair = this.pairs.find(fresh);
+    if (pair) this.pairs = this.pairs.filter((p) => p !== pair);
+    else {
+      const pool = INTRUS_PAIRS.filter(fresh);
+      const from = pool.length ? pool : INTRUS_PAIRS;
+      pair = from[Math.floor(this.random() * from.length)]!;
+    }
+    this.usedPairs.add(normalize(pair.civil));
+    this.usedPairs.add(normalize(pair.intrus));
+    // Une fois sur deux, les rôles des deux mots s'inversent : « plage » n'est pas toujours aux civils.
+    const flip = this.random() < 0.5;
+    this.refillPairs();
+    return flip ? { civil: pair.intrus, intrus: pair.civil } : pair;
+  }
+
+  private refillPairs(): void {
+    if (this.game !== 'intrus' || !this.generatePairs || this.pairing || this.pairs.length >= 6) return;
+    this.pairing = true;
+    this.generatePairs(12, [...this.usedPairs].slice(-AVOID_MAX))
+      .then((pairs) => void (this.pairs = [...this.pairs, ...pairs]))
+      .catch(() => {}) // la liste intégrée prend le relais
+      .finally(() => (this.pairing = false));
+  }
+
+  private startBac(): void {
+    this.bac?.dispose();
+    this.bac = new PetitBac({
+      playerIds: () => [...this.players.keys()],
+      name: (id) => this.players.get(id)?.name ?? '?',
+      isHost: (id) => id === this.hostId,
+      fillTime: () => this.settings.drawTime,
+      rounds: () => this.settings.rounds,
+      random: this.random,
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      system: (text) => this.system(text),
+      endGame: () => this.endGame(),
+    });
+    this.bac.start();
+  }
+
+  private startConnait(): void {
+    this.connait?.dispose();
+    this.connait = new Connait({
+      playerIds: () => [...this.players.keys()],
+      player: (id) => this.players.get(id),
+      rounds: () => this.settings.rounds,
+      random: this.random,
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      system: (text) => this.system(text),
+      endGame: () => this.endGame(),
+    });
+    this.connait.start();
+  }
+
+  private startBomb(): void {
+    this.bomb?.dispose();
+    this.bomb = new Bombe({
+      playerIds: () => [...this.players.keys()],
+      name: (id) => this.players.get(id)?.name ?? '?',
+      lives: () => this.settings.rounds,
+      difficulty: () => this.settings.difficulty,
+      random: this.random,
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      broadcast: (msg, except) => this.broadcast(msg, except),
+      system: (text) => this.system(text),
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      endGame: () => this.endGame(),
+    });
+    this.bomb.start();
+  }
+
+  private startPhoto(): void {
+    this.photo?.dispose();
+    this.photo = new Photomaton({
+      playerIds: () => [...this.players.keys()],
+      player: (id) => this.players.get(id),
+      rounds: () => this.settings.rounds,
+      random: this.random,
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      broadcast: (msg, except) => this.broadcast(msg, except),
+      sendTo: (id, msg) => this.sendTo(id, msg),
+      system: (text) => this.system(text),
+      endGame: () => this.endGame(),
+    });
+    this.photo.start();
+  }
+
+  private startSourire(): void {
+    this.sourire?.dispose();
+    this.sourire = new Sourire({
+      playerIds: () => [...this.players.keys()],
+      player: (id) => this.players.get(id),
+      rounds: () => this.settings.rounds,
+      random: this.random,
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      broadcast: (msg, except) => this.broadcast(msg, except),
+      system: (text) => this.system(text),
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      endGame: () => this.endGame(),
+    });
+    this.sourire.start();
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
     this.drawerId = null;
     this.turnKind = 'draw';
+    this.trap = null;
     this.word = null;
     this.endsAt = Date.now() + GAME_END_TIME * 1000;
     const ranking = this.publicPlayers().sort((a, b) => b.score - a.score);
@@ -407,17 +728,44 @@ export class Room {
 
   private toLobby(): void {
     this.clearTimers();
+    this.wave?.dispose();
+    this.wave = null;
+    this.tel?.dispose();
+    this.tel = null;
+    this.intrus?.dispose();
+    this.intrus = null;
+    this.bac?.dispose();
+    this.bac = null;
+    this.connait?.dispose();
+    this.connait = null;
+    this.bomb?.dispose();
+    this.bomb = null;
+    this.photo?.dispose();
+    this.photo = null;
+    this.sourire?.dispose();
+    this.sourire = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
     this.turnKind = 'draw';
     this.word = null;
+    this.trap = null;
     this.endsAt = null;
     this.strokes = [];
     this.strokeBytes = 0;
     for (const p of this.players.values()) p.guessed = false;
     this.broadcast({ t: 'clear' });
     this.broadcastState();
+  }
+
+  /** Tire le piège du tour selon le réglage, sans retomber deux fois de suite sur le même. */
+  private pickTrap(): Trap | null {
+    const mode = this.settings.traps;
+    if (mode === 'jamais' || (mode === 'parfois' && this.random() >= TRAP_CHANCE)) return null;
+    const kinds = TRAPS.filter((k) => k !== this.lastTrap);
+    const kind = kinds[Math.floor(this.random() * kinds.length)] ?? TRAPS[0];
+    this.lastTrap = kind;
+    return { kind, color: TRAP_COLORS[Math.floor(this.random() * TRAP_COLORS.length)] ?? 12 };
   }
 
   private pickWords(n: number): string[] {
@@ -452,7 +800,7 @@ export class Room {
   /** Recommande des mots à l'IA quand le stock de la difficulté choisie descend sous trois tours. */
   private refillWords(): void {
     const { difficulty, customOnly, customWords, wordChoices } = this.settings;
-    if (!this.generateWords) return;
+    if (!this.generateWords || this.game !== 'dessin') return;
     if (customOnly && customWords.length >= wordChoices) return;
     for (const kind of this.turnKinds()) {
       const key = `${kind}:${difficulty}`;
@@ -494,6 +842,7 @@ export class Room {
     }
     return {
       code: this.code,
+      game: this.game,
       phase: this.phase,
       settings: this.settings,
       players: this.publicPlayers(),
@@ -502,7 +851,16 @@ export class Room {
       round: this.round,
       endsAt: this.endsAt,
       hint,
+      trap: this.trap,
       meetUrl: this.meetUrl,
+      wave: this.wave?.stateFor(id) ?? null,
+      tel: this.tel?.state() ?? null,
+      intrus: this.intrus?.stateFor(id) ?? null,
+      bac: this.bac?.state() ?? null,
+      connait: this.connait?.stateFor(id) ?? null,
+      bomb: this.bomb?.state() ?? null,
+      photo: this.photo?.state() ?? null,
+      sourire: this.sourire?.stateFor(id) ?? null,
     };
   }
 
@@ -538,6 +896,14 @@ export class Room {
 
   dispose(): void {
     this.clearTimers();
+    this.wave?.dispose();
+    this.tel?.dispose();
+    this.intrus?.dispose();
+    this.bac?.dispose();
+    this.connait?.dispose();
+    this.bomb?.dispose();
+    this.photo?.dispose();
+    this.sourire?.dispose();
   }
 }
 
@@ -561,5 +927,6 @@ function mergeSettings(cur: RoomSettings, patch: Partial<RoomSettings>): RoomSet
   if (typeof patch.customOnly === 'boolean') next.customOnly = patch.customOnly;
   if (isDifficulty(patch.difficulty)) next.difficulty = patch.difficulty;
   if (isGameMode(patch.mode)) next.mode = patch.mode;
+  if (isTrapMode(patch.traps)) next.traps = patch.traps;
   return next;
 }

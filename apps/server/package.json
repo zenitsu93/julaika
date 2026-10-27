@@ -8,6 +8,7 @@
     "build": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node20 --external:ws --outfile=dist/index.js"
   },
   "dependencies": {
+    "an-array-of-french-words": "2.0.0",
     "ws": "^8.18.3"
   },
   "devDependencies": {

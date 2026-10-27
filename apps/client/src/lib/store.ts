@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { ChatLine, PlayerPublic, RoomState } from '@julaika/shared';
+import type { BombEvent, ChatLine, PhotoShot, PlayerPublic, RoomState, TelChain, TelEntry } from '@julaika/shared';
 
 export interface GameState {
   status: 'idle' | 'connecting' | 'online' | 'closed';
@@ -10,6 +10,17 @@ export interface GameState {
   turnEnd: { word: string; gains: Record<string, number> } | null;
   ranking: PlayerPublic[] | null;
   error: string | null;
+  /** Aiguille de Wavelength, tenue à part pour ne re-rendre que le cadran à chaque mouvement. */
+  dial: number | null;
+  /** Téléphone dessiné : ce qu'on a reçu à dessiner ou décrire, et l'album une fois révélé. */
+  telPrompt: { step: number; prompt: TelEntry | null } | null;
+  album: TelChain[] | null;
+  /** Bombe à mots : ce que tape celui qui tient la bombe, et le dernier événement (numéroté pour rejouer l'animation). */
+  bombTyping: { by: string; text: string } | null;
+  bombEvent: (BombEvent & { seq: number }) | null;
+  /** Photomaton : les polaroids de la manche, et la meilleure photo de chaque manche pour la fin. */
+  photos: { round: number; shots: PhotoShot[] } | null;
+  reel: { round: number; prompt: string; shot: PhotoShot }[];
   /** Décalage horloge serveur - horloge locale (ms). */
   clockOffset: number;
 }
@@ -23,6 +34,13 @@ const initial: GameState = {
   turnEnd: null,
   ranking: null,
   error: null,
+  dial: null,
+  telPrompt: null,
+  album: null,
+  bombTyping: null,
+  bombEvent: null,
+  photos: null,
+  reel: [],
   clockOffset: 0,
 };
 

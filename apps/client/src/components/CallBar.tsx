@@ -16,7 +16,7 @@ function Level({ on }: { on: boolean }) {
   );
 }
 
-function Tile({ player, stream, self, drawing, mime }: { player: PlayerPublic; stream: MediaStream | null; self: boolean; drawing: boolean; mime: boolean }) {
+function Tile({ player, stream, self, drawing, psychic, mime }: { player: PlayerPublic; stream: MediaStream | null; self: boolean; drawing: boolean; psychic: boolean; mime: boolean }) {
   const video = useRef<HTMLVideoElement>(null);
   const speaking = useSpeaking(stream, player.mic);
   useEffect(() => {
@@ -40,7 +40,7 @@ function Tile({ player, stream, self, drawing, mime }: { player: PlayerPublic; s
       />
       {!player.cam && <span className="absolute inset-0 grid place-items-center text-3xl">{avatarOf(player.avatar)}</span>}
       <span className="absolute left-1.5 top-1.5 flex gap-1 font-mono text-[10px] font-semibold">
-        {drawing && <span className="m-pop rounded-full bg-accent px-1.5 text-[#18181b]">{mime ? '🎭 mime' : '✏️ dessine'}</span>}
+        {drawing && <span className="m-pop rounded-full bg-accent px-1.5 text-[#18181b]">{psychic ? '🔮 télépathe' : mime ? '🎭 mime' : '✏️ dessine'}</span>}
         {player.guessed && <span className="m-pop rounded-full bg-good px-1.5 text-white">✓ trouvé</span>}
       </span>
       <figcaption className="absolute inset-x-1.5 bottom-1.5 flex">
@@ -59,7 +59,9 @@ const dockBtn = 'grid size-8 place-items-center rounded-full text-sm transition 
 export function CallBar() {
   const view = useCall();
   const players = useGame((s) => s.room!.players);
-  const drawerId = useGame((s) => s.room!.drawerId);
+  // Dessin : qui dessine ; Wavelength : qui est télépathe.
+  const psychicId = useGame((s) => s.room!.wave?.psychicId ?? null);
+  const drawerId = useGame((s) => s.room!.drawerId) ?? psychicId;
   const mime = useGame((s) => s.room!.turnKind === 'mime');
   const selfId = useGame((s) => s.selfId);
   const inCall = players.filter((p) => p.inCall);
@@ -100,6 +102,7 @@ export function CallBar() {
             player={p}
             self={p.id === selfId}
             drawing={p.id === drawerId}
+            psychic={p.id === psychicId}
             mime={mime}
             stream={p.id === selfId ? view.local : (view.remotes[p.id] ?? null)}
           />

@@ -282,6 +282,188 @@
     opacity 0.15s;
 }
 
+/* Accueil des jeux, tenue « Cacao » : le dessin dans un écrin chocolat, un liseré doré
+   qui fait le tour de la carte survolée et un reflet qui balaie l'écrin. */
+@property --hub-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+.hub-card {
+  transition:
+    translate 0.35s var(--ease-out),
+    box-shadow 0.35s,
+    border-color 0.3s;
+}
+.hub-card:not(.soon-card):hover {
+  translate: 0 -5px;
+  box-shadow: 0 30px 50px -30px rgb(43 26 18 / 0.7);
+}
+.hub-card:not(.soon-card):active {
+  scale: 0.98;
+}
+.hub-card::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1.5px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s;
+  background: conic-gradient(
+    from var(--hub-angle),
+    transparent 0 72%,
+    color-mix(in srgb, var(--color-gold) 40%, transparent) 82%,
+    var(--color-gold) 92%,
+    #fff3d0 96%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  animation: hub-beam 3.2s linear infinite;
+}
+.hub-card:not(.soon-card):hover::after,
+.hub-card:focus-visible::after,
+.hub-feat::after {
+  opacity: 1;
+}
+@keyframes hub-beam {
+  to {
+    --hub-angle: 360deg;
+  }
+}
+.hub-panel {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(155deg, var(--color-cacao-2), var(--color-cacao) 70%);
+}
+.hub-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgb(255 240 210 / 0.22) 48%, transparent 62%);
+  translate: -120%;
+}
+.hub-card:hover .hub-panel::after {
+  translate: 120%;
+  transition: translate 0.9s ease;
+}
+.soon-card .hub-panel {
+  background: transparent;
+  border: 1px dashed var(--color-edge);
+}
+/* Flèche « jouer » qui glisse en place au survol. */
+.hub-go {
+  position: absolute;
+  right: 1.125rem;
+  bottom: 1.25rem;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  opacity: 0;
+  translate: -8px 0;
+  scale: 0.8;
+  transition:
+    opacity 0.3s,
+    translate 0.35s var(--ease-out),
+    scale 0.35s var(--ease-out);
+}
+.hub-card:hover .hub-go,
+.hub-card:focus-visible .hub-go {
+  opacity: 1;
+  translate: 0;
+  scale: 1;
+}
+/* Lueur chocolat et or qui dérive lentement derrière le titre. */
+.hub-aurora {
+  position: absolute;
+  inset: -140px 0 auto;
+  height: 560px;
+  z-index: -1;
+  pointer-events: none;
+  filter: blur(70px);
+  opacity: 0.45;
+}
+.hub-aurora i {
+  position: absolute;
+  border-radius: 50%;
+  animation: hub-drift 14s ease-in-out infinite alternate;
+}
+.hub-aurora i:first-child {
+  width: min(420px, 70vw);
+  height: 300px;
+  left: 18%;
+  top: 80px;
+  background: color-mix(in srgb, var(--color-gold) 60%, transparent);
+}
+.hub-aurora i:last-child {
+  width: min(480px, 80vw);
+  height: 320px;
+  right: 12%;
+  top: 40px;
+  background: var(--color-butter);
+  animation-delay: -6s;
+}
+@keyframes hub-drift {
+  to {
+    transform: translate(60px, 30px) scale(1.15);
+  }
+}
+@media (prefers-color-scheme: dark) {
+  .hub-aurora {
+    opacity: 0.6;
+  }
+  .hub-aurora i:last-child {
+    background: var(--color-cacao-2);
+  }
+}
+@keyframes m-draw-loop {
+  0% {
+    stroke-dashoffset: 1;
+  }
+  55%,
+  85% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -1;
+  }
+}
+.m-draw {
+  stroke-dasharray: 1;
+  animation: m-draw-loop 3s cubic-bezier(0.6, 0, 0.2, 1) infinite;
+}
+@keyframes m-wave {
+  50% {
+    transform: rotate(14deg);
+  }
+}
+.m-wave {
+  transform-origin: 50% 90%;
+  transform-box: fill-box;
+  transform: rotate(-14deg);
+  animation: m-wave 1.4s ease-in-out infinite;
+}
+@keyframes m-float {
+  50% {
+    transform: translateZ(40px) translateY(-6px);
+  }
+}
+.m-float {
+  animation: m-float 4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -296,5 +478,1190 @@
   }
   .m-level.on > i {
     height: 100%;
+  }
+  .m-draw {
+    animation: none;
+  }
+  .w-boom-fx {
+    display: none;
+  }
+}
+
+/* Wavelength ---------------------------------------------------------------------------- */
+
+/* Carte de l'accueil : l'aiguille hésite autour de la cible. */
+@keyframes m-needle {
+  0%,
+  100% {
+    transform: rotate(-38deg);
+  }
+  45% {
+    transform: rotate(6deg);
+  }
+  70% {
+    transform: rotate(-4deg);
+  }
+}
+.m-needle {
+  animation: m-needle 3.2s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+
+/* Volet du cadran : il balaie le demi-disque pour dévoiler la cible. */
+.w-shutter {
+  transform-box: view-box;
+  transition: transform 0.9s cubic-bezier(0.65, 0, 0.25, 1);
+}
+/* Zones de points : elles s'ouvrent en éventail depuis la cible. */
+@keyframes w-fan {
+  from {
+    transform: rotate(var(--w-from, 0deg)) scale(0.6);
+    opacity: 0;
+  }
+}
+.w-fan {
+  transform-box: view-box;
+  animation: w-fan 0.5s var(--ease-spring) backwards;
+}
+/* Poignée de l'aiguille : un halo respire quand c'est à toi de la placer. */
+@keyframes w-halo {
+  from {
+    r: 14;
+    opacity: 0.45;
+  }
+  to {
+    r: 26;
+    opacity: 0;
+  }
+}
+.w-halo {
+  animation: w-halo 1.6s ease-out infinite;
+}
+/* Indice qui arrive : les mots tombent un à un. */
+.w-word {
+  display: inline-block;
+  animation: m-drop 0.42s var(--ease-out) backwards;
+}
+/* Points du tour : le badge claque puis se pose. */
+@keyframes w-stamp {
+  0% {
+    transform: scale(2.2) rotate(-8deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.94) rotate(2deg);
+    opacity: 1;
+  }
+}
+.w-stamp {
+  animation: w-stamp 0.5s var(--ease-out) backwards;
+}
+
+/* Explosion du cadran (écart au-delà de 25 %) : tout part à BOOM_AT (Dial.tsx), un peu après
+   l'ouverture du volet. Le vrai cadran s'efface, ses éclats volent, retombent, puis il se recompose. */
+@keyframes w-crumble {
+  0% {
+    transform: none;
+    opacity: 1;
+  }
+  4% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+  10%,
+  62% {
+    transform: scale(0.82);
+    opacity: 0;
+  }
+  82% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+.w-crumble {
+  transform-box: view-box;
+  animation: w-crumble 2.2s var(--ease-out) backwards;
+}
+@keyframes w-shard {
+  0% {
+    transform: none;
+    opacity: 0;
+  }
+  1% {
+    opacity: 1;
+  }
+  45% {
+    transform: translate(var(--dx), var(--dy)) rotate(var(--rot));
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(var(--dx) * 1.15), calc(var(--dy) + 140px)) rotate(calc(var(--rot) * 1.6));
+    opacity: 0;
+  }
+}
+.w-shard {
+  transform-box: view-box;
+  animation: w-shard 1.25s cubic-bezier(0.15, 0.7, 0.4, 1) both;
+}
+@keyframes w-spark {
+  0% {
+    transform: none;
+    opacity: 0;
+  }
+  1% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) scale(0.2);
+    opacity: 0;
+  }
+}
+.w-spark {
+  transform-box: view-box;
+  animation: w-spark 0.7s var(--ease-out) both;
+}
+@keyframes w-flash {
+  0% {
+    transform: scale(0.1);
+    opacity: 0;
+  }
+  15% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+.w-flash {
+  transform-box: view-box;
+  animation: w-flash 0.6s ease-out both;
+}
+@keyframes w-ring {
+  0% {
+    transform: scale(0.2);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(3.4);
+    opacity: 0;
+  }
+}
+.w-ring {
+  transform-box: view-box;
+  animation: w-ring 0.7s ease-out both;
+}
+@keyframes w-smoke {
+  0% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: scale(1.8) translateY(-24px);
+    opacity: 0;
+  }
+}
+.w-smoke {
+  transform-box: view-box;
+  animation: w-smoke 1.4s ease-out both;
+}
+/* « BOUM ! » façon bande dessinée : il claque, tremble, puis s'envole. */
+@keyframes w-boom-word {
+  0% {
+    transform: scale(0.2) rotate(-12deg);
+    opacity: 0;
+  }
+  18% {
+    transform: scale(1.25) rotate(-6deg);
+    opacity: 1;
+  }
+  28% {
+    transform: scale(1) rotate(-8deg);
+  }
+  34% {
+    transform: scale(1) rotate(-5deg);
+  }
+  75% {
+    transform: scale(1) rotate(-7deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.4) translateY(-20px) rotate(-7deg);
+    opacity: 0;
+  }
+}
+.w-boom-word {
+  transform-box: view-box;
+  font-size: 54px;
+  fill: #f5b700;
+  stroke: #18181b;
+  stroke-width: 6px;
+  paint-order: stroke;
+  letter-spacing: -0.02em;
+  animation: w-boom-word 1.5s var(--ease-out) both;
+}
+/* La carte du plateau tremble fort au moment du boum. */
+@keyframes w-quake {
+  0%,
+  100% {
+    transform: none;
+  }
+  10% {
+    transform: translate(-7px, 3px) rotate(-0.6deg);
+  }
+  25% {
+    transform: translate(6px, -4px) rotate(0.5deg);
+  }
+  40% {
+    transform: translate(-5px, 2px);
+  }
+  55% {
+    transform: translate(4px, -1px);
+  }
+  75% {
+    transform: translate(-2px, 1px);
+  }
+}
+.w-quake {
+  animation: w-quake 0.5s linear;
+}
+/* Écart à la cible sous le verdict. */
+.w-gap {
+  animation: m-rise 0.35s 1.05s var(--ease-out) backwards;
+}
+
+/* Cartes « Bientôt » de l'accueil ------------------------------------------------------- */
+
+@keyframes soon-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  30% {
+    transform: translateY(-8px) rotate(-6deg);
+  }
+  60% {
+    transform: translateY(0) rotate(5deg);
+  }
+}
+.soon-bob {
+  animation: soon-bob 2.4s ease-in-out infinite;
+}
+@keyframes soon-pulse {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.soon-pulse {
+  animation: soon-pulse 1.2s ease-in-out infinite;
+}
+@keyframes soon-spin {
+  0%,
+  60% {
+    transform: rotateY(0);
+  }
+  80%,
+  100% {
+    transform: rotateY(360deg);
+  }
+}
+.soon-spin {
+  transform-box: view-box;
+  animation: soon-spin 3s cubic-bezier(0.6, 0, 0.2, 1) infinite;
+}
+@keyframes soon-note {
+  0% {
+    transform: translate(0, 0) rotate(0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(26px, -70px) rotate(18deg);
+    opacity: 0;
+  }
+}
+.soon-note {
+  animation: soon-note 1.8s ease-out infinite backwards;
+}
+@keyframes soon-beat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.12);
+  }
+  30% {
+    transform: scale(0.98);
+  }
+  45% {
+    transform: scale(1.08);
+  }
+}
+.soon-beat {
+  transform-box: view-box;
+  animation: soon-beat 1.6s ease-in-out infinite;
+}
+@keyframes soon-flip {
+  0%,
+  70%,
+  100% {
+    transform: scaleX(1);
+    fill: transparent;
+  }
+  78% {
+    transform: scaleX(0);
+  }
+  86%,
+  96% {
+    transform: scaleX(1);
+    fill: var(--color-gold);
+  }
+}
+.soon-flip {
+  transform-box: view-box;
+  animation: soon-flip 2.4s ease-in-out infinite backwards;
+}
+
+/* Mot du jour --------------------------------------------------------------------------- */
+
+/* Carte de l'accueil : les cases se retournent une à une. */
+@keyframes mot-art {
+  0%,
+  20% {
+    transform: rotateX(0);
+    background: transparent;
+  }
+  30% {
+    transform: rotateX(90deg);
+    background: transparent;
+  }
+  31%,
+  85% {
+    background: var(--color-gold);
+    border-color: var(--color-gold);
+    color: var(--color-cacao);
+  }
+  40%,
+  85% {
+    transform: rotateX(0);
+  }
+  100% {
+    background: transparent;
+  }
+}
+.mot-art {
+  animation: mot-art 4s ease-in-out infinite backwards;
+}
+
+/* Lettre tapée : la case claque. */
+@keyframes mot-type {
+  50% {
+    transform: scale(1.12);
+  }
+}
+.mot-type {
+  animation: mot-type 0.14s ease-out;
+}
+/* Essai validé : la case se retourne et prend sa couleur à mi-course (sur la tranche). */
+@keyframes mot-flip {
+  0% {
+    transform: rotateX(0);
+  }
+  50% {
+    transform: rotateX(90deg);
+  }
+  100% {
+    transform: rotateX(0);
+  }
+}
+@keyframes mot-paint {
+  0% {
+    background-color: var(--color-surface);
+    border-color: var(--color-muted);
+    color: var(--color-ink);
+    animation-timing-function: step-end;
+  }
+  50% {
+    background-color: var(--c);
+    border-color: var(--c);
+  }
+}
+.mot-reveal {
+  animation:
+    mot-flip 0.5s ease-in-out both,
+    mot-paint 0.5s both;
+}
+/* Mot trouvé : la rangée saute, case après case. */
+@keyframes mot-hop {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-22px);
+  }
+  60% {
+    transform: translateY(2px);
+  }
+}
+.mot-hop {
+  animation: mot-hop 0.5s cubic-bezier(0.3, 0, 0.3, 1) both;
+}
+/* Touche du clavier qui reçoit sa couleur. */
+@keyframes mot-key {
+  from {
+    background-color: var(--color-edge);
+    color: var(--color-ink);
+  }
+}
+.mot-key {
+  animation: mot-key 0.3s ease-out backwards;
+}
+/* Changement de jour dans le classement : le titre glisse depuis le côté de la flèche. */
+@keyframes mot-from-left {
+  from {
+    transform: translateX(-40%);
+    opacity: 0;
+  }
+}
+@keyframes mot-from-right {
+  from {
+    transform: translateX(40%);
+    opacity: 0;
+  }
+}
+.mot-from-left {
+  animation: mot-from-left 0.28s var(--ease-out) backwards;
+}
+.mot-from-right {
+  animation: mot-from-right 0.28s var(--ease-out) backwards;
+}
+
+/* Téléphone dessiné --------------------------------------------------------------------- */
+
+/* Carte de l'accueil : la phrase, le dessin puis la question arrivent tour à tour, en boucle. */
+@keyframes tel-art {
+  0% {
+    transform: scale(0.6) translateY(10px);
+    opacity: 0;
+  }
+  12%,
+  80% {
+    transform: none;
+    opacity: 1;
+  }
+  92%,
+  100% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+}
+.tel-art {
+  display: inline-block;
+  transform-box: view-box;
+  animation: tel-art 4.2s var(--ease-spring) infinite backwards;
+}
+/* Le dessin reçu se pose comme une carte qu'on retourne. */
+@keyframes tel-card {
+  from {
+    transform: perspective(900px) rotateY(-70deg) scale(0.9);
+    opacity: 0;
+  }
+}
+.tel-card {
+  animation: tel-card 0.55s var(--ease-out) backwards;
+}
+/* La feuille à dessiner glisse en place sous la phrase. */
+@keyframes tel-sheet {
+  from {
+    transform: translateY(24px) rotate(-1.5deg);
+    opacity: 0;
+  }
+}
+.tel-sheet {
+  animation: tel-sheet 0.45s 0.15s var(--ease-spring) backwards;
+}
+/* Coche « envoyé » qui se trace. */
+.tel-check {
+  animation: m-pop 0.3s var(--ease-spring) backwards;
+}
+.tel-check path {
+  stroke-dasharray: 1;
+  animation: m-stroke 0.4s 0.15s ease-out backwards;
+}
+/* Pages de l'album : elles arrivent du côté de leur bulle. */
+@keyframes tel-from-left {
+  from {
+    transform: translateX(-28px) scale(0.96);
+    opacity: 0;
+  }
+}
+@keyframes tel-from-right {
+  from {
+    transform: translateX(28px) scale(0.96);
+    opacity: 0;
+  }
+}
+.tel-from-left {
+  animation: tel-from-left 0.42s var(--ease-spring) backwards;
+}
+.tel-from-right {
+  animation: tel-from-right 0.42s var(--ease-spring) backwards;
+}
+.tel-seen {
+  animation: none;
+}
+
+/* Lecture à voix haute de l'album ------------------------------------------------------- */
+
+/* Mot en cours de lecture : un surligneur jaune passe dessous, de gauche à droite. */
+.tel-word {
+  background: linear-gradient(color-mix(in srgb, var(--color-accent) 55%, transparent), color-mix(in srgb, var(--color-accent) 55%, transparent)) no-repeat 0 92% / 0 48%;
+  border-radius: 3px;
+  transition: background-size 0.25s var(--ease-out);
+}
+.tel-said {
+  background-size: 100% 48%;
+}
+/* Bouton voix : les ondes s'allument une à une, battent pendant la lecture, la croix
+   remplace les ondes quand on coupe. */
+.tel-voice .tel-wave,
+.tel-voice .tel-mute {
+  transition:
+    opacity 0.25s,
+    transform 0.35s var(--ease-spring);
+  transform-box: fill-box;
+  transform-origin: left center;
+}
+.tel-voice .tel-wave-2 {
+  transition-delay: 0.06s;
+}
+.tel-voice[aria-pressed='false'] .tel-wave {
+  opacity: 0;
+  transform: scale(0.4);
+}
+.tel-voice .tel-mute {
+  transform-origin: center;
+}
+.tel-voice[aria-pressed='true'] .tel-mute {
+  opacity: 0;
+  transform: scale(0.3) rotate(-45deg);
+}
+@keyframes tel-wave {
+  0%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+  50% {
+    opacity: 0.35;
+    transform: translateX(1.5px) scale(1.12);
+  }
+}
+.tel-voice.is-speaking .tel-wave {
+  animation: tel-wave 0.9s ease-in-out infinite;
+}
+.tel-voice.is-speaking .tel-wave-2 {
+  animation-delay: 0.18s;
+}
+/* Un halo s'échappe du bouton tant que le narrateur parle. */
+.tel-voice.is-speaking::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  animation: tel-voice-ring 1.4s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes tel-voice-ring {
+  from {
+    box-shadow: 0 0 0 0 rgb(124 58 237 / 0.45);
+  }
+  to {
+    box-shadow: 0 0 0 9px rgb(124 58 237 / 0);
+  }
+}
+
+/* L'Intrus ------------------------------------------------------------------------------ */
+
+/* Accueil : la loupe passe sur chaque silhouette et s'arrête sur l'intrus. */
+@keyframes intrus-lens {
+  0%,
+  10% {
+    transform: translateX(-140px);
+  }
+  25%,
+  35% {
+    transform: translateX(-94px);
+  }
+  50%,
+  60% {
+    transform: translateX(-48px);
+  }
+  75%,
+  100% {
+    transform: translateX(0);
+  }
+}
+.intrus-lens {
+  animation: intrus-lens 4.4s cubic-bezier(0.65, 0, 0.25, 1) infinite;
+}
+/* La silhouette sous la loupe se redresse un instant. */
+@keyframes intrus-head {
+  0%,
+  14%,
+  100% {
+    transform: none;
+  }
+  6% {
+    transform: translateY(-5px) scaleY(1.04);
+  }
+}
+.intrus-head {
+  transform-box: view-box;
+  animation: intrus-head 4.4s ease-in-out infinite;
+}
+
+/* Carte du mot : distribuée face cachée, elle se retourne ; un clic la recache. */
+.i-card {
+  perspective: 900px;
+}
+.i-card-inner {
+  transform-style: preserve-3d;
+  transition: transform 0.7s var(--ease-spring);
+}
+.i-card[data-hidden='true'] .i-card-inner {
+  transform: rotateY(180deg);
+}
+.i-face {
+  backface-visibility: hidden;
+}
+.i-back {
+  transform: rotateY(180deg);
+}
+@keyframes i-deal {
+  from {
+    transform: translate(-30px, -24px) rotate(-10deg) scale(0.85);
+    opacity: 0;
+  }
+}
+.i-deal {
+  animation: i-deal 0.55s var(--ease-spring) backwards;
+}
+/* Siège de qui parle : un halo jaune respire autour de la carte. */
+@keyframes i-spot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px var(--color-accent), 0 0 0 6px color-mix(in srgb, var(--color-accent) 18%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 2px var(--color-accent), 0 0 0 12px transparent;
+  }
+}
+.i-spot {
+  animation: i-spot 1.6s ease-in-out infinite;
+}
+/* Bulletin de vote qui tombe dans l'urne (pastille « a voté »). */
+@keyframes i-ballot {
+  0% {
+    transform: translateY(-14px) rotate(-12deg);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(2px) rotate(3deg);
+    opacity: 1;
+  }
+}
+.i-ballot {
+  animation: i-ballot 0.45s var(--ease-out) backwards;
+}
+/* Révélation : la carte du joueur se retourne pour montrer son mot. */
+@keyframes i-turn {
+  0% {
+    transform: perspective(700px) rotateY(90deg);
+  }
+}
+.i-turn {
+  animation: i-turn 0.6s var(--ease-spring) backwards;
+}
+
+/* Petit Bac ------------------------------------------------------------------------------ */
+
+/* Carte de l'accueil : le tampon « Stop ! » claque une fois les cases remplies, en boucle. */
+@keyframes bac-art-stamp {
+  0%,
+  58% {
+    transform: scale(2.2) rotate(-12deg);
+    opacity: 0;
+  }
+  68% {
+    transform: scale(0.92) rotate(-4deg);
+    opacity: 1;
+  }
+  74%,
+  92% {
+    transform: rotate(-6deg);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(-6deg);
+    opacity: 0;
+  }
+}
+.bac-art-stamp {
+  transform-box: view-box;
+  animation: bac-art-stamp 3s var(--ease-out) infinite;
+}
+/* Bouton « Stop ! » prêt : un reflet fait le tour de la bordure. */
+@keyframes bac-orbit {
+  to {
+    transform: rotate(1turn);
+  }
+}
+.bac-stop {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.bac-stop::before {
+  content: '';
+  position: absolute;
+  inset: -150% -10%;
+  z-index: -2;
+  background: conic-gradient(from 0deg, transparent 0 62%, var(--color-gold) 76%, #fff 82%, transparent 92%);
+  animation: bac-orbit 2.4s linear infinite;
+}
+.bac-stop::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--color-bad);
+}
+/* Grand tampon « Stop ! » au milieu de la grille. */
+@keyframes bac-stamp {
+  0% {
+    transform: scale(2.6) rotate(-14deg);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(0.94) rotate(-5deg);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(-7deg);
+    opacity: 1;
+  }
+}
+.bac-stamp {
+  animation: bac-stamp 0.5s var(--ease-out) both;
+}
+/* Case juste remplie : une coche se trace. */
+.bac-ok path {
+  stroke-dasharray: 1;
+  animation: m-stroke 0.32s ease-out backwards;
+}
+/* Barres et anneaux de progression : ils glissent vers leur nouvelle valeur. */
+.bac-bar {
+  transform-origin: left;
+  transition: transform 0.45s var(--ease-out);
+}
+.bac-ring {
+  transition: stroke-dashoffset 0.45s var(--ease-out);
+}
+/* Décompte : chaque pastille de points tombe dans sa case, colonne après colonne. */
+@keyframes bac-pip {
+  from {
+    transform: translateY(-10px) scale(0.6);
+    opacity: 0;
+  }
+}
+.bac-pip {
+  animation: bac-pip 0.36s var(--ease-spring) backwards;
+}
+/* Temps avant la manche suivante : la barre se vide. */
+@keyframes bac-drain {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Manches piégées du Dessin ------------------------------------------------------------- */
+
+/* Le tampon s'écrase en tournant, rebondit, tient deux secondes puis file vers le coin. */
+@keyframes t-stamp-in {
+  0% {
+    transform: scale(1.9) rotate(-14deg);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(0.95) rotate(-3deg);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(1.03) rotate(-4.5deg);
+  }
+  100% {
+    transform: scale(1) rotate(-4deg);
+  }
+}
+@keyframes t-stamp-out {
+  to {
+    transform: translate(-38%, -42%) scale(0.25) rotate(0deg);
+    opacity: 0;
+  }
+}
+.t-stamp {
+  transform: rotate(-4deg);
+  animation:
+    t-stamp-in 0.55s var(--ease-out) backwards,
+    t-stamp-out 0.45s 2.7s cubic-bezier(0.6, 0, 0.8, 0.4) forwards;
+}
+/* Onde de choc à l'impact. */
+@keyframes t-ring {
+  from {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+.t-ring {
+  opacity: 0;
+  animation: t-ring 0.6s 0.28s ease-out;
+}
+/* Le voile assombrit brièvement le tableau pendant l'annonce. */
+@keyframes t-dim {
+  0%,
+  100% {
+    background: transparent;
+  }
+  15%,
+  80% {
+    background: color-mix(in srgb, var(--color-page) 45%, transparent);
+  }
+}
+.t-stamp-wrap {
+  animation: t-dim 3.15s ease-out forwards;
+}
+@keyframes t-icon {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(-12deg) scale(1.1);
+  }
+  60% {
+    transform: rotate(8deg);
+  }
+}
+.t-icon {
+  display: inline-block;
+  animation: t-icon 0.7s 0.5s ease-in-out;
+}
+/* La pastille arrive au moment où le tampon s'envole, puis l'icône frétille de temps en temps. */
+@keyframes t-badge-in {
+  from {
+    transform: translate(-6px, -6px) scale(0.6);
+    opacity: 0;
+  }
+}
+.t-badge {
+  animation: t-badge-in 0.38s 2.95s var(--ease-spring) backwards;
+}
+@keyframes t-badge-icon {
+  0%,
+  88%,
+  100% {
+    transform: none;
+  }
+  92% {
+    transform: rotate(-14deg);
+  }
+  96% {
+    transform: rotate(10deg);
+  }
+}
+.t-badge-icon {
+  display: inline-block;
+  animation: t-badge-icon 4s 3.4s ease-in-out infinite;
+}
+
+/* Choix du mot : la carte du piège se retourne pour se dévoiler. */
+@keyframes t-flip {
+  from {
+    transform: perspective(600px) rotateX(-90deg);
+    opacity: 0;
+  }
+  60% {
+    transform: perspective(600px) rotateX(12deg);
+    opacity: 1;
+  }
+}
+.t-flip {
+  transform-origin: 50% 0;
+  animation: t-flip 0.6s 0.15s var(--ease-out) backwards;
+}
+
+/* Pinceau farceur : la pastille de couleur tourne comme un dé. */
+@keyframes t-dice {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.t-dice {
+  background: conic-gradient(#ef130b, #ff7100, #ffe400, #00cc00, #00b2ff, #231fd3, #a300ba, #ef130b);
+  animation: t-dice 2.4s linear infinite;
+}
+
+/* Ralenti de fin de tour : la barre avance au rythme du dessin, le voyant clignote. */
+@keyframes t-progress {
+  from {
+    transform: scaleX(0);
+  }
+}
+.t-progress {
+  transform-origin: 0 50%;
+  animation: t-progress var(--t-replay, 4s) linear backwards;
+}
+@keyframes t-rec {
+  50% {
+    opacity: 0.25;
+  }
+}
+.t-rec {
+  animation: t-rec 1s steps(1) infinite;
+}
+@keyframes t-frame-in {
+  from {
+    transform: translateY(10px) rotate(-2deg) scale(0.94);
+    opacity: 0;
+  }
+}
+.t-frame {
+  animation: t-frame-in 0.5s 0.1s var(--ease-spring) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-stamp-wrap,
+  .t-stamp {
+    display: none;
+  }
+  .t-dice,
+  .t-badge-icon,
+  .t-rec {
+    animation: none;
+  }
+}
+
+/* Boîte à sons -------------------------------------------------------------------------- */
+
+/* Popover : il se déplie depuis le bouton (origine posée en JS), et se replie en partant. */
+@keyframes sb-pop-in {
+  from {
+    transform: translateY(-6px) scale(0.9);
+    opacity: 0;
+  }
+}
+@keyframes sb-pop-out {
+  to {
+    transform: translateY(-4px) scale(0.95);
+    opacity: 0;
+  }
+}
+.sb-pop {
+  transform-origin: top right;
+  animation: sb-pop-in 0.24s var(--ease-spring) backwards;
+}
+.sb-pop[data-leaving] {
+  animation: sb-pop-out 0.14s ease-in forwards;
+}
+
+/* Pads : entrée en cascade (délai posé en style), lueur dorée qui suit le pointeur (--mx/--my). */
+@keyframes sb-pad-in {
+  from {
+    transform: translateY(10px) scale(0.85);
+    opacity: 0;
+  }
+}
+.sb-pad {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  animation: sb-pad-in 0.34s var(--ease-spring) backwards;
+  transition:
+    transform 0.15s var(--ease-out),
+    border-color 0.2s,
+    box-shadow 0.2s,
+    opacity 0.2s;
+}
+.sb-pad::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.25s;
+  background: radial-gradient(110px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--color-accent) 30%, transparent), transparent 70%);
+}
+.sb-pad:hover::before,
+.sb-pad:focus-visible::before {
+  opacity: 1;
+}
+.sb-pad:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 65%, var(--color-edge));
+  box-shadow: 0 8px 20px -12px color-mix(in srgb, var(--color-accent) 80%, transparent);
+}
+.sb-pad:active {
+  transform: scale(0.94);
+}
+.sb-pad[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: progress;
+}
+.sb-pad .sb-emoji {
+  display: inline-block;
+  transition: transform 0.28s var(--ease-spring);
+}
+.sb-pad:hover .sb-emoji {
+  transform: scale(1.2) rotate(-8deg);
+}
+
+/* Onde du clic : un disque doré qui part du point touché. */
+@keyframes sb-ripple {
+  from {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.6;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+.sb-ripple {
+  position: absolute;
+  z-index: -1;
+  width: 260%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-accent) 55%, transparent) 0 35%, transparent 70%);
+  animation: sb-ripple 0.6s var(--ease-out) forwards;
+}
+
+/* Recharge après un envoi : la barre se vide en 600 ms. */
+@keyframes sb-recharge {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+.sb-recharge {
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  transform-origin: left;
+  background: var(--color-accent);
+  animation: sb-recharge 0.6s linear forwards;
+}
+
+/* Haut-parleur : les ondes rentrent dans la membrane et une croix se trace en muet. */
+.sb-speaker .sb-wave {
+  transform-box: fill-box;
+  transform-origin: left center;
+  transition:
+    opacity 0.2s,
+    transform 0.3s var(--ease-spring);
+}
+.sb-speaker .sb-wave + .sb-wave {
+  transition-delay: 0.05s;
+}
+.sb-muted .sb-wave {
+  opacity: 0;
+  transform: translateX(-3px) scale(0.4);
+}
+.sb-speaker .sb-cross {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 0.22s var(--ease-out);
+}
+.sb-muted .sb-cross {
+  stroke-dashoffset: 0;
+  transition-delay: 0.12s;
+}
+
+/* Bulle de son : elle jaillit en tournant un peu, se pose, puis s'envole et s'efface. */
+@keyframes sb-bubble {
+  0% {
+    transform: translateY(18px) scale(0.6) rotate(var(--sb-r, -8deg));
+    opacity: 0;
+  }
+  12% {
+    transform: translateY(-4px) scale(1.06) rotate(calc(var(--sb-r, -8deg) / -3));
+    opacity: 1;
+  }
+  22% {
+    transform: none;
+  }
+  78% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-36px) scale(0.94) rotate(calc(var(--sb-r, -8deg) / 2));
+    opacity: 0;
+  }
+}
+@keyframes sb-wiggle {
+  25% {
+    transform: rotate(-14deg) scale(1.2);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
+}
+.sb-bubble {
+  animation: sb-bubble 2.4s var(--ease-out) forwards;
+}
+.sb-bubble .sb-emoji {
+  display: inline-block;
+  animation: sb-wiggle 0.45s 0.18s ease-in-out 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Les bulles restent posées (le JS les retire) ; pas de lueur mouvante ni d'onde. */
+  .sb-bubble,
+  .sb-bubble .sb-emoji,
+  .sb-pad,
+  .sb-pop {
+    animation: none;
+  }
+  .sb-ripple,
+  .sb-pad::before {
+    display: none;
+  }
+  .sb-pad:hover .sb-emoji,
+  .sb-pad:active {
+    transform: none;
   }
 }

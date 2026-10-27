@@ -1,36 +1,51 @@
 @import 'tailwindcss';
 @import './motion/motion.css';
+@import './motion/sourire.css';
 
-/* Concept « Studio Pro » : outil de création épuré, le tableau d'abord.
+/* Concept « Studio Pro » en tenue « Cacao » : crème et chocolat (Whipped Butter #f2e6b3,
+   Cookie Crumble #4b2e21), avec un or bruni en accent.
    Tous les tons passent par ces variables : changer de concept = changer ce bloc. */
 @theme {
-  --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+  /* Duo de polices : Inter pour l'interface et les titres, un script fin en accroche.
+     Tempting (RGB Studio) n'est gratuite qu'en usage personnel : Imperial Script (OFL) la remplace. */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-script: 'Imperial Script', cursive;
+  /* Le lettrage du logo garde sa police d'origine. */
+  --font-logo: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-  --color-page: #fafafa;
+  --color-page: #fbf8f3;
   --color-surface: #ffffff;
-  --color-edge: #e4e4e7;
-  --color-ink: #18181b;
-  --color-muted: #71717a;
-  /* Couleur d'action : noir en clair, blanc en sombre. */
-  --color-primary: #18181b;
-  --color-on-primary: #fafafa;
+  --color-edge: #ece2d1;
+  --color-ink: #2a1a12;
+  --color-muted: #86705f;
+  /* Couleur d'action : chocolat en clair, crème en sombre. */
+  --color-primary: #4b2e21;
+  --color-on-primary: #f2e6b3;
   --color-good: #16a34a;
   --color-warn: #d97706;
   --color-bad: #dc2626;
   --color-info: #2563eb;
-  /* Jaune de la marque (gomme et trait du logo), mêmes valeurs en sombre. */
-  --color-accent: #f5b700;
+  /* Or de la marque (gomme et trait du logo) : bruni en clair, plus lumineux en sombre. */
+  --color-accent: #b07d2c;
+  /* Écrin des cartes de l'accueil : dégradé de chocolat, dessin en crème, touches d'or. */
+  --color-cacao: #4b2e21;
+  --color-cacao-2: #7a4e36;
+  --color-butter: #f2e6b3;
+  --color-gold: #d9a441;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-page: #09090b;
-    --color-surface: #131316;
-    --color-edge: #27272a;
-    --color-ink: #f4f4f5;
-    --color-muted: #a1a1aa;
-    --color-primary: #fafafa;
-    --color-on-primary: #18181b;
+    --color-page: #110b08;
+    --color-surface: #19110d;
+    --color-edge: #2c1f17;
+    --color-ink: #f4ead2;
+    --color-muted: #a48e77;
+    --color-primary: #f2e6b3;
+    --color-on-primary: #2a1a12;
+    --color-accent: #d6a24a;
+    --color-cacao: #24160f;
+    --color-cacao-2: #4b2e21;
     --color-good: #22c55e;
     --color-warn: #f59e0b;
     --color-bad: #f87171;
@@ -51,6 +66,16 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Titres en Inter grasse et serrée. Hors couche, la règle passe devant les font-semibold
+   des composants ; un titre qui veut une autre graisse la force avec `!`. */
+h1 {
+  font-weight: 800;
+}
+
+h2 {
+  font-weight: 700;
 }
 
 @utility panel {
@@ -78,4 +103,10 @@ body {
 /* Petite touche de clavier, pour afficher les raccourcis. */
 @utility kbd {
   @apply rounded border border-edge px-1 font-mono text-[10px] leading-4 text-muted;
+}
+
+/* Mot d'accroche en script, posé au-dessus d'un titre et qui le chevauche un peu.
+   La taille se règle avec text-* comme pour n'importe quel texte. */
+@utility accroche {
+  @apply relative z-10 block font-script font-normal leading-[0.8] tracking-normal -mb-[0.12em] -rotate-3;
 }
