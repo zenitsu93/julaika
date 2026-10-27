@@ -61,8 +61,23 @@ export function Chat() {
           onChange={(e) => setText(e.target.value)}
           placeholder={isDrawer ? 'Discute sans donner le mot' : 'Ta réponse'}
           aria-label="Message"
+          enterKeyHint="send"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellCheck={false}
         />
         <kbd className="kbd hidden sm:block">/</kbd>
+        {/* Bouton visible pour le téléphone ; mousedown annulé pour garder le clavier ouvert. */}
+        <button
+          type="submit"
+          className="btn-primary shrink-0 px-3"
+          disabled={!text.trim()}
+          onPointerDown={(e) => e.preventDefault()}
+          aria-label={isDrawer ? 'Envoyer le message' : 'Valider ma réponse'}
+        >
+          {isDrawer ? 'Envoyer' : 'Valider'}
+        </button>
       </form>
     </section>
   );

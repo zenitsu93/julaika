@@ -50,7 +50,23 @@ export function Home() {
         >
           <div>
             <label className="mb-1.5 block text-sm font-medium" htmlFor="name">Pseudo</label>
-            <input id="name" className="input" maxLength={20} value={name} placeholder="Ton pseudo" onChange={(e) => setName(e.target.value)} />
+            <input
+              id="name"
+              className="input"
+              maxLength={20}
+              value={name}
+              placeholder="Ton pseudo"
+              enterKeyHint="go"
+              onChange={(e) => setName(e.target.value)}
+              // « OK » du clavier : rejoint le salon si un code est saisi, sinon en crée un.
+              // (Sans ça, rien ne se passe : le bouton Rejoindre, désactivé, bloque l'envoi implicite.)
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && status !== 'connecting') {
+                  e.preventDefault();
+                  play(code);
+                }
+              }}
+            />
           </div>
 
           <div>
@@ -77,6 +93,9 @@ export function Home() {
             <input
               className="input font-mono uppercase tracking-widest"
               placeholder="Code salon"
+              enterKeyHint="go"
+              autoCapitalize="characters"
+              autoComplete="off"
               maxLength={8}
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}

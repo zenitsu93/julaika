@@ -62,6 +62,9 @@ export function MeetButton() {
               id="meet-url"
               className="input font-mono sm:text-xs"
               placeholder="meet.google.com/abc-defg-hij"
+              enterKeyHint="done"
+              inputMode="url"
+              autoCapitalize="none"
               value={draft}
               autoFocus
               onChange={(e) => {
