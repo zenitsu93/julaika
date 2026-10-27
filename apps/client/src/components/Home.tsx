@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { AVATARS } from '../lib/avatars';
+import { GAMES, type GameId } from '../lib/games';
 import { net } from '../lib/net';
 import { useGame } from '../lib/store';
 import { bump, shake, useIndicator } from '../motion';
 import { LogoMark } from './Logo';
 
-const codeFromUrl = () => location.pathname.match(/^\/r\/([A-Z0-9]{4,8})/i)?.[1]?.toUpperCase() ?? '';
+export const codeFromUrl = () => location.pathname.match(/^\/r\/([A-Z0-9]{4,8})/i)?.[1]?.toUpperCase() ?? '';
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -19,7 +20,9 @@ function load<T>(key: string, fallback: T): T {
 // L'entrée animée ne se joue qu'une fois par visite, pas au retour d'une partie.
 let introPlayed = false;
 
-export function Home() {
+/** Pseudo, avatar et salon. `game` : jeu choisi sur l'accueil (null = arrivé avec un code). */
+export function Home({ game, onBack }: { game: GameId | null; onBack: () => void }) {
+  const info = GAMES.find((g) => g.id === game);
   const [intro] = useState(() => !introPlayed);
   useEffect(() => void (introPlayed = true), []);
   const rise = intro ? 'm-rise' : '';
@@ -32,6 +35,11 @@ export function Home() {
   const failed = Boolean(error) || status === 'closed';
   const codeInput = useRef<HTMLInputElement>(null);
   const avatars = useIndicator<HTMLDivElement>(avatar);
+
+  // Arrivé par « J'ai un code de salon » : le curseur attend le code.
+  useEffect(() => {
+    if (game === null && !codeFromUrl()) codeInput.current?.focus();
+  }, []);
 
   useEffect(() => {
     if (error) shake(codeInput.current?.value ? codeInput.current : avatars.container.current?.closest('form'));
@@ -48,14 +56,20 @@ export function Home() {
   return (
     <main className="grid min-h-full place-items-center p-4">
       <div className="w-full max-w-md">
+        <button type="button" onClick={onBack} className="btn -ml-3 mb-4 text-muted hover:text-ink">
+          <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+          Tous les jeux
+        </button>
         <div className="mb-6 flex items-center gap-3">
           <LogoMark className="h-12 w-auto" animated={intro} />
           <div>
             <h1 style={after(300)} className={`text-3xl font-semibold leading-tight tracking-[-0.04em] ${rise}`}>
-              julaïka
+              {info?.name ?? 'julaïka'}
             </h1>
             <p style={after(360)} className={`text-sm text-muted ${rise}`}>
-              Dessine, devine, marque des points.
+              {info?.pitch ?? 'Entre ton pseudo pour rejoindre tes amis.'}
             </p>
           </div>
         </div>

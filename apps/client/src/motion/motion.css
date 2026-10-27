@@ -282,6 +282,69 @@
     opacity 0.15s;
 }
 
+/* Accueil des jeux : cartes inclinées en 3D (le JS pose transform et --gx/--gy). */
+.hub-card {
+  transform-style: preserve-3d;
+  transition:
+    transform 0.3s var(--ease-out),
+    box-shadow 0.3s;
+}
+.hub-card:hover {
+  box-shadow: 0 30px 60px -30px rgb(0 0 0 / 0.5);
+}
+.hub-card:active {
+  scale: 0.98;
+}
+.hub-pop {
+  transform: translateZ(40px);
+}
+.hub-glare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  background: radial-gradient(300px circle at var(--gx, 50%) var(--gy, 50%), rgb(255 255 255 / 0.35), transparent 60%);
+}
+.hub-card:hover .hub-glare {
+  opacity: 1;
+}
+@keyframes m-draw-loop {
+  0% {
+    stroke-dashoffset: 1;
+  }
+  55%,
+  85% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -1;
+  }
+}
+.m-draw {
+  stroke-dasharray: 1;
+  animation: m-draw-loop 3s cubic-bezier(0.6, 0, 0.2, 1) infinite;
+}
+@keyframes m-wave {
+  50% {
+    transform: rotate(14deg);
+  }
+}
+.m-wave {
+  transform-origin: 50% 90%;
+  transform-box: fill-box;
+  transform: rotate(-14deg);
+  animation: m-wave 1.4s ease-in-out infinite;
+}
+@keyframes m-float {
+  50% {
+    transform: translateZ(40px) translateY(-6px);
+  }
+}
+.m-float {
+  animation: m-float 4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -296,5 +359,8 @@
   }
   .m-level.on > i {
     height: 100%;
+  }
+  .m-draw {
+    animation: none;
   }
 }
