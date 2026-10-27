@@ -3,6 +3,7 @@ import { wipeBoard } from '../motion';
 import { board } from './board';
 import { call } from './call';
 import { mimeSnapshot } from './mime';
+import { inkLayers, resetInk } from './cerveau';
 import { configureSounds, receive as receiveSound } from './sounds';
 import { store, type GameState } from './store';
 
@@ -29,7 +30,9 @@ class Net {
     ws.onmessage = (e) => {
       if (e.data instanceof ArrayBuffer) {
         const packet = decodeDraw(e.data);
-        if (packet) board.apply(packet);
+        // Octet 3 : calque du Cerveau coupé (0 = tableau commun).
+        const layer = inkLayers[new Uint8Array(e.data)[3]! - 1];
+        if (packet) (layer ?? board).apply(packet);
         return;
       }
       this.onMessage(JSON.parse(e.data) as ServerMsg);
@@ -67,6 +70,7 @@ class Net {
     switch (msg.t) {
       case 'welcome':
         board.reset();
+        resetInk();
         call.configure({
           selfId: msg.selfId,
           ice: msg.ice,
@@ -112,10 +116,17 @@ class Net {
       case 'clear':
         wipeBoard();
         board.reset();
+        resetInk();
         break;
       case 'undo':
         board.undo();
         break;
+      case 'cerveauInk': {
+        const layer = inkLayers[msg.layer];
+        if (msg.op === 'undo') layer?.undo();
+        else layer?.reset();
+        break;
+      }
       case 'telPrompt':
         store.set({ telPrompt: { step: msg.step, prompt: msg.prompt } });
         break;

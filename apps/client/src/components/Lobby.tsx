@@ -2,6 +2,7 @@ import { BOMB_MAX_LIVES, INTRUS_MIN_PLAYERS, SETTINGS_LIMITS, TRAPS, type Diffic
 import { useEffect, useRef } from 'react';
 import { net } from '../lib/net';
 import { TRAP_INFO, TRAP_MODE_LABELS } from '../lib/traps';
+import { CerveauModes } from './cerveau/CerveauModes';
 import { useGame } from '../lib/store';
 import { bump, Ticker, useIndicator } from '../motion';
 import { Planche } from './mime/Planche';
@@ -76,6 +77,13 @@ const SOURIRE_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
+// Cerveau coupé : chacun mène le binôme une fois par manche.
+const CERVEAU_FIELDS: typeof FIELDS = [
+  { key: 'rounds', label: 'Manches' },
+  { key: 'drawTime', label: 'Temps par dessin (s)', step: 10 },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
 const RULES: Partial<Record<RoomGame, string[]>> = {
   wavelength: [
     'Le télépathe voit où se cache la cible entre deux extrêmes, et donne un indice.',
@@ -121,6 +129,12 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
     'Un défenseur garde un visage de marbre pendant 30 s ; son attaquant a des bruitages, des grimaces à faire et peut déformer sa visio.',
     'Au moindre sourire, on appuie sur « Il a souri ! » (ou Espace) : plus il craque tôt, plus l’attaquant marque.',
     'Puis on inverse les rôles. Allumez vos caméras, c’est bien plus drôle !',
+  ],
+
+  cerveau: [
+    'À deux, un seul dessin. Guide : l’un voit le modèle et le décrit à voix haute, l’autre dessine sans le voir.',
+    'Moitié chacun : chacun ne voit que sa moitié du modèle et dessine de son côté. Droites contre courbes : l’un n’a que la règle, l’autre que la main levée.',
+    'Le modèle se pose sur le dessin : plus ça se ressemble, plus votre complicité grimpe. Les rôles tournent à chaque dessin.',
   ],
 };
 
@@ -190,7 +204,7 @@ export function Lobby() {
       </div>
       )}
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'cerveau' ? CERVEAU_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
           const label = key === 'drawTime' && !rules && room.settings.mode !== 'dessin' ? 'Temps par tour (s)' : base;
           const [min, limit] = SETTINGS_LIMITS[key];
           const max = cap ?? limit;
@@ -244,6 +258,7 @@ export function Lobby() {
           </div>
         </div>
       )}
+      {room.game === 'cerveau' && <CerveauModes value={room.settings.cerveau} disabled={!isHost} onChange={(cerveau) => set({ cerveau })} />}
       {rules ? (
         <ol className="mt-4 space-y-1.5 text-sm text-muted">
           {rules.map((rule, i) => (

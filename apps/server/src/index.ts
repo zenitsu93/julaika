@@ -148,7 +148,7 @@ wss.on('connection', (ws: WebSocket & { alive?: boolean }) => {
     }
     if (!room || !playerId) return;
     if (msg.t === 'chat' && !chatBucket()) return;
-    if ((msg.t === 'wave' || msg.t === 'tel' || msg.t === 'intrus' || msg.t === 'bac' || msg.t === 'connait' || msg.t === 'bomb' || msg.t === 'sourire') && !dialBucket()) return;
+    if ((msg.t === 'wave' || msg.t === 'tel' || msg.t === 'intrus' || msg.t === 'bac' || msg.t === 'connait' || msg.t === 'bomb' || msg.t === 'sourire' || msg.t === 'cerveau') && !dialBucket()) return;
     if (msg.t === 'sound' && !soundBucket()) return;
     room.handle(playerId, msg);
   });
