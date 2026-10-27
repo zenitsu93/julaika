@@ -1,4 +1,4 @@
-import { normalize, type Difficulty, type IntrusPair, type TurnKind } from '@julaika/shared';
+import { aovFits, normalize, type AovHeat, type AovKind, type Difficulty, type IntrusPair, type TurnKind } from '@julaika/shared';
 
 /** Fournit `count` mots nouveaux pour une difficulté (à dessiner ou à mimer), en évitant ceux de `avoid`. */
 export type WordGenerator = (difficulty: Difficulty, count: number, avoid: string[], kind?: TurnKind) => Promise<string[]>;
@@ -49,7 +49,26 @@ Chaque mot doit être :
 - différent de tous les autres mots de la liste et des exemples ci-dessus.
 Réponds uniquement en JSON, au format {"paires": [{"civil": "...", "intrus": "..."}]}.`;
 
+/** Fournit des cartes nouvelles d'Action ou vérité pour un niveau, sans redonner celles de `avoid`. */
+export type DareGenerator = (heat: AovHeat, count: number, avoid: string[]) => Promise<Record<AovKind, string[]>>;
+
+// Les trois niveaux sont décrits ensemble pour que le modèle calibre ; seul celui demandé est gardé,
+// puis repassé au filtre de niveau (aovFits) : rien d'explicite, même en Spicy.
+const SYSTEM_DARES = `Tu écris des cartes pour « Action ou vérité » sur julaïka, un site de jeux entre amis et en couple. Les joueurs sont souvent en visio (caméra et micro), parfois dans la même pièce. Ils sont francophones (France, Afrique, Canada…) et majeurs.
+Les trois niveaux :
+- lite : fun et sans gêne entre amis ou collègues, aucune séduction ni romance (ex. vérité « Quelle est la pire excuse que tu aies inventée pour annuler un plan ? » ; action « Parle avec l'accent de ton choix jusqu'à ton prochain tour. ») ;
+- complice : tendre et complice, pour un couple ou de très bons amis : souvenirs, compliments, petites déclarations (ex. « Qu'est-ce qui t'a fait craquer en premier chez {nom} ? » ; « Regarde {nom} dans les yeux à la caméra pendant 20 secondes sans rire. ») ;
+- spicy : taquin et séducteur, qui fait rougir mais reste suggestif et jamais explicite : regards, murmures, compliments audacieux, rendez-vous rêvés (ex. « Quel regard de {nom} te trouble le plus ? » ; « Murmure un compliment à {nom} au micro, tout doucement. »).
+Chaque carte doit :
+- être en français, tutoyer le joueur, faire une seule phrase de 160 caractères au plus ;
+- pour une action, se faire en moins d'une minute devant une caméra, sans matériel spécial ni sortir de chez soi ;
+- pouvoir viser un autre joueur avec {nom} (écrit exactement ainsi), sans obligation ;
+- respecter tout le monde : jamais de nudité, de vêtement à retirer, de sexe, d'alcool, de drogue, de danger, d'humiliation, ni de question sur la religion, la santé ou l'argent ;
+- être différente des autres cartes et des exemples ci-dessus.
+Réponds uniquement en JSON, au format {"action": [...], "verite": [...]}.`;
+
 const MAX_LENGTH = 30;
+const MAX_DARE_LENGTH = 160;
 const MAX_PAIR_WORDS = 3;
 const MAX_WORDS = 4;
 const WORD = /^\p{L}[\p{L}' -]*\p{L}$/u;
@@ -131,6 +150,56 @@ export function deepseekPairs(env = process.env, fetchImpl: typeof fetch = fetch
     );
     return pairs.slice(0, count);
   };
+}
+
+/** Générateur de cartes pour Action ou vérité, ou `null` sans `DEEPSEEK_API_KEY`. */
+export function deepseekDares(env = process.env, fetchImpl: typeof fetch = fetch): DareGenerator | null {
+  const call = deepseekCaller(env, fetchImpl, 'action-verite');
+  if (!call) return null;
+
+  return async (heat, count, avoid) => {
+    const prompt = [
+      avoid.length ? `Cartes déjà sorties, à ne pas redonner : ${avoid.join(' | ')}` : '',
+      `Donne ${count} actions et ${count} vérités du niveau « ${heat} ».`,
+    ]
+      .filter(Boolean)
+      .join('\n');
+    const taken = new Set(avoid.map(normalize));
+    const [cards] = await call(SYSTEM_DARES, prompt, (content) => {
+      const parsed = parseDares(content, heat);
+      for (const kind of ['action', 'verite'] as const) parsed[kind] = parsed[kind].filter((t) => !taken.has(normalize(t))).slice(0, count);
+      return parsed.action.length + parsed.verite.length ? [parsed] : [];
+    });
+    return cards!;
+  };
+}
+
+/** Extrait les cartes (`{"action": [...], "verite": [...]}`) qui passent le filtre du niveau. */
+export function parseDares(content: string, heat: AovHeat): Record<AovKind, string[]> {
+  const out: Record<AovKind, string[]> = { action: [], verite: [] };
+  let data: unknown;
+  try {
+    data = JSON.parse(content);
+  } catch {
+    return out;
+  }
+  const seen = new Set<string>();
+  for (const kind of ['action', 'verite'] as const) {
+    const list = (data as Partial<Record<AovKind, unknown>> | null)?.[kind];
+    if (!Array.isArray(list)) continue;
+    for (const raw of list) {
+      if (typeof raw !== 'string') continue;
+      // Seul {nom} est un emplacement : toute autre accolade trahirait un gabarit mal rempli.
+      const text = raw.replace(/[`]/g, "'").replace(/\s+/g, ' ').trim();
+      if (text.length < 12 || text.length > MAX_DARE_LENGTH || /[{}]/.test(text.replaceAll('{nom}', ''))) continue;
+      if (!aovFits(text, heat)) continue;
+      const id = normalize(text);
+      if (seen.has(id)) continue;
+      seen.add(id);
+      out[kind].push(text);
+    }
+  }
+  return out;
 }
 
 /** Générateur de mots pour le jeu de dessin, ou `null` sans `DEEPSEEK_API_KEY`. */

@@ -12,6 +12,7 @@ import {
   TRAP_COLORS,
   checkGuess,
   decodeDraw,
+  isAovLevel,
   isDifficulty,
   isGameMode,
   isPhotoDataUrl,
@@ -20,6 +21,8 @@ import {
   maskWord,
   parseMeetUrl,
   normalize,
+  type AovHeat,
+  type AovKind,
   type ChatLine,
   type ClientMsg,
   type Difficulty,
@@ -37,13 +40,14 @@ import {
 } from '@julaika/shared';
 import { Bombe } from './bombe';
 import { Connait } from './connait';
-import type { PairGenerator, WordGenerator } from './deepseek';
+import type { DareGenerator, PairGenerator, WordGenerator } from './deepseek';
 import { Intrus } from './intrus';
 import { INTRUS_PAIRS } from './intrusPairs';
 import { PetitBac } from './petitbac';
 import { Photomaton } from './photomaton';
 import { Sourire } from './sourire';
 import { Telephone } from './telephone';
+import { ActionVerite } from './verite';
 import { Wavelength } from './wavelength';
 import { MIME_FR, WORDS_FR } from './words';
 
@@ -113,6 +117,15 @@ export class Room {
   private bomb: Bombe | null = null;
   private photo: Photomaton | null = null;
   private sourire: Sourire | null = null;
+  private aov: ActionVerite | null = null;
+  // Cartes d'Action ou vérité inventées par l'IA, par niveau ; chacune ne sert qu'une fois.
+  private dares: Record<AovHeat, Record<AovKind, string[]>> = {
+    lite: { action: [], verite: [] },
+    complice: { action: [], verite: [] },
+    spicy: { action: [], verite: [] },
+  };
+  private daring = new Set<AovHeat>();
+  private daresSeen: string[] = [];
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -141,6 +154,7 @@ export class Room {
     private readonly iceServers: (playerId: string) => IceServer[] = () => [],
     private readonly generateWords: WordGenerator | null = null,
     private readonly generatePairs: PairGenerator | null = null,
+    private readonly generateDares: DareGenerator | null = null,
   ) {
     this.code = code;
   }
@@ -176,6 +190,7 @@ export class Room {
     if (this.players.size >= 2) {
       this.refillWords();
       this.refillPairs();
+      this.refillDares();
     }
     return id;
   }
@@ -198,7 +213,7 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire) {
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.aov) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
       this.intrus?.onLeave(id);
@@ -207,6 +222,7 @@ export class Room {
       this.bomb?.onLeave(id);
       this.photo?.onLeave(id);
       this.sourire?.onLeave(id);
+      this.aov?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -228,7 +244,10 @@ export class Room {
         if (id === this.hostId && this.phase === 'lobby') {
           this.settings = mergeSettings(this.settings, msg.settings);
           this.broadcastState();
-          if (this.players.size >= 2) this.refillWords();
+          if (this.players.size >= 2) {
+            this.refillWords();
+            this.refillDares();
+          }
         }
         break;
       case 'start':
@@ -263,6 +282,9 @@ export class Room {
         break;
       case 'sourire':
         if (msg && typeof msg === 'object') this.sourire?.handle(id, msg);
+        break;
+      case 'aov':
+        if (msg && typeof msg === 'object') this.aov?.handle(id, msg);
         break;
       case 'mimeShot':
         this.mimeShot(id, msg.finder, msg.image);
@@ -368,6 +390,7 @@ export class Room {
     if (this.game === 'bombe') return this.startBomb();
     if (this.game === 'photomaton') return this.startPhoto();
     if (this.game === 'sourire') return this.startSourire();
+    if (this.game === 'verite') return this.startAov();
     this.usedWords.clear();
     this.shotCount = 0;
     this.nextRound();
@@ -772,6 +795,58 @@ export class Room {
     this.sourire.start();
   }
 
+  private startAov(): void {
+    this.aov?.dispose();
+    this.aov = new ActionVerite({
+      playerIds: () => [...this.players.keys()],
+      player: (id) => this.players.get(id),
+      hostId: () => this.hostId,
+      rounds: () => this.settings.rounds,
+      level: () => this.settings.aovLevel,
+      dareTime: () => this.settings.drawTime,
+      random: this.random,
+      aiCard: (heat, kind) => {
+        const card = this.dares[heat][kind].shift() ?? null;
+        this.refillDares();
+        return card;
+      },
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      system: (text) => this.system(text),
+      endGame: () => this.endGame(),
+    });
+    this.aov.start();
+  }
+
+  /** Commande des cartes à l'IA pour chaque niveau que le réglage peut tirer, quand le stock baisse. */
+  private refillDares(): void {
+    if (this.game !== 'verite' || !this.generateDares) return;
+    const level = this.settings.aovLevel;
+    const heats: AovHeat[] = level === 'crescendo' ? ['lite', 'complice', 'spicy'] : [level];
+    for (const heat of heats) {
+      const stock = this.dares[heat];
+      if (this.daring.has(heat) || Math.min(stock.action.length, stock.verite.length) >= 3) continue;
+      this.daring.add(heat);
+      this.generateDares(heat, 8, [...stock.action, ...stock.verite, ...this.daresSeen].slice(-AVOID_MAX))
+        .then((cards) => {
+          for (const kind of ['action', 'verite'] as const) {
+            stock[kind] = [...stock[kind], ...cards[kind]];
+            this.daresSeen = [...this.daresSeen, ...cards[kind]].slice(-AVOID_MAX);
+          }
+        })
+        .catch(() => {}) // les cartes écrites à la main prennent le relais
+        .finally(() => this.daring.delete(heat));
+    }
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -805,6 +880,8 @@ export class Room {
     this.photo = null;
     this.sourire?.dispose();
     this.sourire = null;
+    this.aov?.dispose();
+    this.aov = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -924,6 +1001,7 @@ export class Room {
       bomb: this.bomb?.state() ?? null,
       photo: this.photo?.state() ?? null,
       sourire: this.sourire?.stateFor(id) ?? null,
+      aov: this.aov?.state() ?? null,
     };
   }
 
@@ -967,6 +1045,7 @@ export class Room {
     this.bomb?.dispose();
     this.photo?.dispose();
     this.sourire?.dispose();
+    this.aov?.dispose();
   }
 }
 
@@ -992,5 +1071,6 @@ function mergeSettings(cur: RoomSettings, patch: Partial<RoomSettings>): RoomSet
   if (isGameMode(patch.mode)) next.mode = patch.mode;
   if (isTrapMode(patch.traps)) next.traps = patch.traps;
   if (typeof patch.twists === 'boolean') next.twists = patch.twists;
+  if (isAovLevel(patch.aovLevel)) next.aovLevel = patch.aovLevel;
   return next;
 }

@@ -8,6 +8,7 @@ import { ConnaitBoard } from './connait/ConnaitBoard';
 import { PhotoBoard } from './photo/PhotoBoard';
 import { SourireBoard, useSmiledKey } from './sourire/SourireBoard';
 import { TelBoard } from './tel/TelBoard';
+import { AovBoard } from './verite/AovBoard';
 import { TopBar } from './TopBar';
 import { WaveBoard } from './wave/WaveBoard';
 
@@ -18,7 +19,7 @@ export function Game() {
     <div className="mx-auto flex min-h-full max-w-[1400px] flex-col gap-3 p-3">
       <TopBar />
       <div className="grid flex-1 gap-3 lg:grid-cols-[1fr_20rem]">
-        {game === 'wavelength' ? <WaveBoard /> : game === 'telephone' ? <TelBoard /> : game === 'intrus' ? <IntrusBoard /> : game === 'petitbac' ? <BacBoard /> : game === 'connait' ? <ConnaitBoard /> : game === 'bombe' ? <BombBoard /> : game === 'photomaton' ? <PhotoBoard /> : game === 'sourire' ? <SourireBoard /> : <Board />}
+        {game === 'wavelength' ? <WaveBoard /> : game === 'telephone' ? <TelBoard /> : game === 'intrus' ? <IntrusBoard /> : game === 'petitbac' ? <BacBoard /> : game === 'connait' ? <ConnaitBoard /> : game === 'bombe' ? <BombBoard /> : game === 'photomaton' ? <PhotoBoard /> : game === 'sourire' ? <SourireBoard /> : game === 'verite' ? <AovBoard /> : <Board />}
         <Chat />
       </div>
     </div>

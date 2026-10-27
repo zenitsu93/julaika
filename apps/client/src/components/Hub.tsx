@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type JSX } from 'react
 import { GAMES, SOON, matchesGame, matchesSoon, type GameId, type GameInfo, type SoonId } from '../lib/games';
 import { BombGlyph } from './bombe/BombGlyph';
 import { ConnaitArt } from './connait/ConnaitArt';
+import { AovArt } from './verite/AovArt';
 import { LogoMark } from './Logo';
 import './photo/photo.css';
 
@@ -303,6 +304,7 @@ const ART: Record<GameId, JSX.Element> = {
   bombe: <BombArt />,
   photomaton: <PhotoArt />,
   sourire: <SourireArt />,
+  verite: <AovArt />,
 };
 
 /** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */

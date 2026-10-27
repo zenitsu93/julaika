@@ -8,6 +8,7 @@ import type { MimeShot, MimeTwist } from './mime';
 import type { BacState } from './petitbac';
 import type { PhotoShot, PhotoState } from './photomaton';
 import type { TelChain, TelEntry, TelState } from './telephone';
+import type { AovKind, AovLevel, AovState } from './verite';
 import type { SoundId, SourireState, WarpId } from './sourire';
 import type { WaveState } from './wavelength';
 
@@ -23,7 +24,7 @@ export const PALETTE = [
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 /** Jeux proposés : chaque salon en porte un, choisi à sa création. */
-export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire'] as const;
+export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'verite'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
@@ -38,6 +39,7 @@ export function isRoomGame(v: unknown): v is RoomGame {
  * Qui me connaît le mieux : answer (la vedette répond, les autres parient) → reveal.
  * Bombe à mots : bomb, jusqu'au dernier survivant. Photomaton : pose (consigne puis flash) → vote → reveal.
  * Pas un sourire ! : faceoff (3, 2, 1) → duel → verdict.
+ * Action ou vérité : spin (la bouteille) → pick (action ou vérité) → dare (la carte) → verdict.
  */
 export type Phase =
   | 'lobby'
@@ -60,6 +62,9 @@ export type Phase =
   | 'faceoff'
   | 'duel'
   | 'verdict'
+  | 'spin'
+  | 'pick'
+  | 'dare'
   | 'gameEnd';
 
 /** Difficulté des mots proposés : sert au tirage dans les listes intégrées et à la génération par IA. */
@@ -119,6 +124,8 @@ export interface RoomSettings {
   traps: TrapMode;
   /** Mime : une consigne surprise toutes les 20 s (au ralenti, comme un robot…). */
   twists: boolean;
+  /** Action ou vérité : niveau des cartes. */
+  aovLevel: AovLevel;
 }
 
 export const DEFAULT_SETTINGS: RoomSettings = {
@@ -133,6 +140,7 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   customOnly: false,
   traps: 'jamais',
   twists: true,
+  aovLevel: 'lite',
 };
 
 export const SETTINGS_LIMITS = {
@@ -207,6 +215,8 @@ export interface RoomState {
   photo: PhotoState | null;
   /** État de Pas un sourire !, null pour les autres jeux. */
   sourire: SourireState | null;
+  /** État d'Action ou vérité, null pour les autres jeux. */
+  aov: AovState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -274,6 +284,10 @@ export type ClientMsg =
   | { t: 'sourire'; smiled: true }
   | { t: 'sourire'; dare: true }
   | { t: 'sourire'; warp: WarpId | null }
+  | { t: 'aov'; spin: true }
+  | { t: 'aov'; choose: AovKind }
+  | { t: 'aov'; pass: true }
+  | { t: 'aov'; vote: boolean }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =
