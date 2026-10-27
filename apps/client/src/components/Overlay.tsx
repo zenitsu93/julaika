@@ -4,9 +4,11 @@ import { net } from '../lib/net';
 import { useGame } from '../lib/store';
 import { Lobby } from './Lobby';
 
-function Panel({ children }: { children: React.ReactNode }) {
+function Panel({ children, flow = false }: { children: React.ReactNode; flow?: boolean }) {
+  // `flow` : sur téléphone, le panneau prend sa hauteur naturelle au lieu d'être coincé dans le cadre 4:3.
+  const mobile = flow ? 'max-sm:static max-sm:bg-transparent max-sm:p-0 max-sm:backdrop-blur-none' : '';
   return (
-    <div className="absolute inset-0 grid place-items-center overflow-y-auto bg-page/85 p-4 backdrop-blur-[2px]">
+    <div className={`absolute inset-0 grid place-items-center overflow-y-auto bg-page/85 p-4 backdrop-blur-[2px] ${mobile}`}>
       <div className="animate-pop w-full max-w-lg text-center">{children}</div>
     </div>
   );
@@ -35,7 +37,7 @@ export function Overlay() {
   switch (room.phase) {
     case 'lobby':
       return (
-        <Panel>
+        <Panel flow>
           <Lobby />
         </Panel>
       );

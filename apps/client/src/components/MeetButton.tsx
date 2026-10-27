@@ -60,7 +60,7 @@ export function MeetButton() {
           <form onSubmit={share} className="flex gap-2">
             <input
               id="meet-url"
-              className="input font-mono text-xs"
+              className="input font-mono sm:text-xs"
               placeholder="meet.google.com/abc-defg-hij"
               value={draft}
               autoFocus

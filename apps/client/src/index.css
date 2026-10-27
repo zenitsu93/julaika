@@ -66,8 +66,9 @@ body {
   @apply btn border border-edge bg-surface hover:bg-edge/50;
 }
 
+/* 16px sur téléphone : en dessous, iOS zoome au focus et reste zoomé. */
 @utility input {
-  @apply w-full rounded-md border border-edge bg-surface px-3 py-2 text-sm outline-none transition placeholder:text-muted focus:border-ink focus:ring-2 focus:ring-ink/10;
+  @apply w-full rounded-md border border-edge bg-surface px-3 py-2 text-base outline-none sm:text-sm transition placeholder:text-muted focus:border-ink focus:ring-2 focus:ring-ink/10;
 }
 
 /* Petite touche de clavier, pour afficher les raccourcis. */

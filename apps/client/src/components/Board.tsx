@@ -13,6 +13,7 @@ export function Board() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [pen] = useState(() => new Pen((buf) => net.sendBinary(buf)));
   const inCall = useCall().joined;
+  const lobby = useGame((s) => s.room!.phase === 'lobby');
   const canDraw = useGame((s) => s.room!.phase === 'drawing' && s.room!.drawerId === s.selfId);
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export function Board() {
       <PlayerStrip />
       {/* Le tableau garde son ratio 4:3 et tient dans la hauteur de l’écran, dock compris. */}
       <div
-        className={`relative mx-auto w-full overflow-hidden rounded-lg border border-edge ${
+        className={`relative mx-auto w-full overflow-hidden rounded-lg border border-edge ${lobby ? 'max-sm:border-0' : ''} ${
           inCall ? 'max-w-[max(20rem,calc((100dvh-24rem)*4/3))]' : 'max-w-[max(20rem,calc((100dvh-19rem)*4/3))]'
         }`}
       >
@@ -42,7 +43,7 @@ export function Board() {
           ref={canvas}
           width={CANVAS_W}
           height={CANVAS_H}
-          className={`block aspect-[4/3] w-full touch-none bg-white ${canDraw ? 'cursor-crosshair' : ''}`}
+          className={`block aspect-[4/3] w-full touch-none bg-white ${canDraw ? 'cursor-crosshair' : ''} ${lobby ? 'max-sm:hidden' : ''}`}
           onPointerDown={(e) => {
             if (!canDraw || e.button !== 0) return;
             e.currentTarget.setPointerCapture(e.pointerId);
