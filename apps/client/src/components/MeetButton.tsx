@@ -60,7 +60,7 @@ export function MeetButton() {
           <form onSubmit={share} className="flex gap-2">
             <input
               id="meet-url"
-              className="input font-mono sm:text-xs"
+              className="input font-mono sm:pointer-fine:text-xs"
               placeholder="meet.google.com/abc-defg-hij"
               enterKeyHint="done"
               inputMode="url"

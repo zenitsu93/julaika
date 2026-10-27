@@ -665,6 +665,12 @@ button.mp-pp:hover:not(:disabled) {
   color: var(--mp-ink);
   outline: none;
 }
+/* Au doigt, 16px minimum : en dessous, iOS zoome au focus. */
+@media (pointer: coarse) {
+  .mp-search input {
+    font-size: 16px;
+  }
+}
 .mp-search input::placeholder {
   color: var(--mp-muted);
 }
