@@ -1300,3 +1300,174 @@
     transform: scaleX(0);
   }
 }
+
+/* Manches piégées du Dessin ------------------------------------------------------------- */
+
+/* Le tampon s'écrase en tournant, rebondit, tient deux secondes puis file vers le coin. */
+@keyframes t-stamp-in {
+  0% {
+    transform: scale(1.9) rotate(-14deg);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(0.95) rotate(-3deg);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(1.03) rotate(-4.5deg);
+  }
+  100% {
+    transform: scale(1) rotate(-4deg);
+  }
+}
+@keyframes t-stamp-out {
+  to {
+    transform: translate(-38%, -42%) scale(0.25) rotate(0deg);
+    opacity: 0;
+  }
+}
+.t-stamp {
+  transform: rotate(-4deg);
+  animation:
+    t-stamp-in 0.55s var(--ease-out) backwards,
+    t-stamp-out 0.45s 2.7s cubic-bezier(0.6, 0, 0.8, 0.4) forwards;
+}
+/* Onde de choc à l'impact. */
+@keyframes t-ring {
+  from {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+.t-ring {
+  opacity: 0;
+  animation: t-ring 0.6s 0.28s ease-out;
+}
+/* Le voile assombrit brièvement le tableau pendant l'annonce. */
+@keyframes t-dim {
+  0%,
+  100% {
+    background: transparent;
+  }
+  15%,
+  80% {
+    background: color-mix(in srgb, var(--color-page) 45%, transparent);
+  }
+}
+.t-stamp-wrap {
+  animation: t-dim 3.15s ease-out forwards;
+}
+@keyframes t-icon {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(-12deg) scale(1.1);
+  }
+  60% {
+    transform: rotate(8deg);
+  }
+}
+.t-icon {
+  display: inline-block;
+  animation: t-icon 0.7s 0.5s ease-in-out;
+}
+/* La pastille arrive au moment où le tampon s'envole, puis l'icône frétille de temps en temps. */
+@keyframes t-badge-in {
+  from {
+    transform: translate(-6px, -6px) scale(0.6);
+    opacity: 0;
+  }
+}
+.t-badge {
+  animation: t-badge-in 0.38s 2.95s var(--ease-spring) backwards;
+}
+@keyframes t-badge-icon {
+  0%,
+  88%,
+  100% {
+    transform: none;
+  }
+  92% {
+    transform: rotate(-14deg);
+  }
+  96% {
+    transform: rotate(10deg);
+  }
+}
+.t-badge-icon {
+  display: inline-block;
+  animation: t-badge-icon 4s 3.4s ease-in-out infinite;
+}
+
+/* Choix du mot : la carte du piège se retourne pour se dévoiler. */
+@keyframes t-flip {
+  from {
+    transform: perspective(600px) rotateX(-90deg);
+    opacity: 0;
+  }
+  60% {
+    transform: perspective(600px) rotateX(12deg);
+    opacity: 1;
+  }
+}
+.t-flip {
+  transform-origin: 50% 0;
+  animation: t-flip 0.6s 0.15s var(--ease-out) backwards;
+}
+
+/* Pinceau farceur : la pastille de couleur tourne comme un dé. */
+@keyframes t-dice {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.t-dice {
+  background: conic-gradient(#ef130b, #ff7100, #ffe400, #00cc00, #00b2ff, #231fd3, #a300ba, #ef130b);
+  animation: t-dice 2.4s linear infinite;
+}
+
+/* Ralenti de fin de tour : la barre avance au rythme du dessin, le voyant clignote. */
+@keyframes t-progress {
+  from {
+    transform: scaleX(0);
+  }
+}
+.t-progress {
+  transform-origin: 0 50%;
+  animation: t-progress var(--t-replay, 4s) linear backwards;
+}
+@keyframes t-rec {
+  50% {
+    opacity: 0.25;
+  }
+}
+.t-rec {
+  animation: t-rec 1s steps(1) infinite;
+}
+@keyframes t-frame-in {
+  from {
+    transform: translateY(10px) rotate(-2deg) scale(0.94);
+    opacity: 0;
+  }
+}
+.t-frame {
+  animation: t-frame-in 0.5s 0.1s var(--ease-spring) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-stamp-wrap,
+  .t-stamp {
+    display: none;
+  }
+  .t-dice,
+  .t-badge-icon,
+  .t-rec {
+    animation: none;
+  }
+}

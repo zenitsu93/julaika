@@ -1,6 +1,7 @@
-import { BOMB_MAX_LIVES, INTRUS_MIN_PLAYERS, SETTINGS_LIMITS, type Difficulty, type RoomGame, type RoomSettings } from '@julaika/shared';
+import { BOMB_MAX_LIVES, INTRUS_MIN_PLAYERS, SETTINGS_LIMITS, TRAPS, type Difficulty, type RoomGame, type RoomSettings } from '@julaika/shared';
 import { useEffect, useRef } from 'react';
 import { net } from '../lib/net';
+import { TRAP_INFO, TRAP_MODE_LABELS } from '../lib/traps';
 import { useGame } from '../lib/store';
 import { bump, Ticker, useIndicator } from '../motion';
 
@@ -112,6 +113,7 @@ export function Lobby() {
   const error = useGame((s) => s.error);
   const set = (settings: Partial<RoomSettings>) => net.send({ t: 'settings', settings });
   const level = useIndicator(LEVELS.findIndex((l) => l.value === room.settings.difficulty));
+  const trapMode = useIndicator(TRAP_MODE_LABELS.findIndex((l) => l.value === room.settings.traps));
   const minPlayers = room.game === 'intrus' ? INTRUS_MIN_PLAYERS : 2;
   const canStart = room.players.length >= minPlayers;
   const start = useRef<HTMLButtonElement>(null);
@@ -188,6 +190,49 @@ export function Lobby() {
         </ol>
       ) : (
       <>
+      <div className="mt-3 text-sm">
+        <span className="mb-1 flex items-center gap-1.5 text-muted">
+          Manches piégées
+          <span className="rounded-full bg-accent/20 px-1.5 text-[10px] font-semibold tracking-wide text-ink uppercase">Nouveau</span>
+        </span>
+        <div ref={trapMode.container} role="group" aria-label="Manches piégées" className="relative grid grid-cols-3 gap-1 rounded-md border border-edge p-1">
+          <span ref={trapMode.indicator} className={`m-indicator rounded ${room.settings.traps === 'jamais' ? 'bg-primary' : 'bg-accent'}`} />
+          {TRAP_MODE_LABELS.map(({ value, label }) => {
+            const active = room.settings.traps === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                data-slot
+                aria-pressed={active}
+                disabled={!isHost}
+                onClick={() => set({ traps: value })}
+                className={`relative rounded px-3 py-1.5 font-medium transition outline-none focus-visible:ring-2 focus-visible:ring-info disabled:cursor-not-allowed ${
+                  active ? (value === 'jamais' ? 'text-on-primary' : 'text-black') : 'text-muted enabled:hover:bg-edge/50'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+        {/* Les quatre pièges se déploient en éventail quand on les active. */}
+        {room.settings.traps !== 'jamais' && (
+          <ul key={room.settings.traps} className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+            {TRAPS.map((kind, i) => (
+              <li
+                key={kind}
+                title={TRAP_INFO[kind].rule}
+                className="m-pop flex items-center gap-1.5 rounded-md border border-edge bg-surface px-2 py-1 text-xs"
+                style={{ animationDelay: `${i * 55}ms` }}
+              >
+                <span className="text-base">{TRAP_INFO[kind].icon}</span>
+                <span className="leading-tight">{TRAP_INFO[kind].name}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
       <label className="mt-3 block text-sm">
         <span className="mb-1 block text-muted">Mots perso (séparés par des virgules)</span>
         <textarea

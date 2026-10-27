@@ -126,6 +126,51 @@ describe('Room', () => {
   });
 });
 
+describe('manches piégées', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('aucun piège par défaut, réglage borné aux valeurs connues', () => {
+    const { room, conns, ids } = setup();
+    room.handle(ids[0]!, { t: 'settings', settings: { traps: 'souvent' as never } });
+    expect(room.settings.traps).toBe('jamais');
+    room.handle(ids[0]!, { t: 'start' });
+    expect(conns[1]!.last('state')!.state.trap).toBeNull();
+  });
+
+  it('« toujours » : un piège annoncé à tous dès le choix du mot, jamais deux fois le même', () => {
+    const { room, conns, ids } = setup(2);
+    room.handle(ids[0]!, { t: 'settings', settings: { traps: 'toujours', rounds: 2 } });
+    room.handle(ids[0]!, { t: 'start' });
+    const first = conns[1]!.last('state')!.state.trap!;
+    expect(first.kind).toBeTruthy();
+    room.handle(ids[0]!, { t: 'choose', index: 0 });
+    room.handle(ids[1]!, { t: 'chat', text: room.word! });
+    expect(room.phase).toBe('turnEnd');
+    vi.advanceTimersByTime(TURN_END_TIME * 1000);
+    expect(room.trap!.kind).not.toBe(first.kind);
+  });
+
+  it('« une seule couleur » : le serveur impose la couleur, sauf pour la gomme', () => {
+    const { room, conns, ids } = setup(2);
+    room.handle(ids[0]!, { t: 'start' });
+    room.trap = { kind: 'mono', color: 7 };
+    room.handle(ids[0]!, { t: 'choose', index: 0 });
+    room.handleDraw(ids[0]!, new Uint8Array(encodeDraw({ op: DrawOp.Begin, color: 2, size: 10, points: [1, 1] })));
+    room.handleDraw(ids[0]!, new Uint8Array(encodeDraw({ op: DrawOp.Begin, color: 0, size: 10, points: [2, 2] })));
+    expect(conns[1]!.binary.map((b) => b[1])).toEqual([7, 0]);
+  });
+
+  it('le piège disparaît au retour au salon', () => {
+    const { room, ids } = setup(2);
+    room.handle(ids[0]!, { t: 'settings', settings: { traps: 'toujours' } });
+    room.handle(ids[0]!, { t: 'start' });
+    expect(room.trap).not.toBeNull();
+    room.leave(ids[1]!);
+    expect(room.trap).toBeNull();
+  });
+});
+
 describe('visio', () => {
   it("seul l'hôte partage un lien Meet valide, diffusé à tous", () => {
     const { room, conns, ids } = setup(2);
