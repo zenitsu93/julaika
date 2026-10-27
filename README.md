@@ -48,16 +48,17 @@ lettre près affiche « tu chauffes ». Ceux qui ont trouvé discutent entre eux
 Concept « Néon Arcade ». Les couleurs sont des variables dans `apps/client/src/index.css` (`@theme`) :
 changer de concept se fait essentiellement là.
 
-## Déployer sur un VPS
+## Déployer
 
-Prérequis : un VPS Ubuntu/Debian, un (sous-)domaine dont l'enregistrement A pointe vers son IP.
+Production : VPS OVH, derrière le Caddy de la pile `2nb-prospect` (seul à écouter sur 80/443).
 
-```bash
-# sur le VPS, en root
-DOMAIN=jeu.exemple.com bash deploy/setup-vps.sh
-```
+1. DNS (cPanel o2switch > Zone Editor) : `julaika` en `A` vers l'IP du VPS.
+2. Sur le VPS : cloner le dépôt dans `~/julaika`, puis `deploy/deploy.sh` (construit l'image et
+   lance le conteneur `julaika` sur le réseau `2nb-prospect_frontend`).
+3. Copier `deploy/julaika.caddy` dans `~/caddy-sites/` et recharger Caddy (commande dans le fichier).
+4. CI/CD : chaque push sur la branche par défaut déploie via `.github/workflows/ci.yml`, une fois
+   `VPS_HOST`, `VPS_USER` (variables) et `VPS_SSH_KEY`, `VPS_KNOWN_HOSTS` (secrets) renseignés.
+   La clé est déclarée sur le serveur avec `command="/home/christian/julaika/deploy/deploy.sh",restrict`.
 
-Le script installe Docker, clone le dépôt dans `/opt/julaika` et lance `docker compose` :
-le conteneur du jeu (client + WebSocket sur un seul port) derrière Caddy, qui gère HTTPS
-(Let's Encrypt) et les WebSockets. Mettre à jour : relancer le même script.
-Si nginx tourne déjà sur le VPS, voir `deploy/nginx.conf`.
+VPS neuf sans autre site : `DOMAIN=jeu.exemple.com docker compose -f docker-compose.standalone.yml up -d --build`
+(Caddy inclus, HTTPS automatique). Avec nginx à la place : `deploy/nginx.conf`.
