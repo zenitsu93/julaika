@@ -4,6 +4,7 @@ import { extname, join, normalize as normalizePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, type WebSocket } from 'ws';
 import type { ClientMsg } from '@julaika/shared';
+import { iceServersFor } from './ice';
 import { Room } from './room';
 
 const PORT = Number(process.env.PORT ?? 3001);
@@ -110,10 +111,15 @@ function createRoom(): Room {
   let code: string;
   do code = randomCode();
   while (rooms.has(code));
-  const room = new Room(code, (r) => {
-    r.dispose();
-    rooms.delete(r.code);
-  });
+  const room = new Room(
+    code,
+    (r) => {
+      r.dispose();
+      rooms.delete(r.code);
+    },
+    Math.random,
+    (playerId) => iceServersFor(playerId),
+  );
   rooms.set(code, room);
   return room;
 }

@@ -9,6 +9,26 @@ services:
     container_name: julaika
     restart: unless-stopped
     networks: [frontend]
+    # TURN_URLS et TURN_SECRET pour le relais de la visio (voir deploy/turnserver.conf).
+    env_file:
+      - path: .env
+        required: false
+
+  # Relais TURN de la visio, pour les joueurs derrière un NAT strict (4G, réseaux d'entreprise).
+  # Désactivé par défaut : `COMPOSE_PROFILES=turn` dans .env l'active, une fois les ports ouverts.
+  turn:
+    image: coturn/coturn:4.6
+    container_name: julaika-turn
+    profiles: [turn]
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - path: .env
+        required: false
+    # Le secret vient de .env, lu dans le conteneur ($$ : pas d'interpolation par compose).
+    entrypoint: ['sh', '-c', 'exec turnserver -c /etc/coturn/turnserver.conf --static-auth-secret="$$TURN_SECRET"']
+    volumes:
+      - ./deploy/turnserver.conf:/etc/coturn/turnserver.conf:ro
 
 networks:
   frontend:

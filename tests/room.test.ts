@@ -137,3 +137,20 @@ describe('visio', () => {
     expect(conns[1]!.last('state')!.state.meetUrl).toBe('https://meet.google.com/abc-defg-hij');
   });
 });
+
+describe('visio intégrée', () => {
+  it('relaie la signalisation seulement entre participants', () => {
+    const { room, conns, ids } = setup(3);
+    const sdp = { sdp: { type: 'offer' as const, sdp: 'v=0' } };
+    room.handle(ids[0]!, { t: 'call', inCall: true, cam: true, mic: true });
+    room.handle(ids[0]!, { t: 'rtc', to: ids[1]!, data: sdp });
+    expect(conns[1]!.last('rtc')).toBeUndefined();
+    room.handle(ids[1]!, { t: 'call', inCall: true, cam: false, mic: true });
+    room.handle(ids[0]!, { t: 'rtc', to: ids[1]!, data: sdp });
+    expect(conns[1]!.last('rtc')).toEqual({ t: 'rtc', from: ids[0], data: sdp });
+    room.handle(ids[2]!, { t: 'rtc', to: ids[1]!, data: sdp });
+    expect(conns[1]!.json.filter((m) => m.t === 'rtc')).toHaveLength(1);
+    const me = conns[2]!.last('state')!.state.players.find((p) => p.id === ids[1]);
+    expect(me).toMatchObject({ inCall: true, cam: false, mic: true });
+  });
+});
