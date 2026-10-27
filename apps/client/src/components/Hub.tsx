@@ -215,6 +215,30 @@ const IntrusArt = () => (
   </svg>
 );
 
+/** La grille du Petit Bac : la lettre tourne, les cases se remplissent, puis le tampon « Stop ! ». */
+const BacArt = () => (
+  <svg viewBox="0 0 220 140" className="mx-auto max-h-36 w-full" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <g className="soon-spin" style={{ transformOrigin: '50px 70px' }}>
+      <rect x="18" y="38" width="64" height="64" rx="14" className="fill-gold" stroke="none" />
+      <text x="50" y="86" textAnchor="middle" fontSize="44" fontWeight="700" className="fill-cacao" stroke="none">
+        B
+      </text>
+    </g>
+    {[44, 70, 96].map((y, i) => (
+      <g key={y}>
+        <rect x="98" y={y - 10} width="104" height="20" rx="6" fill="currentColor" fillOpacity=".16" stroke="none" />
+        <path className="m-draw" style={{ animationDelay: `${i * 300}ms` }} pathLength={1} d={`M106 ${y}h${68 - i * 14}`} strokeWidth="5" />
+      </g>
+    ))}
+    <g className="bac-art-stamp" style={{ transformOrigin: '176px 112px' }}>
+      <rect x="146" y="100" width="60" height="24" rx="6" className="fill-butter" stroke="none" />
+      <text x="176" y="117" textAnchor="middle" fontSize="14" fontWeight="800" className="fill-bad" stroke="none" letterSpacing="1">
+        STOP!
+      </text>
+    </g>
+  </svg>
+);
+
 const ART: Record<GameId, JSX.Element> = {
   dessin: <DrawArt />,
   mime: <MimeArt />,
@@ -222,6 +246,7 @@ const ART: Record<GameId, JSX.Element> = {
   motdujour: <MotArt />,
   telephone: <TelArt />,
   intrus: <IntrusArt />,
+  petitbac: <BacArt />,
 };
 
 /** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */
@@ -261,20 +286,6 @@ const SOON_ART: Record<SoonId, JSX.Element> = {
       <rect x="36" y="30" width="128" height="80" rx="14" strokeWidth="5" />
       <path d="M58 58h84M58 82h56" strokeWidth="7" strokeOpacity=".35" />
       <path className="m-draw stroke-gold" pathLength={1} d="M50 96 150 44" strokeWidth="7" />
-    </>,
-  ),
-  // La lettre tourne, les lignes se remplissent.
-  petitbac: svg(
-    <>
-      <g className="soon-spin" style={{ transformOrigin: '52px 70px' }}>
-        <rect x="26" y="44" width="52" height="52" rx="10" className="fill-gold" stroke="none" />
-        <text x="52" y="83" textAnchor="middle" fontSize="34" fontWeight="700" className="fill-cacao" stroke="none">
-          B
-        </text>
-      </g>
-      {[48, 72, 96].map((y, i) => (
-        <path key={y} className="m-draw" style={{ animationDelay: `${i * 300}ms` }} pathLength={1} d={`M98 ${y}h${70 - i * 12}`} strokeWidth="6" />
-      ))}
     </>,
   ),
   // Des notes qui s'envolent.

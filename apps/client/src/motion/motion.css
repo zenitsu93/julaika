@@ -1198,3 +1198,105 @@
 .i-turn {
   animation: i-turn 0.6s var(--ease-spring) backwards;
 }
+
+/* Petit Bac ------------------------------------------------------------------------------ */
+
+/* Carte de l'accueil : le tampon « Stop ! » claque une fois les cases remplies, en boucle. */
+@keyframes bac-art-stamp {
+  0%,
+  58% {
+    transform: scale(2.2) rotate(-12deg);
+    opacity: 0;
+  }
+  68% {
+    transform: scale(0.92) rotate(-4deg);
+    opacity: 1;
+  }
+  74%,
+  92% {
+    transform: rotate(-6deg);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(-6deg);
+    opacity: 0;
+  }
+}
+.bac-art-stamp {
+  transform-box: view-box;
+  animation: bac-art-stamp 3s var(--ease-out) infinite;
+}
+/* Bouton « Stop ! » prêt : un reflet fait le tour de la bordure. */
+@keyframes bac-orbit {
+  to {
+    transform: rotate(1turn);
+  }
+}
+.bac-stop {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.bac-stop::before {
+  content: '';
+  position: absolute;
+  inset: -150% -10%;
+  z-index: -2;
+  background: conic-gradient(from 0deg, transparent 0 62%, var(--color-gold) 76%, #fff 82%, transparent 92%);
+  animation: bac-orbit 2.4s linear infinite;
+}
+.bac-stop::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--color-bad);
+}
+/* Grand tampon « Stop ! » au milieu de la grille. */
+@keyframes bac-stamp {
+  0% {
+    transform: scale(2.6) rotate(-14deg);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(0.94) rotate(-5deg);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(-7deg);
+    opacity: 1;
+  }
+}
+.bac-stamp {
+  animation: bac-stamp 0.5s var(--ease-out) both;
+}
+/* Case juste remplie : une coche se trace. */
+.bac-ok path {
+  stroke-dasharray: 1;
+  animation: m-stroke 0.32s ease-out backwards;
+}
+/* Barres et anneaux de progression : ils glissent vers leur nouvelle valeur. */
+.bac-bar {
+  transform-origin: left;
+  transition: transform 0.45s var(--ease-out);
+}
+.bac-ring {
+  transition: stroke-dashoffset 0.45s var(--ease-out);
+}
+/* Décompte : chaque pastille de points tombe dans sa case, colonne après colonne. */
+@keyframes bac-pip {
+  from {
+    transform: translateY(-10px) scale(0.6);
+    opacity: 0;
+  }
+}
+.bac-pip {
+  animation: bac-pip 0.36s var(--ease-spring) backwards;
+}
+/* Temps avant la manche suivante : la barre se vide. */
+@keyframes bac-drain {
+  to {
+    transform: scaleX(0);
+  }
+}

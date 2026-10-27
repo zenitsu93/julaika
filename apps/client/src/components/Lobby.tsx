@@ -37,6 +37,13 @@ const INTRUS_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
+// Petit Bac : des manches, le temps pour remplir la grille.
+const BAC_FIELDS: typeof FIELDS = [
+  { key: 'rounds', label: 'Manches' },
+  { key: 'drawTime', label: 'Temps par grille (s)', step: 10 },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
 const RULES: Partial<Record<RoomGame, string[]>> = {
   wavelength: [
     'Le télépathe voit où se cache la cible entre deux extrêmes, et donne un indice.',
@@ -52,6 +59,12 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
     "Chacun reçoit un mot secret. Tous ont le même, sauf l'intrus, qui en a un proche… et ne le sait pas.",
     'À tour de rôle, donnez un indice : assez précis pour vous reconnaître, assez flou pour ne rien livrer.',
     "Votez pour l'intrus. Démasqué, il peut encore voler la manche en devinant votre mot.",
+  ],
+
+  petitbac: [
+    'Une lettre tombe : trouve un mot qui commence par elle dans chaque catégorie.',
+    'Grille pleine ? Crie « Stop ! » : les autres n’ont plus que 5 secondes.',
+    'On vote contre les réponses douteuses. 10 points par mot unique, 5 s’il est partagé.',
   ],
 };
 
@@ -76,7 +89,7 @@ export function Lobby() {
     <div className="panel p-5 text-left shadow-sm">
       <h2 className="mb-4 text-lg font-semibold">Réglages du salon <span className="font-mono text-muted">#{room.code}</span></h2>
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : FIELDS).map(({ key, label, step }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : FIELDS).map(({ key, label, step }) => {
           const [min, max] = SETTINGS_LIMITS[key];
           return (
             <label key={key} className="text-sm">

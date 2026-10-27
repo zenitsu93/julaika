@@ -5,3 +5,4 @@ export * from './wavelength';
 export * from './motdujour';
 export * from './telephone';
 export * from './intrus';
+export * from './petitbac';
