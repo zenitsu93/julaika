@@ -249,3 +249,66 @@
 .bomb-art .bomb-body {
   --beat: 0.9s;
 }
+
+/* Tic-tac : la table s'échauffe (--heat de 0 à 1) avec la mèche. Le cercle vire de l'or au rouge,
+   une onde part du centre à chaque coup, et un « tic » ou un « tac » s'échappe de la bombe. */
+.bomb-ring {
+  border-color: color-mix(in srgb, var(--color-bad) calc(var(--heat, 0) * 70%), var(--color-edge));
+  transition: border-color 0.6s linear;
+}
+.bomb-shock {
+  position: absolute;
+  inset: 24%;
+  border-radius: 9999px;
+  pointer-events: none;
+  border: 2px solid color-mix(in srgb, var(--color-bad) calc(var(--heat, 0) * 100%), var(--color-accent));
+  opacity: calc(0.18 + var(--heat, 0) * 0.4);
+  animation: bomb-shock 0.7s var(--ease-out) forwards;
+}
+@keyframes bomb-shock {
+  from {
+    transform: scale(0.85);
+  }
+  to {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+.bomb-glow {
+  fill: var(--color-bad);
+  mix-blend-mode: screen;
+  transition: opacity 0.5s linear;
+}
+.bomb-tic {
+  position: absolute;
+  top: 6%;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: calc(0.7rem + var(--heat, 0) * 0.35rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--color-bad) calc(var(--heat, 0) * 100%), var(--color-muted));
+  pointer-events: none;
+  animation: bomb-tic 0.62s var(--ease-out) forwards;
+}
+.bomb-tic.is-tic {
+  left: 2%;
+  --dx: -10px;
+}
+.bomb-tic.is-tac {
+  right: 2%;
+  --dx: 10px;
+}
+@keyframes bomb-tic {
+  from {
+    transform: translate(0, 6px) scale(0.6);
+    opacity: 0;
+  }
+  25% {
+    transform: translate(calc(var(--dx) * 0.4), 0) scale(1.1);
+    opacity: 1;
+  }
+  to {
+    transform: translate(var(--dx), -14px) scale(0.9);
+    opacity: 0;
+  }
+}

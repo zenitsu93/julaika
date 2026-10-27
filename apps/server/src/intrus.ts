@@ -1,5 +1,7 @@
 import {
   INTRUS_CLUE_MAX,
+  INTRUS_HESITATE_GRACE,
+  INTRUS_HESITATE_TIME,
   INTRUS_MIN_PLAYERS,
   INTRUS_POINTS,
   checkGuess,
@@ -58,6 +60,11 @@ export class Intrus {
   accusedId: string | null = null;
   result: IntrusResult | null = null;
   readonly history: IntrusResult[] = [];
+  /** « Hésitation ! » en cours sur l'orateur, et ceux qui ont déjà crié cette manche. */
+  hesitationBy: string | null = null;
+  readonly hesitated = new Set<string>();
+  private turnStartedAt = 0;
+  private turnEndsAt = 0;
 
   private timers: ReturnType<typeof setTimeout>[] = [];
 
@@ -74,6 +81,7 @@ export class Intrus {
     if ('clue' in msg) this.giveClue(id, msg.clue);
     else if ('vote' in msg) this.vote(id, String(msg.vote));
     else if ('steal' in msg) this.steal(id, msg.steal);
+    else if ('hesitate' in msg) this.hesitate(id);
   }
 
   onLeave(id: string): void {
@@ -108,6 +116,9 @@ export class Intrus {
       clues: this.clues,
       voted: [...this.votes.keys()],
       myVote: this.votes.get(id) ?? null,
+      hesitationBy: this.phase === 'clue' ? this.hesitationBy : null,
+      canHesitate: this.phase === 'clue' && this.order.includes(id) && !this.hesitated.has(id),
+      hesitateFrom: this.phase === 'clue' && !this.hesitationBy ? this.turnStartedAt + INTRUS_HESITATE_GRACE * 1000 : null,
       accusedId: this.phase === 'steal' ? this.accusedId : null,
       result: this.phase === 'reveal' || this.phase === 'done' ? this.result : null,
       history: this.history,
@@ -139,17 +150,45 @@ export class Intrus {
     this.votes.clear();
     this.accusedId = null;
     this.result = null;
+    this.hesitated.clear();
     this.startClue();
   }
 
   private startClue(): void {
-    this.clearTimers();
     this.phase = 'clue';
-    this.setPhase('clue', CLUE_TIME);
-    this.after(CLUE_TIME, () => {
+    this.hesitationBy = null;
+    this.turnStartedAt = Date.now();
+    this.armClue(CLUE_TIME);
+    this.host.broadcastState();
+  }
+
+  /** Chrono de l'orateur : au bout, il n'a rien dit et on passe au suivant. */
+  private armClue(seconds: number): void {
+    this.clearTimers();
+    this.turnEndsAt = Date.now() + seconds * 1000;
+    this.setPhase('clue', seconds);
+    this.after(seconds, () => {
       this.host.system(`${this.host.name(this.order[this.speaker]!)} n'a rien dit… c'est suspect !`);
       this.nextSpeaker();
     });
+  }
+
+  /**
+   * « Hésitation ! » : un auditeur trouve que l'orateur cherche trop longtemps. Une fois par
+   * manche et par joueur, après un petit délai de grâce ; l'orateur n'a plus que quelques
+   * secondes, et son indice sera marqué comme arraché.
+   */
+  private hesitate(id: string): void {
+    const speakerId = this.order[this.speaker];
+    if (this.phase !== 'clue' || this.hesitationBy || id === speakerId || !this.order.includes(id) || this.hesitated.has(id)) return;
+    if (!this.host.playerIds().includes(id)) return;
+    const now = Date.now();
+    if (now < this.turnStartedAt + INTRUS_HESITATE_GRACE * 1000) return;
+    this.hesitated.add(id);
+    this.hesitationBy = id;
+    // Ne jamais rallonger : s'il restait moins que le délai, on garde le chrono tel quel.
+    if (this.turnEndsAt - now > INTRUS_HESITATE_TIME * 1000) this.armClue(INTRUS_HESITATE_TIME);
+    this.host.system(`${this.host.name(id)} : « Hésitation ! » ${this.host.name(speakerId!)} n'a plus que quelques secondes.`);
     this.host.broadcastState();
   }
 
@@ -161,7 +200,7 @@ export class Intrus {
       this.host.error(id, 'Pas ton mot, voyons ! Trouve un indice.');
       return;
     }
-    this.clues.push({ by: id, text, round: this.clueRound });
+    this.clues.push(this.hesitationBy ? { by: id, text, round: this.clueRound, hesitated: true } : { by: id, text, round: this.clueRound });
     this.nextSpeaker();
   }
 

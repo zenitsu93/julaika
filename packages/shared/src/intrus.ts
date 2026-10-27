@@ -13,6 +13,8 @@ export interface IntrusClue {
   text: string;
   /** Tour d'indices (à partir de 0). */
   round: number;
+  /** Donné après un « Hésitation ! » : un indice arraché, forcément un peu suspect. */
+  hesitated?: boolean;
 }
 
 /** Bilan d'une manche, dévoilé à tous à la fin. */
@@ -49,6 +51,12 @@ export interface IntrusState {
   voted: string[];
   /** Ton vote, pour l'afficher chez toi. */
   myVote: string | null;
+  /** Qui a crié « Hésitation ! » sur l'orateur en cours (null sinon) : il ne lui reste que quelques secondes. */
+  hesitationBy: string | null;
+  /** Tu peux encore crier « Hésitation ! » cette manche (une fois par manche, jamais sur toi). */
+  canHesitate: boolean;
+  /** Timestamp serveur à partir duquel on peut crier sur l'orateur en cours (petit délai de grâce). */
+  hesitateFrom: number | null;
   /** Joueur démasqué qui tente de voler la manche (phase steal). */
   accusedId: string | null;
   result: IntrusResult | null;
@@ -61,6 +69,10 @@ export const INTRUS_CLUE_MAX = 30;
 export function intrusClueRounds(players: number): number {
   return players <= 4 ? 2 : 1;
 }
+
+/** « Hésitation ! » : pas avant ce délai de parole (s), puis il ne reste que tant de secondes à l'orateur. */
+export const INTRUS_HESITATE_GRACE = 4;
+export const INTRUS_HESITATE_TIME = 6;
 
 /** Points : civil qui a désigné l'intrus, intrus qui passe entre les mailles, ou qui vole le mot. */
 export const INTRUS_POINTS = { spotted: 150, escaped: 300, stolen: 200 } as const;

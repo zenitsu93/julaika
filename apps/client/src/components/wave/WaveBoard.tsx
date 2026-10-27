@@ -118,7 +118,7 @@ function TeamBar() {
           <Progress wave={wave} />
           <span ref={badge} className="inline-flex items-baseline gap-1 rounded-full bg-primary px-3 py-1 text-on-primary">
             <span className="font-mono text-base font-bold tabular-nums">{score}</span>
-            <span className="text-xs opacity-75">pts d'équipe</span>
+            <span className="text-xs opacity-75">points de complicité</span>
           </span>
         </div>
       )}
@@ -191,7 +191,7 @@ function Stage() {
         boom={boom}
       />
       {revealed ? (
-        <Verdict points={wave.points!} gap={waveGap(wave.target!, wave.dial)} boom={boom} />
+        <Verdict points={wave.points!} gap={waveGap(wave.target!, wave.dial)} target={wave.target!} dial={wave.dial} boom={boom} />
       ) : (
         <Actions wave={wave} phase={phase} psychic={psychic} psychicName={psychicName} onLock={lock} />
       )}
@@ -295,7 +295,8 @@ function Actions({ wave, phase, psychic, psychicName, onLock }: { wave: WaveStat
 }
 
 /** Points du tour : le tampon claque une fois le volet ouvert, l'écart à la cible dessous. */
-function Verdict({ points, gap, boom }: { points: number; gap: number; boom: boolean }) {
+function Verdict({ points, gap, target, dial, boom }: { points: number; gap: number; target: number; dial: number; boom: boolean }) {
+  const percent = (v: number) => `${Math.round((v / DIAL_MAX) * 100)} %`;
   return (
     <div className="flex min-h-14 flex-col items-center gap-1.5">
       <span className="w-stamp flex items-center gap-2 whitespace-nowrap rounded-full bg-surface px-4 py-2 shadow-lg ring-1 ring-edge" style={{ animationDelay: boom ? `${BOOM_AT + 300}ms` : '850ms' }} role="status">
@@ -303,7 +304,7 @@ function Verdict({ points, gap, boom }: { points: number; gap: number; boom: boo
         <span className="font-semibold">{boom ? 'Boum ! Le cadran a sauté.' : POINT_LINE[points]}</span>
       </span>
       <span className={`w-gap font-mono text-sm tabular-nums ${boom ? 'font-semibold text-bad' : 'text-muted'}`} style={boom ? { animationDelay: `${BOOM_AT + 1300}ms` } : undefined}>
-        {gap === 0 ? 'Écart : 0 %, pile sur la cible' : `Écart : ${gap} %`}
+        Cible {percent(target)} · aiguille {percent(dial)} · {gap === 0 ? 'pile sur la cible' : `écart ${gap} %`}
       </span>
     </div>
   );
@@ -340,6 +341,7 @@ function Finale() {
       <p className="mb-4 font-mono text-5xl font-bold tabular-nums">
         {score}
         <span className="text-xl text-muted"> / {max}</span>
+        <span className="block font-sans text-sm font-normal text-muted">points de complicité</span>
       </p>
       <ul className="panel mx-auto max-w-sm divide-y divide-edge text-left text-sm">
         {wave.history.map((r, i) => (

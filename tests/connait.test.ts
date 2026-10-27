@@ -1,5 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CONNAIT_ANSWER_TIME, CONNAIT_GUESS_POINTS, CONNAIT_QUESTIONS, CONNAIT_REVEAL_TIME, CONNAIT_STAR_POINTS, connaitVerdict, type ServerMsg } from '@julaika/shared';
+import {
+  CONNAIT_ANSWER_TIME,
+  CONNAIT_GUESS_POINTS,
+  CONNAIT_QUESTIONS,
+  CONNAIT_REVEAL_TIME,
+  CONNAIT_SCALES,
+  CONNAIT_STAR_POINTS,
+  connaitScalePoints,
+  connaitVerdict,
+  isScale,
+  type ServerMsg,
+} from '@julaika/shared';
 import { Room, type Conn } from '../apps/server/src/room';
 
 class FakeConn implements Conn {
@@ -105,6 +116,46 @@ describe('Qui me connaît le mieux', () => {
     const s = conns[1]!.state().connait!;
     expect(room.phase).toBe('answer');
     expect(s.starId).toBe(ids[1]);
+  });
+
+  it('une question sur trois se joue au curseur, notée selon l’écart', () => {
+    expect(new Set(CONNAIT_SCALES.map((q) => q.topic)).size).toBe(CONNAIT_SCALES.length);
+    const { room, conns, ids } = setup(3);
+    room.handle(ids[0]!, { t: 'connait', pick: 0 });
+    room.handle(ids[1]!, { t: 'connait', pick: 0 });
+    room.handle(ids[2]!, { t: 'connait', pick: 0 });
+    vi.advanceTimersByTime(CONNAIT_REVEAL_TIME * 1000);
+
+    // Tour 2 : J1 est la vedette, au curseur.
+    const s = conns[0]!.state().connait!;
+    expect(s.starId).toBe(ids[1]);
+    expect(isScale(s.question!)).toBe(true);
+    room.handle(ids[0]!, { t: 'connait', pick: 101 }); // hors piste : ignoré
+    expect(conns[0]!.state().connait!.mine).toBeNull();
+
+    const before = Object.fromEntries(conns[0]!.state().players.map((p) => [p.id, p.score]));
+    room.handle(ids[1]!, { t: 'connait', pick: 70 });
+    room.handle(ids[0]!, { t: 'connait', pick: 73 }); // dans le mille
+    room.handle(ids[2]!, { t: 'connait', pick: 20 }); // trop loin
+    expect(room.phase).toBe('reveal');
+    const reveal = conns[0]!.state().connait!.reveal!;
+    expect(reveal.answer).toBe(70);
+    expect(reveal.gains).toEqual({ [ids[0]!]: CONNAIT_GUESS_POINTS, [ids[1]!]: CONNAIT_STAR_POINTS });
+    const after = Object.fromEntries(conns[0]!.state().players.map((p) => [p.id, p.score]));
+    expect(after[ids[0]!]! - before[ids[0]!]!).toBe(CONNAIT_GUESS_POINTS);
+    expect(conns[0]!.state().connait!.history.at(-1)).toMatchObject({ answer: '70 sur 100', right: 1, total: 2 });
+
+    // Un changement de question garde le curseur.
+    vi.advanceTimersByTime(CONNAIT_REVEAL_TIME * 1000);
+    expect(isScale(conns[0]!.state().connait!.question!)).toBe(false);
+  });
+
+  it('les points du curseur baissent avec l’écart', () => {
+    expect(connaitScalePoints(0)).toBe(CONNAIT_GUESS_POINTS);
+    expect(connaitScalePoints(-5)).toBe(CONNAIT_GUESS_POINTS);
+    expect(connaitScalePoints(20)).toBe(50);
+    expect(connaitScalePoints(35)).toBe(0);
+    for (let d = 0; d < 40; d++) expect(connaitScalePoints(d)).toBeGreaterThanOrEqual(connaitScalePoints(d + 1));
   });
 
   it('donne un titre selon la part de paris justes', () => {
