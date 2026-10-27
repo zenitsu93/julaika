@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus';
 
 export interface GameInfo {
   id: GameId;
@@ -53,13 +53,20 @@ export const GAMES: GameInfo[] = [
     badge: 'Nouveau',
     keywords: ['telephone', 'dessin', 'dessiner', 'chaine', 'phrase', 'album', 'gartic', 'deviner'],
   },
+  {
+    id: 'intrus',
+    name: "L'Intrus",
+    pitch: 'Tout le monde a le même mot, sauf un. Démasquez-le.',
+    players: '3 joueurs ou plus',
+    badge: 'Nouveau',
+    keywords: ['intrus', 'imposteur', 'undercover', 'vote', 'mot', 'indice', 'bluff', 'deduction'],
+  },
 ];
 
-export type SoonId = 'intrus' | 'interdits' | 'petitbac' | 'fredonne' | 'connait' | 'agents';
+export type SoonId = 'interdits' | 'petitbac' | 'fredonne' | 'connait' | 'agents';
 
 /** Jeux en préparation, affichés en « Bientôt » après les jeux disponibles (ordre de la liste des jeux à faire). */
 export const SOON: { id: SoonId; name: string; pitch: string; keywords: string[] }[] = [
-  { id: 'intrus', name: "L'Intrus", pitch: 'Tout le monde a le même mot, sauf un.', keywords: ['intrus', 'imposteur', 'vote', 'mot'] },
   { id: 'interdits', name: 'Mots interdits', pitch: 'Fais deviner sans dire les mots interdits.', keywords: ['interdit', 'tabou', 'visio', 'buzz'] },
   { id: 'petitbac', name: 'Petit Bac', pitch: 'Une lettre, des catégories, le plus vite possible.', keywords: ['petit bac', 'bac', 'lettre', 'categories'] },
   { id: 'fredonne', name: 'Fredonne !', pitch: 'Fredonne une chanson, les autres trouvent le titre.', keywords: ['fredonne', 'chanson', 'musique', 'micro', 'blind test'] },

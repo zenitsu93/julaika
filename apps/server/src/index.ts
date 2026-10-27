@@ -4,7 +4,7 @@ import { extname, join, normalize as normalizePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { isRoomGame, type ClientMsg, type RoomGame } from '@julaika/shared';
-import { deepseekWords } from './deepseek';
+import { deepseekPairs, deepseekWords } from './deepseek';
 import { iceServersFor } from './ice';
 import { MotDuJour, isToken } from './motdujour';
 import { Room } from './room';
@@ -13,6 +13,7 @@ const PORT = Number(process.env.PORT ?? 3001);
 const STATIC_DIR = process.env.STATIC_DIR ?? fileURLToPath(new URL('../../client/dist', import.meta.url));
 const rooms = new Map<string, Room>();
 const generateWords = deepseekWords();
+const generatePairs = deepseekPairs();
 const mot = new MotDuJour(process.env.MOT_DATA_DIR ?? 'data/mot', Date.now, process.env.MOT_TZ || 'Europe/Paris');
 const motBuckets = new Map<string, () => boolean>();
 
@@ -145,7 +146,7 @@ wss.on('connection', (ws: WebSocket & { alive?: boolean }) => {
     }
     if (!room || !playerId) return;
     if (msg.t === 'chat' && !chatBucket()) return;
-    if ((msg.t === 'wave' || msg.t === 'tel') && !dialBucket()) return;
+    if ((msg.t === 'wave' || msg.t === 'tel' || msg.t === 'intrus') && !dialBucket()) return;
     room.handle(playerId, msg);
   });
 
@@ -178,6 +179,7 @@ function createRoom(game: RoomGame): Room {
     Math.random,
     (playerId) => iceServersFor(playerId),
     generateWords,
+    generatePairs,
   );
   room.game = game;
   rooms.set(code, room);

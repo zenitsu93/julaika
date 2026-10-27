@@ -1,4 +1,4 @@
-import { SETTINGS_LIMITS, type Difficulty, type RoomGame, type RoomSettings } from '@julaika/shared';
+import { INTRUS_MIN_PLAYERS, SETTINGS_LIMITS, type Difficulty, type RoomGame, type RoomSettings } from '@julaika/shared';
 import { useEffect, useRef } from 'react';
 import { net } from '../lib/net';
 import { useGame } from '../lib/store';
@@ -31,6 +31,12 @@ const TEL_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
+// L'Intrus : pas de dessin, seulement le nombre de manches.
+const INTRUS_FIELDS: typeof FIELDS = [
+  { key: 'rounds', label: 'Manches' },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
 const RULES: Partial<Record<RoomGame, string[]>> = {
   wavelength: [
     'Le télépathe voit où se cache la cible entre deux extrêmes, et donne un indice.',
@@ -42,6 +48,11 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
     'Ton voisin la dessine, le suivant devine le dessin, et ainsi de suite : tout le monde joue en même temps.',
     "À la fin, l'album rejoue chaque chaîne, dessin après phrase. Plus on est, plus ça déraille !",
   ],
+  intrus: [
+    "Chacun reçoit un mot secret. Tous ont le même, sauf l'intrus, qui en a un proche… et ne le sait pas.",
+    'À tour de rôle, donnez un indice : assez précis pour vous reconnaître, assez flou pour ne rien livrer.',
+    "Votez pour l'intrus. Démasqué, il peut encore voler la manche en devinant votre mot.",
+  ],
 };
 
 export function Lobby() {
@@ -52,7 +63,8 @@ export function Lobby() {
   const error = useGame((s) => s.error);
   const set = (settings: Partial<RoomSettings>) => net.send({ t: 'settings', settings });
   const level = useIndicator(LEVELS.findIndex((l) => l.value === room.settings.difficulty));
-  const canStart = room.players.length >= 2;
+  const minPlayers = room.game === 'intrus' ? INTRUS_MIN_PLAYERS : 2;
+  const canStart = room.players.length >= minPlayers;
   const start = useRef<HTMLButtonElement>(null);
 
   // Le bouton s'éclaire quand le deuxième joueur arrive.
@@ -64,7 +76,7 @@ export function Lobby() {
     <div className="panel p-5 text-left shadow-sm">
       <h2 className="mb-4 text-lg font-semibold">Réglages du salon <span className="font-mono text-muted">#{room.code}</span></h2>
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : FIELDS).map(({ key, label, step }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : FIELDS).map(({ key, label, step }) => {
           const [min, max] = SETTINGS_LIMITS[key];
           return (
             <label key={key} className="text-sm">
@@ -141,7 +153,7 @@ export function Lobby() {
       )}
       {isHost ? (
         <button ref={start} className="btn-primary mt-5 w-full py-2.5" disabled={!canStart} onClick={() => net.send({ t: 'start' })}>
-          {canStart ? 'Lancer la partie' : 'En attente de joueurs…'}
+          {canStart ? 'Lancer la partie' : minPlayers > 2 ? `En attente de joueurs (${room.players.length}/${minPlayers})…` : 'En attente de joueurs…'}
         </button>
       ) : (
         <p className="mt-5 text-center text-muted">L'hôte va lancer la partie…</p>
