@@ -103,6 +103,13 @@ export class Telephone {
     if (this.phase === 'album') this.host.sendTo(id, { t: 'album', chains: this.chains });
   }
 
+  /** Retour après une coupure : on lui redonne ce qu'il avait à dessiner ou décrire. */
+  onResume(id: string): void {
+    const i = this.seats.findIndex((s) => s.id === id);
+    if (i < 0 || this.phase === 'album') return;
+    this.host.sendTo(id, { t: 'telPrompt', step: this.step, prompt: this.promptAt(i) });
+  }
+
   /** Un joueur part : sa page sera remplie à la fin de l'étape, les autres n'attendent plus que les présents. */
   onLeave(_id: string): void {
     this.checkAllDone();
@@ -134,13 +141,14 @@ export class Telephone {
     this.phase = kind;
     const seconds = kind === 'draw' ? this.host.drawTime() : TEL_WRITE_TIME;
     this.host.setPhase(kind, Date.now() + seconds * 1000, step + 1);
-    this.seats.forEach((s, i) => {
-      const prompt = step === 0 ? null : this.chainAt(i).entries[step - 1] ?? null;
-      this.host.sendTo(s.id, { t: 'telPrompt', step, prompt });
-    });
+    this.seats.forEach((s, i) => this.host.sendTo(s.id, { t: 'telPrompt', step, prompt: this.promptAt(i) }));
     // Une seconde de grâce : le brouillon envoyé au dernier moment arrive à temps.
     this.timers.push(setTimeout(() => this.endStep(), (seconds + 1) * 1000));
     this.host.broadcastState();
+  }
+
+  private promptAt(i: number): TelEntry | null {
+    return this.step === 0 ? null : this.chainAt(i).entries[this.step - 1] ?? null;
   }
 
   private endStep(): void {

@@ -10,26 +10,90 @@ import { configureSounds, receive as receiveSound } from './sounds';
 import { store, type GameState } from './store';
 
 const MAX_CHAT = 120;
+const SEAT_KEY = 'julaika:seat';
+/** Une place est gardée 10 minutes au plus par le serveur : au-delà, le jeton ne sert plus à rien. */
+const SEAT_TTL = 10 * 60_000;
+/** Fermeture envoyée par le serveur quand la même place est reprise ailleurs (autre onglet). */
+const SEAT_TAKEN = 4001;
+/** Au retour au premier plan, un socket qui ne répond plus en 3 s est tenu pour mort. */
+const WAKE_TIMEOUT = 3000;
+
+interface Seat {
+  room: string;
+  seat: string;
+  at: number;
+}
+
+/** Place gardée dans ce salon (localStorage : elle survit au rechargement de l'onglet par le téléphone). */
+export function savedSeat(room: string): Seat | null {
+  try {
+    const seat = JSON.parse(localStorage.getItem(SEAT_KEY) ?? 'null') as Seat | null;
+    return seat && seat.room === room && Date.now() - seat.at < SEAT_TTL ? seat : null;
+  } catch {
+    return null;
+  }
+}
+
+function keepSeat(seat: Seat | null) {
+  try {
+    if (seat) localStorage.setItem(SEAT_KEY, JSON.stringify(seat));
+    else localStorage.removeItem(SEAT_KEY);
+  } catch {}
+}
 
 /** Connexion unique au serveur de jeu. */
 class Net {
   private ws: WebSocket | null = null;
   private pingTimer: ReturnType<typeof setInterval> | null = null;
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
+  private retries = 0;
+  private lastPong = 0;
+  /** De quoi revenir à sa place : pseudo, avatar, salon et jeton. */
+  private me: { name: string; avatar: number; room: string; seat: string } | null = null;
+
+  constructor() {
+    // Retour sur l'onglet (après WhatsApp, l'écran verrouillé…) ou retour du réseau : on reprend tout de suite.
+    document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && this.wake());
+    addEventListener('online', () => this.wake());
+    addEventListener('pageshow', (e) => (e as PageTransitionEvent).persisted && this.wake());
+  }
 
   connect(name: string, avatar: number, room?: string, game?: RoomGame, mode?: GameMode) {
+    const seat = room ? savedSeat(room)?.seat : undefined;
     this.close();
     store.reset();
     store.set({ status: 'connecting' });
+    this.open({ t: 'join', name, avatar, room, game, mode, seat });
+  }
+
+  /** Reprend la place gardée après une coupure, sans effacer le chat ni l'écran. */
+  reconnect() {
+    if (!this.me || store.get().status !== 'reconnecting') return;
+    this.clearRetry();
+    const { name, avatar, room, seat } = this.me;
+    this.open({ t: 'join', name, avatar, room, seat });
+  }
+
+  /** Bouton « Réessayer » du bandeau : on repart de zéro, sans attendre le prochain essai. */
+  retryNow() {
+    this.retries = 0;
+    this.reconnect();
+  }
+
+  private open(join: Extract<ClientMsg, { t: 'join' }>) {
+    this.detach();
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     const ws = new WebSocket(`${proto}://${location.host}/ws`);
     ws.binaryType = 'arraybuffer';
     this.ws = ws;
 
     ws.onopen = () => {
-      this.send({ t: 'join', name, avatar, room, game, mode });
+      this.send(join);
+      this.lastPong = Date.now();
       this.pingTimer = setInterval(() => this.send({ t: 'ping', at: Date.now() }), 10_000);
     };
     ws.onmessage = (e) => {
+      if (this.ws !== ws) return;
       if (e.data instanceof ArrayBuffer) {
         if (isArcadeFrame(e.data)) return arcadeFrames.push(e.data);
         const packet = decodeDraw(e.data);
@@ -40,12 +104,60 @@ class Net {
       }
       this.onMessage(JSON.parse(e.data) as ServerMsg);
     };
-    ws.onclose = () => {
+    ws.onclose = (e) => {
       if (this.ws !== ws) return;
       this.stopPing();
       call.leave(false);
-      store.set({ status: 'closed' });
+      this.ws = null;
+      const { status } = store.get();
+      if (e.code === SEAT_TAKEN) {
+        this.me = null;
+        keepSeat(null);
+        store.set({ status: 'closed', error: 'Ta place a été reprise dans un autre onglet.' });
+      } else if (this.me && (status === 'online' || status === 'reconnecting')) {
+        store.set({ status: 'reconnecting' });
+        this.retryLater();
+      } else store.set({ status: 'closed' });
     };
+  }
+
+  /** Nouvel essai de plus en plus espacé (1 s, 2 s, 4 s… 15 s), jusqu'à la fin du délai de grâce. */
+  private retryLater() {
+    this.clearRetry();
+    const seat = this.me && savedSeat(this.me.room);
+    if (!seat) return this.giveUp();
+    // Onglet caché : le téléphone couperait de toute façon ; on attend le retour au premier plan.
+    if (document.visibilityState === 'hidden') return;
+    const delay = Math.min(15_000, 1000 * 2 ** this.retries++);
+    this.retryTimer = setTimeout(() => this.reconnect(), delay);
+  }
+
+  private giveUp() {
+    this.me = null;
+    keepSeat(null);
+    store.set({ status: 'closed', error: 'Le salon a fermé pendant ton absence.' });
+  }
+
+  /** Retour au premier plan : reconnexion immédiate, ou vérification que le socket vit encore. */
+  private wake() {
+    const { status } = store.get();
+    if (status === 'reconnecting') {
+      this.retries = 0;
+      return this.reconnect();
+    }
+    const ws = this.ws;
+    if (status !== 'online' || !ws) return;
+    // Après un long sommeil, le socket peut sembler ouvert alors que le serveur l'a déjà fermé.
+    const asked = Date.now();
+    this.send({ t: 'ping', at: asked });
+    setTimeout(() => {
+      if (this.ws === ws && this.lastPong < asked) {
+        this.detach();
+        call.leave(false);
+        store.set({ status: 'reconnecting' });
+        this.reconnect();
+      }
+    }, WAKE_TIMEOUT);
   }
 
   send(msg: ClientMsg) {
@@ -56,12 +168,30 @@ class Net {
     if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(buf);
   }
 
+  /** Fermeture voulue (on quitte, on change de salon) : la place est rendue tout de suite. */
   close() {
-    this.stopPing();
+    this.send({ t: 'leave' });
+    this.me = null;
+    keepSeat(null);
+    this.clearRetry();
     call.leave(false);
+    this.detach();
+  }
+
+  /** Lâche le socket courant sans déclencher de reconnexion. */
+  private detach() {
+    this.stopPing();
     const ws = this.ws;
     this.ws = null;
-    ws?.close();
+    if (ws) {
+      ws.onclose = null;
+      ws.close();
+    }
+  }
+
+  private clearRetry() {
+    if (this.retryTimer) clearTimeout(this.retryTimer);
+    this.retryTimer = null;
   }
 
   /** Départ volontaire : on ferme sans passer par « connexion perdue » et on rend l'adresse d'accueil. */
@@ -78,7 +208,11 @@ class Net {
 
   private onMessage(msg: ServerMsg) {
     switch (msg.t) {
-      case 'welcome':
+      case 'welcome': {
+        const self = msg.state.players.find((p) => p.id === msg.selfId);
+        this.me = { name: self?.name ?? '', avatar: self?.avatar ?? 0, room: msg.state.code, seat: msg.seat };
+        this.retries = 0;
+        keepSeat({ room: msg.state.code, seat: msg.seat, at: Date.now() });
         board.reset();
         arcadeFrames.reset();
         resetInk();
@@ -91,6 +225,7 @@ class Net {
         store.set({ status: 'online', selfId: msg.selfId, room: msg.state, dial: msg.state.wave?.dial ?? null, clockOffset: msg.now - Date.now(), error: null });
         history.replaceState(null, '', `/r/${msg.state.code}`);
         break;
+      }
       case 'state': {
         const phase = msg.state.phase;
         store.set((s) => ({
@@ -193,6 +328,9 @@ class Net {
         break;
       case 'pong': {
         // Demi aller-retour : estimation simple et suffisante pour un compte à rebours.
+        this.lastPong = Date.now();
+        // Le délai de grâce part de la coupure : la place reste valable 10 min après le dernier signe de vie.
+        if (this.me) keepSeat({ room: this.me.room, seat: this.me.seat, at: this.lastPong });
         const rtt = Date.now() - msg.at;
         store.set({ clockOffset: msg.now + rtt / 2 - Date.now() });
         break;
@@ -202,6 +340,11 @@ class Net {
         if (store.get().status === 'connecting') {
           this.close();
           store.set({ status: 'idle', error: msg.message });
+        } else if (store.get().status === 'reconnecting') {
+          this.detach();
+          // Le salon n'existe plus (tout le monde est parti) : inutile d'insister. Sinon (trop d'essais), on réessaie.
+          if (/introuvable/i.test(msg.message)) this.giveUp();
+          else this.retryLater();
         } else store.set({ error: msg.message });
         break;
     }

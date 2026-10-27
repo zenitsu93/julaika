@@ -433,9 +433,10 @@ export function nameOf(id: string): string {
   return game.get().room?.players.find((p) => p.id === id)?.name ?? 'Un joueur';
 }
 
-// En quittant le salon, le partage s'arrête ; sa propre musique continue.
+// En quittant le salon, le partage s'arrête ; sa propre musique continue (pas pendant une simple reconnexion).
 game.subscribe(() => {
-  if (game.get().status === 'online' || (!state.room && !state.sharing && !state.listening)) return;
+  const { status } = game.get();
+  if (status === 'online' || status === 'reconnecting' || (!state.room && !state.sharing && !state.listening)) return;
   if (state.listening) stopListening(true);
   set({ room: null, sharing: false });
 });

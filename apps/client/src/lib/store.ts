@@ -2,7 +2,8 @@ import { useSyncExternalStore } from 'react';
 import type { BombEvent, ChatLine, MimeShot, FlashSketch, Creature, DrawPacket, PhotoShot, PlayerPublic, RoomState, TelChain, TelEntry } from '@julaika/shared';
 
 export interface GameState {
-  status: 'idle' | 'connecting' | 'online' | 'closed';
+  /** `reconnecting` : la connexion est tombée (appli en arrière-plan), on reprend sa place dès que possible. */
+  status: 'idle' | 'connecting' | 'online' | 'reconnecting' | 'closed';
   selfId: string | null;
   room: RoomState | null;
   chat: ChatLine[];
@@ -75,6 +76,9 @@ export const store = {
     return () => listeners.delete(l);
   },
 };
+
+/** Dans un salon, même pendant une reconnexion : l'écran de jeu reste affiché. */
+export const inRoom = (s: GameState) => (s.status === 'online' || s.status === 'reconnecting') && s.room !== null;
 
 /** Abonnement avec sélecteur : un composant ne se re-rend que si sa tranche change. */
 export function useGame<T>(select: (s: GameState) => T): T {

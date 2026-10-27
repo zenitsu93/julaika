@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { parseYoutubeLink, type MusicTrack } from '@julaika/shared';
 import { attachHost, heard, music, nameOf, unlock, useMusic, warm } from '../lib/music';
-import { useGame } from '../lib/store';
+import { inRoom, useGame } from '../lib/store';
 import { thumbOf } from '../lib/youtube';
 import { avatarOf } from '../lib/avatars';
 
@@ -14,7 +14,7 @@ export function MusicPlayer() {
   const open = useMusic((s) => s.open);
   const playing = useMusic((s) => s.playing);
   const sheet = useMusic((s) => s.open && s.view !== 'now');
-  const inRoom = useGame((s) => s.status === 'online' && s.room !== null);
+  const salon = useGame(inRoom);
   const hostRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -24,7 +24,7 @@ export function MusicPlayer() {
 
   return (
     <aside
-      className={`mp ${open ? 'mp-open' : 'mp-mini'} ${sheet ? 'mp-sheet' : ''} ${playing ? 'mp-playing' : ''} ${inRoom ? 'mp-salon' : ''}`}
+      className={`mp ${open ? 'mp-open' : 'mp-mini'} ${sheet ? 'mp-sheet' : ''} ${playing ? 'mp-playing' : ''} ${salon ? 'mp-salon' : ''}`}
       aria-label="Lecteur de musique"
       onPointerEnter={warm}
       onFocus={warm}
@@ -251,7 +251,7 @@ function SoundButton() {
 
 /** Interrupteur « Partager avec le salon », seulement dans un salon. */
 function ShareRow() {
-  const online = useGame((s) => s.status === 'online' && s.room !== null);
+  const online = useGame(inRoom);
   const players = useGame((s) => s.room?.players);
   const self = useGame((s) => s.selfId);
   const sharing = useMusic((s) => s.sharing);

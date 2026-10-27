@@ -35,6 +35,8 @@ const AI_CALLS_PER_ROOM = 20;
 /** Un client qui ne lit plus ce qu'on lui envoie est coupé avant de remplir la mémoire. */
 const MAX_BUFFERED = 8 * 1024 * 1024;
 const connections = connectionCounter(MAX_CONNECTIONS_PER_IP);
+/** Code de fermeture d'une connexion dont la place a été reprise ailleurs : le client ne se reconnecte pas. */
+const SEAT_TAKEN = 4001;
 /** Messages propres à chaque jeu, qui partagent le seau de l'aiguille de Wavelength. */
 const GAME_MESSAGES = new Set<string>([
   'wave', 'tel', 'intrus', 'bac', 'connait', 'bomb', 'photo', 'sourire', 'bras', 'flash', 'cadavre', 'interdits',
@@ -175,6 +177,12 @@ wss.on('connection', (ws: WebSocket & { alive?: boolean }, req: IncomingMessage)
       if (ws.bufferedAmount > MAX_BUFFERED) return void ws.terminate();
       ws.send(data);
     },
+    // Sa place a été reprise par une autre connexion : celle-ci ne parle plus au nom du joueur.
+    close() {
+      room = null;
+      playerId = null;
+      ws.close(SEAT_TAKEN, 'place reprise ailleurs');
+    },
   };
   const anyBucket = bucket(80, 40); // tout message JSON : large pour le jeu, court pour un script
   const chatBucket = bucket(5, 1); // 5 messages en rafale, 1/s ensuite
@@ -229,6 +237,15 @@ wss.on('connection', (ws: WebSocket & { alive?: boolean }, req: IncomingMessage)
         conn.send(JSON.stringify({ t: 'error', message: 'Le serveur est plein, réessaie dans un instant.' }));
         return;
       }
+      // Retour après une coupure : même place, même score, même rôle d'hôte.
+      if (code && typeof msg.seat === 'string' && msg.seat.length <= 64) {
+        const resumed = rooms.get(code)!.resume(msg.seat, conn);
+        if (resumed) {
+          room = rooms.get(code)!;
+          playerId = resumed;
+          return;
+        }
+      }
       room = code ? rooms.get(code)! : createRoom(isRoomGame(msg.game) ? msg.game : 'dessin', isGameMode(msg.mode) ? msg.mode : 'dessin');
       playerId = room.join(conn, String(msg.name ?? ''), Number(msg.avatar) || 0);
       if (!playerId) {
@@ -238,6 +255,12 @@ wss.on('connection', (ws: WebSocket & { alive?: boolean }, req: IncomingMessage)
       return;
     }
     if (!room || !playerId) return;
+    if (msg.t === 'leave') {
+      room.leave(playerId);
+      room = null;
+      playerId = null;
+      return;
+    }
     if (msg.t === 'rtc') {
       if (rtcBucket()) room.handle(playerId, msg);
       return;
@@ -259,7 +282,8 @@ wss.on('connection', (ws: WebSocket & { alive?: boolean }, req: IncomingMessage)
   ws.on('close', () => {
     connections.remove(ip);
     if (settingsTimer) clearTimeout(settingsTimer);
-    if (room && playerId) room.leave(playerId);
+    // Une connexion qui tombe n'est pas un départ : la place est gardée le temps du délai de grâce.
+    if (room && playerId) room.disconnect(playerId, conn);
   });
 });
 
