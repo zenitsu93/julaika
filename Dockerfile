@@ -1,5 +1,5 @@
 # Build : client Vite + serveur bundlé par esbuild.
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 RUN corepack enable
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
@@ -11,7 +11,7 @@ COPY . .
 RUN pnpm build
 
 # Runtime : seulement le bundle serveur, le client buildé et `ws`.
-FROM node:22-alpine
+FROM node:26-alpine
 WORKDIR /app
 ENV NODE_ENV=production PORT=3001 STATIC_DIR=/app/public MOT_DATA_DIR=/app/data/mot
 # Version exacte, la même que dans pnpm-lock.yaml : pas de surprise d'un build à l'autre.
