@@ -1,0 +1,97 @@
+// Contrat client <-> serveur.
+// Messages de contrôle : JSON (frames texte). Dessin : binaire (voir draw.ts).
+
+export const CANVAS_W = 800;
+export const CANVAS_H = 600;
+
+/** Palette fixe : le dessin n'envoie qu'un index (1 octet) au lieu d'une couleur. */
+export const PALETTE = [
+  '#ffffff', '#c1c1c1', '#ef130b', '#ff7100', '#ffe400', '#00cc00', '#00b2ff', '#231fd3',
+  '#a300ba', '#d37caa', '#a0522d', '#592f2a', '#000000', '#4c4c4c', '#740b07', '#c23800',
+  '#e8a200', '#005510', '#00569e', '#0e0865', '#550069', '#a75574', '#63300d', '#ecbcb4',
+] as const;
+export const BRUSH_SIZES = [4, 10, 20, 36] as const;
+
+export type Phase = 'lobby' | 'choosing' | 'drawing' | 'turnEnd' | 'gameEnd';
+
+export interface RoomSettings {
+  rounds: number;
+  drawTime: number; // secondes
+  maxPlayers: number;
+  wordChoices: number;
+  hints: number;
+  customWords: string[];
+  customOnly: boolean;
+}
+
+export const DEFAULT_SETTINGS: RoomSettings = {
+  rounds: 3,
+  drawTime: 80,
+  maxPlayers: 10,
+  wordChoices: 3,
+  hints: 2,
+  customWords: [],
+  customOnly: false,
+};
+
+export const SETTINGS_LIMITS = {
+  rounds: [1, 10],
+  drawTime: [30, 240],
+  maxPlayers: [2, 16],
+  wordChoices: [1, 5],
+  hints: [0, 5],
+} as const;
+
+export interface PlayerPublic {
+  id: string;
+  name: string;
+  avatar: number;
+  score: number;
+  isHost: boolean;
+  guessed: boolean;
+  connected: boolean;
+}
+
+export interface RoomState {
+  code: string;
+  phase: Phase;
+  settings: RoomSettings;
+  players: PlayerPublic[];
+  drawerId: string | null;
+  round: number;
+  /** Timestamp serveur (ms) de fin de phase ; le client calcule le compte à rebours. */
+  endsAt: number | null;
+  /** Mot masqué ("_ _ a _"), ou mot complet pour le dessinateur. */
+  hint: string | null;
+}
+
+export type ChatKind = 'msg' | 'system' | 'correct' | 'close' | 'guessed';
+
+export interface ChatLine {
+  from: string | null;
+  name: string | null;
+  text: string;
+  kind: ChatKind;
+}
+
+export type ClientMsg =
+  | { t: 'join'; name: string; avatar: number; room?: string }
+  | { t: 'settings'; settings: Partial<RoomSettings> }
+  | { t: 'start' }
+  | { t: 'choose'; index: number }
+  | { t: 'chat'; text: string }
+  | { t: 'clear' }
+  | { t: 'undo' }
+  | { t: 'ping'; at: number };
+
+export type ServerMsg =
+  | { t: 'welcome'; selfId: string; state: RoomState; now: number }
+  | { t: 'state'; state: RoomState }
+  | { t: 'chat'; line: ChatLine }
+  | { t: 'choices'; words: string[] }
+  | { t: 'turnEnd'; word: string; gains: Record<string, number> }
+  | { t: 'gameEnd'; ranking: PlayerPublic[] }
+  | { t: 'clear' }
+  | { t: 'undo' }
+  | { t: 'pong'; at: number; now: number }
+  | { t: 'error'; message: string };
