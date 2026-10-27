@@ -114,6 +114,7 @@ const SKINS: Record<GameId, string> = {
   wavelength: 'border-edge bg-surface text-ink',
   motdujour: 'border-[#15803d] bg-[#16a34a] text-white',
   telephone: 'border-[#6d28d9] bg-[#7c3aed] text-white',
+  petitbac: 'border-[#c2410c] bg-[#ea580c] text-white',
 };
 
 function GameCard({ game, className, style, onPick }: { game: GameInfo; className: string; style: CSSProperties; onPick: () => void }) {
@@ -210,7 +211,38 @@ const TelArt = () => (
   </svg>
 );
 
-const ART: Record<GameId, JSX.Element> = { dessin: <DrawArt />, mime: <MimeArt />, wavelength: <WaveArt />, motdujour: <MotArt />, telephone: <TelArt /> };
+/** La grille du Petit Bac : la lettre tourne, les cases se remplissent, puis le tampon « Stop ! ». */
+const BacArt = () => (
+  <svg viewBox="0 0 220 140" className="mx-auto max-h-36 w-full" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <g className="soon-spin" style={{ transformOrigin: '50px 70px' }}>
+      <rect x="18" y="38" width="64" height="64" rx="14" fill="#f5b700" stroke="none" />
+      <text x="50" y="86" textAnchor="middle" fontSize="44" fontWeight="700" fill="#18181b" stroke="none">
+        B
+      </text>
+    </g>
+    {[44, 70, 96].map((y, i) => (
+      <g key={y}>
+        <rect x="98" y={y - 10} width="104" height="20" rx="6" fill="currentColor" fillOpacity=".16" stroke="none" />
+        <path className="m-draw" style={{ animationDelay: `${i * 300}ms` }} pathLength={1} d={`M106 ${y}h${68 - i * 14}`} strokeWidth="5" />
+      </g>
+    ))}
+    <g className="bac-art-stamp" style={{ transformOrigin: '176px 112px' }}>
+      <rect x="146" y="100" width="60" height="24" rx="6" fill="#fff" stroke="none" />
+      <text x="176" y="117" textAnchor="middle" fontSize="14" fontWeight="800" fill="#dc2626" stroke="none" letterSpacing="1">
+        STOP!
+      </text>
+    </g>
+  </svg>
+);
+
+const ART: Record<GameId, JSX.Element> = {
+  dessin: <DrawArt />,
+  mime: <MimeArt />,
+  wavelength: <WaveArt />,
+  motdujour: <MotArt />,
+  telephone: <TelArt />,
+  petitbac: <BacArt />,
+};
 
 /** Carte d'un jeu en préparation : même mise en scène, en pointillés et sans clic. */
 function SoonCard({ game, className, style }: { game: (typeof SOON)[number]; className: string; style: CSSProperties }) {
@@ -268,20 +300,6 @@ const SOON_ART: Record<SoonId, JSX.Element> = {
       <rect x="36" y="30" width="128" height="80" rx="14" strokeWidth="5" />
       <path d="M58 58h84M58 82h56" strokeWidth="7" strokeOpacity=".35" />
       <path className="m-draw" pathLength={1} d="M50 96 150 44" stroke="#dc2626" strokeWidth="7" />
-    </>,
-  ),
-  // La lettre tourne, les lignes se remplissent.
-  petitbac: svg(
-    <>
-      <g className="soon-spin" style={{ transformOrigin: '52px 70px' }}>
-        <rect x="26" y="44" width="52" height="52" rx="10" fill="#f5b700" stroke="none" />
-        <text x="52" y="83" textAnchor="middle" fontSize="34" fontWeight="700" fill="#18181b" stroke="none">
-          B
-        </text>
-      </g>
-      {[48, 72, 96].map((y, i) => (
-        <path key={y} className="m-draw" style={{ animationDelay: `${i * 300}ms` }} pathLength={1} d={`M98 ${y}h${70 - i * 12}`} strokeWidth="6" />
-      ))}
     </>,
   ),
   // Des notes qui s'envolent.

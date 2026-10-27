@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'petitbac';
 
 export interface GameInfo {
   id: GameId;
@@ -53,15 +53,22 @@ export const GAMES: GameInfo[] = [
     badge: 'Nouveau',
     keywords: ['telephone', 'dessin', 'dessiner', 'chaine', 'phrase', 'album', 'gartic', 'deviner'],
   },
+  {
+    id: 'petitbac',
+    name: 'Petit Bac',
+    pitch: 'Une lettre, six catégories : le premier qui crie « Stop ! ».',
+    players: '2 joueurs ou plus',
+    badge: 'Nouveau',
+    keywords: ['petit bac', 'bac', 'lettre', 'categories', 'mots', 'stop', 'vote', 'rapidite'],
+  },
 ];
 
-export type SoonId = 'intrus' | 'interdits' | 'petitbac' | 'fredonne' | 'connait' | 'agents';
+export type SoonId = 'intrus' | 'interdits' | 'fredonne' | 'connait' | 'agents';
 
 /** Jeux en préparation, affichés en « Bientôt » après les jeux disponibles (ordre de la liste des jeux à faire). */
 export const SOON: { id: SoonId; name: string; pitch: string; keywords: string[] }[] = [
   { id: 'intrus', name: "L'Intrus", pitch: 'Tout le monde a le même mot, sauf un.', keywords: ['intrus', 'imposteur', 'vote', 'mot'] },
   { id: 'interdits', name: 'Mots interdits', pitch: 'Fais deviner sans dire les mots interdits.', keywords: ['interdit', 'tabou', 'visio', 'buzz'] },
-  { id: 'petitbac', name: 'Petit Bac', pitch: 'Une lettre, des catégories, le plus vite possible.', keywords: ['petit bac', 'bac', 'lettre', 'categories'] },
   { id: 'fredonne', name: 'Fredonne !', pitch: 'Fredonne une chanson, les autres trouvent le titre.', keywords: ['fredonne', 'chanson', 'musique', 'micro', 'blind test'] },
   { id: 'connait', name: 'Qui me connaît le mieux ?', pitch: 'Une question sur toi, les autres parient.', keywords: ['connait', 'question', 'pari', 'amis', 'couple'] },
   { id: 'agents', name: 'Agents secrets', pitch: 'Un indice pour relier plusieurs mots de ton équipe.', keywords: ['agents', 'secret', 'equipes', 'grille', 'codenames'] },

@@ -30,7 +30,7 @@ function Gain({ player, gain, index }: { player: PlayerPublic; gain: number; ind
 }
 
 /** Podium : les marches montent (3e, 2e puis 1er), chaque avatar tombe sur la sienne, puis confettis. */
-function Podium({ ranking }: { ranking: PlayerPublic[] }) {
+export function Podium({ ranking }: { ranking: PlayerPublic[] }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     let stop = () => {};

@@ -20,6 +20,7 @@ import {
   type ServerMsg,
 } from '@julaika/shared';
 import type { WordGenerator } from './deepseek';
+import { PetitBac } from './petitbac';
 import { Telephone } from './telephone';
 import { Wavelength } from './wavelength';
 import { WORDS_FR } from './words';
@@ -71,6 +72,7 @@ export class Room {
 
   private wave: Wavelength | null = null;
   private tel: Telephone | null = null;
+  private bac: PetitBac | null = null;
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -143,9 +145,10 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel) {
+    if (this.wave || this.tel || this.bac) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
+      this.bac?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -184,6 +187,9 @@ export class Room {
         break;
       case 'tel':
         if (msg && typeof msg === 'object') this.tel?.handle(id, msg);
+        break;
+      case 'bac':
+        if (msg && typeof msg === 'object') this.bac?.handle(id, msg);
         break;
       case 'clear':
         if (this.tel) this.tel.clear(id);
@@ -274,6 +280,7 @@ export class Room {
     this.round = 0;
     if (this.game === 'wavelength') return this.startWave();
     if (this.game === 'telephone') return this.startTel();
+    if (this.game === 'petitbac') return this.startBac();
     this.usedWords.clear();
     this.nextRound();
   }
@@ -451,6 +458,31 @@ export class Room {
     this.tel.start();
   }
 
+  private startBac(): void {
+    this.bac?.dispose();
+    this.bac = new PetitBac({
+      playerIds: () => [...this.players.keys()],
+      name: (id) => this.players.get(id)?.name ?? '?',
+      isHost: (id) => id === this.hostId,
+      fillTime: () => this.settings.drawTime,
+      rounds: () => this.settings.rounds,
+      random: this.random,
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      system: (text) => this.system(text),
+      endGame: () => this.endGame(),
+    });
+    this.bac.start();
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -469,6 +501,8 @@ export class Room {
     this.wave = null;
     this.tel?.dispose();
     this.tel = null;
+    this.bac?.dispose();
+    this.bac = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -555,6 +589,7 @@ export class Room {
       meetUrl: this.meetUrl,
       wave: this.wave?.stateFor(id) ?? null,
       tel: this.tel?.state() ?? null,
+      bac: this.bac?.state() ?? null,
     };
   }
 
@@ -592,6 +627,7 @@ export class Room {
     this.clearTimers();
     this.wave?.dispose();
     this.tel?.dispose();
+    this.bac?.dispose();
   }
 }
 

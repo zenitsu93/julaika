@@ -1,6 +1,7 @@
 // Contrat client <-> serveur.
 // Messages de contrôle : JSON (frames texte). Dessin : binaire (voir draw.ts).
 
+import type { BacState } from './petitbac';
 import type { TelChain, TelEntry, TelState } from './telephone';
 import type { WaveState } from './wavelength';
 
@@ -16,7 +17,7 @@ export const PALETTE = [
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 /** Jeux proposés : chaque salon en porte un, choisi à sa création. */
-export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone'] as const;
+export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'petitbac'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
@@ -26,7 +27,7 @@ export function isRoomGame(v: unknown): v is RoomGame {
 /**
  * Dessin : choosing → drawing → turnEnd. Wavelength : clue (le télépathe cherche son indice)
  * → guess (l'équipe place l'aiguille) → reveal. Téléphone dessiné : write → draw → describe
- * → draw… (tous en même temps) → album.
+ * → draw… (tous en même temps) → album. Petit Bac : fill (la grille) → vote → reveal.
  */
 export type Phase =
   | 'lobby'
@@ -40,6 +41,8 @@ export type Phase =
   | 'draw'
   | 'describe'
   | 'album'
+  | 'fill'
+  | 'vote'
   | 'gameEnd';
 
 /** Difficulté des mots proposés : sert au tirage dans les listes intégrées et à la génération par IA. */
@@ -126,6 +129,8 @@ export interface RoomState {
   wave: WaveState | null;
   /** État du Téléphone dessiné, null pour les autres jeux. */
   tel: TelState | null;
+  /** État du Petit Bac, null pour les autres jeux. */
+  bac: BacState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -172,6 +177,11 @@ export type ClientMsg =
   | { t: 'tel'; done: true }
   | { t: 'tel'; edit: true }
   | { t: 'tel'; next: true }
+  | { t: 'bac'; answers: string[] }
+  | { t: 'bac'; stop: true }
+  | { t: 'bac'; veto: { player: string; category: number; against: boolean } }
+  | { t: 'bac'; done: boolean }
+  | { t: 'bac'; next: true }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =
