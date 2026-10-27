@@ -4,9 +4,9 @@ import { arcadeFrames, emitArcadeEvents } from './arcade';
 import { board } from './board';
 import { call } from './call';
 import { mimeSnapshot } from './mime';
-import { configureMusic, receiveRoomMusic } from './music';
+import { configureMusic, musicPlaying, receiveRoomMusic } from './music';
 import { inkLayers, resetInk } from './cerveau';
-import { configureSounds, receive as receiveSound } from './sounds';
+import { chatPing, configureSounds, receive as receiveSound } from './sounds';
 import { store, type GameState } from './store';
 
 const MAX_CHAT = 120;
@@ -251,9 +251,13 @@ class Net {
         call.sync(msg.state.players);
         break;
       }
-      case 'chat':
+      case 'chat': {
         store.set((s) => ({ chat: [...s.chat.slice(-MAX_CHAT + 1), msg.line] }));
+        // Plop pour les messages des autres seulement : ni les siens, ni les lignes du jeu (trouvé, système, « tu chauffes »).
+        const { from, kind } = msg.line;
+        if (from && from !== store.get().selfId && (kind === 'msg' || kind === 'guessed')) chatPing(musicPlaying());
         break;
+      }
       case 'choices':
         store.set({ choices: msg.words });
         break;

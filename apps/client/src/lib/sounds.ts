@@ -506,6 +506,32 @@ export function whoosh(up = true) {
 // ---- Muet ---------------------------------------------------------------------------------
 
 const MUTE_KEY = 'julaika:muted';
+/**
+ * « Plop » d'un message reçu dans le chat : une goutte ronde (sinus qui retombe) suivie d'une
+ * note plus haute, comme une bulle qui éclot. Très court et doux ; `soft` le baisse encore quand
+ * la musique de l'île joue. Les rafales sont regroupées : un seul plop par instant.
+ */
+let lastPing = 0;
+export function chatPing(soft = false) {
+  if (isMuted) return;
+  const now = performance.now();
+  if (now - lastPing < 400) return;
+  lastPing = now;
+  const k = soft ? 0.45 : 1;
+  voice((v, t) => {
+    for (const [at, f, a] of [
+      [0, 880, 0.2],
+      [0.075, 1318.5, 0.14],
+    ] as const) {
+      const s = t + at;
+      const o = tone(v, 'sine', f * 0.8, s, s + 0.2);
+      o.frequency.exponentialRampToValueAtTime(f, s + 0.025);
+      o.connect(filter(v, 'lowpass', 3000)).connect(env(v, a * k, s, 0.004, 0.01, 0.14)).connect(v.out);
+    }
+    return 0.3;
+  });
+}
+
 let isMuted = (() => {
   try {
     return localStorage.getItem(MUTE_KEY) === '1';
