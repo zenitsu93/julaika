@@ -102,6 +102,8 @@ export function TopBar() {
             ? room.phase === 'reveal'
               ? 'Dévoilement'
               : `Morceau ${room.cadavre.step + 1}/3`
+          : room.interdits
+            ? `Tour ${room.interdits.turn + 1}/${room.interdits.turns}`
             : room.tel
             ? room.phase === 'album'
               ? 'Album'

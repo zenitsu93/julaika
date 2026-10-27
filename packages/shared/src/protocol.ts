@@ -7,6 +7,7 @@ import type { CadavreState, Creature } from './cadavre';
 import type { DrawPacket } from './draw';
 import type { ConnaitState } from './connait';
 import type { FlashSketch, FlashState } from './flash';
+import type { InterditsState } from './interdits';
 import type { IntrusState } from './intrus';
 import type { MimeShot, MimeTwist } from './mime';
 import type { BacState } from './petitbac';
@@ -27,7 +28,7 @@ export const PALETTE = [
 export const BRUSH_SIZES = [4, 10, 20, 36] as const;
 
 /** Jeux proposés : chaque salon en porte un, choisi à sa création. */
-export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre'] as const;
+export const ROOM_GAMES = ['dessin', 'wavelength', 'telephone', 'intrus', 'petitbac', 'connait', 'bombe', 'photomaton', 'sourire', 'brasdefer', 'flash', 'cadavre', 'interdits'] as const;
 export type RoomGame = (typeof ROOM_GAMES)[number];
 
 export function isRoomGame(v: unknown): v is RoomGame {
@@ -43,6 +44,7 @@ export function isRoomGame(v: unknown): v is RoomGame {
  * Bombe à mots : bomb, jusqu'au dernier survivant. Photomaton : pose (consigne puis flash) → vote → reveal.
  * Pas un sourire ! : faceoff (3, 2, 1) → duel → verdict. Bras de fer : pareil. Flash : memorize (l'image 3 s) → draw → vote → reveal.
  * Cadavre exquis : draw (tête, corps, jambes, tous en même temps) → reveal.
+ * Mots interdits : faceoff (qui fait deviner) → explain (les cartes défilent) → verdict.
  */
 export type Phase =
   | 'lobby'
@@ -66,6 +68,7 @@ export type Phase =
   | 'duel'
   | 'verdict'
   | 'memorize'
+  | 'explain'
   | 'gameEnd';
 
 /** Difficulté des mots proposés : sert au tirage dans les listes intégrées et à la génération par IA. */
@@ -219,6 +222,8 @@ export interface RoomState {
   flash: FlashState | null;
   /** État du Cadavre exquis, null pour les autres jeux. */
   cadavre: CadavreState | null;
+  /** État de Mots interdits vu par ce joueur (la carte reste secrète), null pour les autres jeux. */
+  interdits: InterditsState | null;
 }
 
 /** Seuls les liens de réunion Google Meet sont acceptés, pour ne pas relayer n'importe quelle URL. */
@@ -297,6 +302,10 @@ export type ClientMsg =
   | { t: 'cadavre'; name: string }
   | { t: 'cadavre'; heart: string }
   | { t: 'cadavre'; next: true }
+  /** Mots interdits : on tranche la carte n° `card` (trouvé, buzz, passée). */
+  | { t: 'interdits'; found: number }
+  | { t: 'interdits'; buzz: number; heard?: string }
+  | { t: 'interdits'; skip: number }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =

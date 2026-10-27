@@ -14,3 +14,4 @@ export * from './mime';
 export * from './brasdefer';
 export * from './flash';
 export * from './cadavre';
+export * from './interdits';

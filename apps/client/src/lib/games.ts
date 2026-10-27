@@ -1,7 +1,7 @@
 // Catalogue des jeux de julaïka : l'accueil affiche une carte par entrée.
 // Ajouter un jeu = l'ajouter ici (et retirer sa carte de SOON).
 
-export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash' | 'cadavre';
+export type GameId = 'dessin' | 'mime' | 'wavelength' | 'motdujour' | 'telephone' | 'intrus' | 'petitbac' | 'connait' | 'bombe' | 'photomaton' | 'sourire' | 'brasdefer' | 'flash' | 'cadavre' | 'interdits';
 
 export interface GameInfo {
   id: GameId;
@@ -125,13 +125,20 @@ export const GAMES: GameInfo[] = [
     badge: 'À deux',
     keywords: ['cadavre exquis', 'creature', 'monstre', 'dessin', 'dessiner', 'tete', 'corps', 'jambes', 'plier', 'duo', 'deux', 'couple', 'franken'],
   },
+  {
+    id: 'interdits',
+    name: 'Mots interdits',
+    pitch: 'Fais deviner à voix haute, sans les mots défendus. Bzzz !',
+    players: 'En visio · à deux ou plus',
+    badge: 'Nouveau',
+    keywords: ['interdit', 'interdits', 'tabou', 'taboo', 'mots', 'deviner', 'oral', 'parler', 'visio', 'buzz', 'buzzer', 'duo', 'deux', 'bruitages'],
+  },
 ];
 
-export type SoonId = 'interdits' | 'fredonne' | 'agents';
+export type SoonId = 'fredonne' | 'agents';
 
 /** Jeux en préparation, affichés en « Bientôt » après les jeux disponibles (ordre de la liste des jeux à faire). */
 export const SOON: { id: SoonId; name: string; pitch: string; keywords: string[] }[] = [
-  { id: 'interdits', name: 'Mots interdits', pitch: 'Fais deviner sans dire les mots interdits.', keywords: ['interdit', 'tabou', 'visio', 'buzz'] },
   { id: 'fredonne', name: 'Fredonne !', pitch: 'Fredonne une chanson, les autres trouvent le titre.', keywords: ['fredonne', 'chanson', 'musique', 'micro', 'blind test'] },
   { id: 'agents', name: 'Agents secrets', pitch: 'Un indice pour relier plusieurs mots de ton équipe.', keywords: ['agents', 'secret', 'equipes', 'grille', 'codenames'] },
 ];

@@ -455,6 +455,17 @@ export function buzzer() {
   });
 }
 
+/** Buzzer de jeu télé (Mots interdits) : deux carrés graves désaccordés, râpeux, une demi-seconde. */
+export function buzzerLong() {
+  if (isMuted) return;
+  voice((v, t) => {
+    const lp = filter(v, 'lowpass', 1400, 1.2);
+    lp.connect(env(v, 0.32, t, 0.008, 0.42, 0.08)).connect(v.out);
+    for (const f of [110, 116.5, 220]) tone(v, 'square', f, t, t + 0.52).connect(lp);
+    return 0.55;
+  });
+}
+
 // ---- Muet ---------------------------------------------------------------------------------
 
 const MUTE_KEY = 'julaika:muted';

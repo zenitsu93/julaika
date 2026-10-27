@@ -7,6 +7,7 @@ import { ConnaitArt } from './connait/ConnaitArt';
 import { FlashArt } from './flash/FlashArt';
 import { LogoMark } from './Logo';
 import './photo/photo.css';
+import './interdits/interdits.css';
 
 // L'entrée animée ne se joue qu'une fois par visite, comme sur l'écran du pseudo.
 let introPlayed = false;
@@ -294,6 +295,32 @@ const BacArt = () => (
   </svg>
 );
 
+/** La carte de Mots interdits : ses mots se font barrer, le buzzer s'enfonce, « bzz » part. */
+const InterditsArt = () => (
+  <svg viewBox="0 0 220 140" className="mx-auto max-h-36 w-full" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <g transform="rotate(-6 80 70)">
+      <rect x="28" y="14" width="104" height="116" rx="12" className="fill-butter" />
+      <text x="80" y="42" textAnchor="middle" fontSize="17" fontWeight="800" className="fill-cacao" letterSpacing="0.5">
+        SOURIRE
+      </text>
+      <path d="M44 52h72" className="stroke-cacao" strokeOpacity=".2" strokeWidth="2" />
+      {[68, 86, 104].map((y, i) => (
+        <g key={y}>
+          <circle cx="48" cy={y} r="5" className="fill-bad" />
+          <path d={`M60 ${y}h${48 - i * 8}`} className="stroke-cacao" strokeOpacity=".45" strokeWidth="6" />
+          <path className="ti-art-strike stroke-bad" style={{ animationDelay: `${i * 0.35}s` }} pathLength={1} d={`M56 ${y}h${56 - i * 8}`} strokeWidth="3" />
+        </g>
+      ))}
+    </g>
+    <g className="ti-art-wave stroke-gold" strokeWidth="4">
+      <path d="M150 64a26 26 0 0 1 52 0" />
+      <path d="M140 60a36 36 0 0 1 72 0" strokeOpacity=".5" />
+    </g>
+    <rect x="148" y="98" width="56" height="16" rx="5" fill="currentColor" fillOpacity=".35" />
+    <path className="ti-art-buzz fill-bad" d="M156 98a20 20 0 0 1 40 0z" />
+  </svg>
+);
+
 const ART: Record<GameId, JSX.Element> = {
   dessin: <DrawArt />,
   mime: <MimeArt />,
@@ -309,6 +336,7 @@ const ART: Record<GameId, JSX.Element> = {
   brasdefer: <BrasGlyph className="mx-auto max-h-36 w-full" />,
   flash: <FlashArt />,
   cadavre: <CadArt />,
+  interdits: <InterditsArt />,
 };
 
 /** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */
@@ -342,14 +370,6 @@ const svg = (body: JSX.Element, viewBox = '0 0 200 140') => (
 );
 
 const SOON_ART: Record<SoonId, JSX.Element> = {
-  // Un mot barré d'un trait rouge, encore et encore.
-  interdits: svg(
-    <>
-      <rect x="36" y="30" width="128" height="80" rx="14" strokeWidth="5" />
-      <path d="M58 58h84M58 82h56" strokeWidth="7" strokeOpacity=".35" />
-      <path className="m-draw stroke-gold" pathLength={1} d="M50 96 150 44" strokeWidth="7" />
-    </>,
-  ),
   // Des notes qui s'envolent.
   fredonne: svg(
     <>

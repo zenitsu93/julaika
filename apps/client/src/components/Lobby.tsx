@@ -94,6 +94,13 @@ const CAD_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
+// Mots interdits : chacun fait deviner `rounds` fois ; la difficulté règle le nombre de mots interdits.
+const INTERDITS_FIELDS: typeof FIELDS = [
+  { key: 'rounds', label: 'Tours par joueur' },
+  { key: 'drawTime', label: 'Temps par tour (s)', step: 10 },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
 const RULES: Partial<Record<RoomGame, string[]>> = {
   wavelength: [
     'Le télépathe voit où se cache la cible entre deux extrêmes, et donne un indice.',
@@ -157,6 +164,12 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
     'Deux joueurs face à face, une jauge au milieu : tapote les cibles qui apparaissent pour la pousser dans le camp de l’autre.',
     'Crie, commente, rugis au micro : tant que tu dépasses le seuil, chaque coup pousse deux fois plus. Les cibles dorées aussi.',
     'Jauge plaquée au bout : K.O. ! Sinon, au bout de 30 s, celui qui mène gagne aux points.',
+  ],
+
+  interdits: [
+    'À ton tour, une carte : fais deviner le mot à voix haute, en visio, sans dire les mots interdits.',
+    'Les autres crient leurs réponses ou les tapent dans le chat. Trouvé ? Entrée, carte suivante !',
+    'À trois et plus, un gardien voit la carte et buzze ; à deux, l’oreille de l’arbitre (reconnaissance vocale) s’en charge.',
   ],
 };
 
@@ -226,7 +239,7 @@ export function Lobby() {
       </div>
       )}
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'brasdefer' ? BRAS_FIELDS : room.game === 'flash' ? FLASH_FIELDS : room.game === 'cadavre' ? CAD_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'brasdefer' ? BRAS_FIELDS : room.game === 'flash' ? FLASH_FIELDS : room.game === 'cadavre' ? CAD_FIELDS : room.game === 'interdits' ? INTERDITS_FIELDS : FIELDS).map(({ key, label: base, step, max: cap }) => {
           const label = key === 'drawTime' && !rules && room.settings.mode !== 'dessin' ? 'Temps par tour (s)' : base;
           const [min, limit] = SETTINGS_LIMITS[key];
           const max = cap ?? limit;
@@ -254,9 +267,9 @@ export function Lobby() {
           );
         })}
       </div>
-      {(!rules || room.game === 'bombe') && (
+      {(!rules || room.game === 'bombe' || room.game === 'interdits') && (
         <div className="mt-3 text-sm">
-          <span className="mb-1 block text-muted">{room.game === 'bombe' ? 'Difficulté des syllabes' : 'Difficulté des mots'}</span>
+          <span className="mb-1 block text-muted">{room.game === 'bombe' ? 'Difficulté des syllabes' : room.game === 'interdits' ? 'Mots interdits par carte (3, 4 ou 5)' : 'Difficulté des mots'}</span>
           <div ref={level.container} role="group" aria-label="Difficulté" className="relative grid grid-cols-3 gap-1 rounded-md border border-edge p-1">
             <span ref={level.indicator} className="m-indicator rounded bg-primary" />
             {LEVELS.map(({ value, label }) => {
