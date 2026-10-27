@@ -1,10 +1,13 @@
-import { aovFits, normalize, type AovHeat, type AovKind, type Difficulty, type IntrusPair, type TurnKind } from '@julaika/shared';
+import { QUIZ_DEFAULT_THEME, aovFits, normalize, type AovHeat, type AovKind, type Difficulty, type IntrusPair, type QuizQuestion, type TurnKind } from '@julaika/shared';
 
 /** Fournit `count` mots nouveaux pour une difficulté (à dessiner ou à mimer), en évitant ceux de `avoid`. */
 export type WordGenerator = (difficulty: Difficulty, count: number, avoid: string[], kind?: TurnKind) => Promise<string[]>;
 
 /** Fournit `count` paires nouvelles pour L'Intrus, sans réutiliser les mots de `avoid`. */
 export type PairGenerator = (count: number, avoid: string[]) => Promise<IntrusPair[]>;
+
+/** Écrit `count` questions de quiz sur les thèmes donnés, au niveau demandé. */
+export type QuizGenerator = (themes: string[], difficulty: Difficulty, count: number) => Promise<QuizQuestion[]>;
 
 // Quelques thèmes tirés au hasard à chaque appel : sans eux, le modèle ressort toujours les mêmes mots.
 const THEMES = [
@@ -67,6 +70,20 @@ Chaque carte doit :
 - être différente des autres cartes et des exemples ci-dessus.
 Réponds uniquement en JSON, au format {"action": [...], "verite": [...]}.`;
 
+const SYSTEM_QUIZ = `Tu écris les questions d'un quiz de culture générale pour julaïka, un site de jeux entre amis : les joueurs répondent en même temps, et le plus rapide marque le plus. Ils sont francophones (France, Afrique, Canada…) et de tous âges.
+Les thèmes sont écrits librement par les joueurs. Si un thème est flou, prends-le au sens le plus courant ; s'il est inapproprié (violence, sexe, haine…) ou n'est pas un thème, remplace-le par « ${QUIZ_DEFAULT_THEME} ».
+Chaque question :
+- porte sur un fait sûr et vérifiable, sans ambiguïté ni opinion, et n'a qu'une seule bonne réponse ;
+- est courte (une phrase de 140 caractères au plus) et se comprend sans image ;
+- a 4 réponses courtes (40 caractères au plus), du même genre et plausibles, pour que les mauvaises fassent hésiter ; jamais « toutes ces réponses » ni « aucune » ;
+- est suivie d'une anecdote d'une phrase (160 caractères au plus) qui explique la bonne réponse ou apprend quelque chose ;
+- est différente des autres : varie les angles (dates, lieux, personnes, chiffres, définitions).
+Le niveau :
+- facile : ce que sait presque tout le monde ;
+- moyen : ce que sait quelqu'un qui s'intéresse au thème ;
+- difficile : pour les passionnés, sans tomber dans le détail introuvable.
+Réponds uniquement en JSON, au format {"questions": [{"theme": "...", "question": "...", "reponses": ["...", "...", "...", "..."], "bonne": 0, "anecdote": "..."}]}, où "bonne" est l'indice (de 0 à 3) de la bonne réponse et "theme" l'un des thèmes donnés.`;
+
 const MAX_LENGTH = 30;
 const MAX_DARE_LENGTH = 160;
 const MAX_PAIR_WORDS = 3;
@@ -76,13 +93,19 @@ const MAX_CALLS_PER_HOUR = 60;
 const PAUSE_AFTER_ERROR_MS = 60_000;
 const TIMEOUT_MS = 15_000;
 
+interface CallOptions {
+  maxTokens?: number;
+  timeoutMs?: number;
+  temperature?: number;
+}
+
 /**
  * Appelle l'API DeepSeek (format OpenAI) et renvoie ce que `extract` tire de la réponse JSON,
  * ou `null` sans `DEEPSEEK_API_KEY`. Les salons sont ouverts à tous : les appels sont plafonnés
  * par heure pour tout le serveur, et suspendus une minute après une erreur (le jeu repasse
  * alors sur les listes intégrées).
  */
-function deepseekCaller(env: typeof process.env, fetchImpl: typeof fetch, tag: string) {
+function deepseekCaller(env: typeof process.env, fetchImpl: typeof fetch, tag: string, opts: CallOptions = {}) {
   const key = env.DEEPSEEK_API_KEY?.trim();
   if (!key) return null;
   const model = env.DEEPSEEK_MODEL?.trim() || 'deepseek-flash';
@@ -109,10 +132,10 @@ function deepseekCaller(env: typeof process.env, fetchImpl: typeof fetch, tag: s
           response_format: { type: 'json_object' },
           // Sans ça, deepseek-flash réfléchit d'abord : plus lent, et la réflexion peut épuiser max_tokens.
           thinking: { type: 'disabled' },
-          temperature: 1,
-          max_tokens: 1500,
+          temperature: opts.temperature ?? 1,
+          max_tokens: opts.maxTokens ?? 1500,
         }),
-        signal: AbortSignal.timeout(TIMEOUT_MS),
+        signal: AbortSignal.timeout(opts.timeoutMs ?? TIMEOUT_MS),
       });
       if (!res.ok) throw new Error(`DeepSeek : HTTP ${res.status}`);
       const body = (await res.json()) as { choices?: { message?: { content?: string } }[] };
@@ -219,6 +242,85 @@ export function deepseekWords(env = process.env, fetchImpl: typeof fetch = fetch
     const words = await call(kind === 'mime' ? SYSTEM_MIME : SYSTEM, prompt, (content) => parseWords(content, difficulty).filter((w) => !taken.has(normalize(w))));
     return words.slice(0, count);
   };
+}
+
+/**
+ * Générateur de questions pour le quiz, ou `null` sans `DEEPSEEK_API_KEY`. Les faits comptent
+ * plus que la fantaisie : température plus basse, et plus de temps pour une vingtaine de questions.
+ */
+export function deepseekQuiz(env = process.env, fetchImpl: typeof fetch = fetch, random = Math.random): QuizGenerator | null {
+  const call = deepseekCaller(env, fetchImpl, 'quiz', { maxTokens: 6000, timeoutMs: 45_000, temperature: 0.7 });
+  if (!call) return null;
+
+  return async (themes, difficulty, count) => {
+    // Quelques questions de plus : celles qui ne passent pas les contrôles tombent.
+    const ask = Math.min(25, count + 3);
+    const prompt = [
+      themes.length > 1
+        ? `Thèmes, à répartir à parts égales et dans le désordre : ${themes.map((t) => `« ${t} »`).join(', ')}.`
+        : `Thème : « ${themes[0] ?? QUIZ_DEFAULT_THEME} ».`,
+      `Niveau : ${difficulty}.`,
+      `Donne ${ask} questions.`,
+    ].join('\n');
+    const questions = await call(SYSTEM_QUIZ, prompt, (content) => parseQuiz(content, themes, random));
+    return questions.slice(0, count);
+  };
+}
+
+/**
+ * Extrait les questions (`{"questions": [...]}`) en écartant celles qui ne tiendraient pas à l'écran
+ * ou dont la réponse est douteuse, puis mélange les réponses : le modèle range trop souvent la bonne en premier.
+ */
+export function parseQuiz(content: string, themes: string[], random: () => number = Math.random): QuizQuestion[] {
+  let data: unknown;
+  try {
+    data = JSON.parse(content);
+  } catch {
+    return [];
+  }
+  const list = (data as { questions?: unknown } | null)?.questions;
+  if (!Array.isArray(list)) return [];
+  const byKey = new Map(themes.map((t) => [normalize(t), t]));
+  const seen = new Set<string>();
+  const out: QuizQuestion[] = [];
+  for (const raw of list) {
+    const item = raw as { theme?: unknown; question?: unknown; reponses?: unknown; bonne?: unknown; anecdote?: unknown } | null;
+    const text = cleanText(item?.question, 160);
+    if (!text || text.length < 8 || !Array.isArray(item?.reponses) || item.reponses.length !== 4) continue;
+    const options = item.reponses.map((r) => cleanText(typeof r === 'number' ? String(r) : r, 50));
+    if (options.some((o) => !o)) continue;
+    if (new Set(options.map((o) => normalize(o!))).size !== 4) continue;
+    // La bonne réponse : un indice de 0 à 3, ou à défaut le texte d'une des réponses.
+    let answer = typeof item.bonne === 'number' ? item.bonne : Number.NaN;
+    if (typeof item.bonne === 'string') {
+      answer = /^[0-3]$/.test(item.bonne) ? Number(item.bonne) : options.findIndex((o) => normalize(o!) === normalize(item.bonne as string));
+    }
+    if (!Number.isInteger(answer) || answer < 0 || answer > 3) continue;
+    const key = normalize(text);
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const order = [0, 1, 2, 3];
+    for (let i = 3; i > 0; i--) {
+      const j = Math.floor(random() * (i + 1));
+      [order[i], order[j]] = [order[j]!, order[i]!];
+    }
+    const theme = byKey.get(normalize(String(item.theme ?? ''))) ?? themes[0] ?? QUIZ_DEFAULT_THEME;
+    out.push({
+      theme,
+      text,
+      options: order.map((i) => options[i]!),
+      answer: order.indexOf(answer),
+      explain: cleanText(item.anecdote, 220) ?? '',
+    });
+  }
+  return out;
+}
+
+function cleanText(raw: unknown, max: number): string | null {
+  if (typeof raw !== 'string') return null;
+  const text = raw.replace(/[\u0000-\u001f]/g, ' ').replace(/[’`]/g, "'").replace(/\s+/g, ' ').trim();
+  return text && text.length <= max ? text : null;
 }
 
 /** Extrait les mots du niveau demandé (`{"difficile": [...]}`) en écartant ce qui ne tiendrait pas dans le jeu. */

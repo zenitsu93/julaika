@@ -1,9 +1,9 @@
 <p align="center">
-  <img src="docs/brand/cover.png" alt="julaïka : jouer ensemble, même de loin. 22 jeux entre amis ou en couple, visio intégrée." width="100%" />
+  <img src="docs/brand/cover.png" alt="julaïka : jouer ensemble, même de loin. Des jeux entre amis ou en couple, visio intégrée." width="100%" />
 </p>
 
 <p align="center">
-  <b>22 petits jeux à jouer entre amis ou en couple, avec la visio intégrée.</b><br />
+  <b>Des petits jeux à jouer entre amis ou en couple, avec la visio intégrée.</b><br />
   Un salon, un lien à partager, et on joue dans le navigateur. Sans compte, sans téléchargement.
 </p>
 
@@ -62,8 +62,9 @@
 | **Pitch saboté** | Vends un produit absurde en 60 s, malgré les diapos piégées. | En visio |
 | **Cerveau coupé** | Un seul dessin à deux : l'un voit le modèle, l'autre tient le crayon. | À deux ou plus, micro |
 | **Action ou vérité** | La bouteille tourne : Lite, Complice ou Spicy ? | En visio |
+| **Quiz culture G** | Écris un thème, l'IA pose les questions. Qui sera champion ? | À deux ou plus |
 
-Le catalogue de l'accueil (noms, accroches, mots-clés de la recherche) vit dans
+La liste s'allonge au fil des ajouts. Le catalogue de l'accueil (noms, accroches, mots-clés de la recherche) vit dans
 [`apps/client/src/lib/games.ts`](apps/client/src/lib/games.ts).
 
 ## Captures

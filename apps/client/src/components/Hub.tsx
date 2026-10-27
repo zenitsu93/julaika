@@ -10,6 +10,7 @@ import { ConnaitArt } from './connait/ConnaitArt';
 import { FlashArt } from './flash/FlashArt';
 import { AovArt } from './verite/AovArt';
 import { Wordmark } from './Logo';
+import { QuizArt } from './quiz/QuizArt';
 import { StoryArt } from './motamot/StoryArt';
 import './photo/photo.css';
 import './interdits/interdits.css';
@@ -413,6 +414,7 @@ const ART: Record<GameId, JSX.Element> = {
   pitch: <PitchArt />,
   cerveau: <CerveauArt />,
   verite: <AovArt />,
+  quiz: <QuizArt />,
 };
 
 /** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */
