@@ -1,0 +1,151 @@
+/* L'Intrus, « Hésitation ! » : le bouton qui se charge, le tampon qui s'abat sur la table,
+   l'orateur pris en défaut et sa mèche. Le reste du jeu vit dans motion.css (préfixe « i- »). */
+
+/* Le bouton se remplit pendant le délai de grâce, puis s'allume et appelle le doigt. */
+@keyframes i-charge {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+.i-charge {
+  animation: i-charge linear forwards;
+}
+.i-hesitate {
+  cursor: not-allowed;
+  transition:
+    background-color 0.3s,
+    border-color 0.3s,
+    color 0.3s,
+    transform 0.25s var(--ease-spring);
+}
+@keyframes i-ready {
+  0% {
+    transform: scale(0.92);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-bad) 55%, transparent);
+  }
+  60% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: none;
+    box-shadow: 0 0 0 16px transparent;
+  }
+}
+.i-hesitate.is-ready {
+  cursor: pointer;
+  animation: i-ready 0.6s var(--ease-out);
+  box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--color-bad) 80%, transparent);
+}
+.i-hesitate.is-ready:hover {
+  transform: translateY(-2px) rotate(-2deg);
+}
+.i-hesitate.is-ready:active {
+  transform: scale(0.95);
+}
+
+/* Le tampon : il tombe de haut, gros et flou, puis claque sur la table et s'efface. */
+@keyframes i-slam {
+  0% {
+    transform: scale(2.6) rotate(-14deg);
+    opacity: 0;
+    filter: blur(6px);
+  }
+  28% {
+    transform: scale(0.94) rotate(-6deg);
+    opacity: 1;
+    filter: blur(0);
+  }
+  38% {
+    transform: scale(1.03) rotate(-7deg);
+  }
+  46%,
+  80% {
+    transform: scale(1) rotate(-7deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.96) rotate(-7deg) translateY(-8px);
+    opacity: 0;
+  }
+}
+.i-slam {
+  animation: i-slam 1.7s var(--ease-out) forwards;
+}
+@keyframes i-slam-flash {
+  0% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.i-slam-flash {
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--color-bad) 22%, transparent), transparent 65%);
+  animation: i-slam-flash 0.9s var(--ease-out) forwards;
+}
+
+/* L'orateur sous pression : le halo vire au rouge et bat plus vite. */
+@keyframes i-hesit {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px var(--color-bad), 0 0 0 6px color-mix(in srgb, var(--color-bad) 22%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 2px var(--color-bad), 0 0 0 11px transparent;
+  }
+}
+.i-hesit {
+  animation: i-hesit 0.7s ease-in-out infinite;
+}
+@keyframes i-fuse {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+.i-fuse {
+  transform-origin: left;
+  animation: i-fuse linear forwards;
+}
+
+/* Indice arraché : il tremble une fois en arrivant. */
+@keyframes i-shaky {
+  0%,
+  100% {
+    transform: none;
+  }
+  20% {
+    transform: translateX(-2px) rotate(-2deg);
+  }
+  40% {
+    transform: translateX(2px) rotate(2deg);
+  }
+  60% {
+    transform: translateX(-1px) rotate(-1deg);
+  }
+}
+.i-shaky {
+  animation:
+    m-pop 0.3s var(--ease-spring) backwards,
+    i-shaky 0.5s ease-in-out 0.3s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .i-slam {
+    animation: none;
+    transform: rotate(-7deg);
+  }
+  .i-slam-flash,
+  .i-hesit,
+  .i-shaky {
+    animation: none;
+  }
+}

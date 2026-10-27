@@ -235,6 +235,7 @@ export type ClientMsg =
   | { t: 'intrus'; clue: string }
   | { t: 'intrus'; vote: string }
   | { t: 'intrus'; steal: string }
+  | { t: 'intrus'; hesitate: true }
   | { t: 'bac'; answers: string[] }
   | { t: 'bac'; stop: true }
   | { t: 'bac'; veto: { player: string; category: number; against: boolean } }

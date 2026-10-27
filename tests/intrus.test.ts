@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { INTRUS_POINTS, intrusClueRounds, type IntrusState, type ServerMsg } from '@julaika/shared';
+import { INTRUS_HESITATE_GRACE, INTRUS_HESITATE_TIME, INTRUS_POINTS, intrusClueRounds, type IntrusState, type ServerMsg } from '@julaika/shared';
 import { Room, type Conn } from '../apps/server/src/room';
 import { CLUE_TIME, REVEAL_TIME, STEAL_TIME, VOTE_TIME } from '../apps/server/src/intrus';
 
@@ -70,6 +70,39 @@ describe("L'Intrus", () => {
     room.handle(first, { t: 'intrus', clue: '  sable   chaud ' });
     expect(view().clues).toEqual([{ by: first, text: 'sable chaud', round: 0 }]);
     expect(view().speakerId).toBe(view().order[1]);
+  });
+
+  it('« Hésitation ! » raccourcit le temps de l’orateur, une fois par manche, et marque son indice', () => {
+    const { room, view, conn } = setup(3);
+    const [speaker, a, b] = view().order as [string, string, string];
+    // Trop tôt (délai de grâce), et jamais sur soi-même.
+    room.handle(a, { t: 'intrus', hesitate: true });
+    expect(view().hesitationBy).toBeNull();
+    vi.advanceTimersByTime(INTRUS_HESITATE_GRACE * 1000);
+    room.handle(speaker, { t: 'intrus', hesitate: true });
+    expect(view().hesitationBy).toBeNull();
+
+    room.handle(a, { t: 'intrus', hesitate: true });
+    expect(view().hesitationBy).toBe(a);
+    expect(conn(a).intrus().canHesitate).toBe(false);
+    expect(room.endsAt! - Date.now()).toBe(INTRUS_HESITATE_TIME * 1000);
+    room.handle(b, { t: 'intrus', hesitate: true }); // déjà quelqu'un sur ce tour
+    expect(view().hesitationBy).toBe(a);
+
+    room.handle(speaker, { t: 'intrus', clue: 'euh' });
+    expect(view().clues).toEqual([{ by: speaker, text: 'euh', round: 0, hesitated: true }]);
+    expect(view().hesitationBy).toBeNull();
+
+    // Au suivant : b peut buzzer, a a déjà grillé sa cartouche.
+    vi.advanceTimersByTime(INTRUS_HESITATE_GRACE * 1000);
+    room.handle(a, { t: 'intrus', hesitate: true });
+    expect(view().hesitationBy).toBeNull();
+    room.handle(b, { t: 'intrus', hesitate: true });
+    expect(view().hesitationBy).toBe(b);
+    // Sans réponse dans le temps raccourci, on passe au suivant.
+    vi.advanceTimersByTime(INTRUS_HESITATE_TIME * 1000);
+    expect(view().speakerId).toBe(b);
+    expect(view().clues).toHaveLength(1);
   });
 
   it("le temps écoulé passe au suivant, puis on vote après les tours d'indices", () => {

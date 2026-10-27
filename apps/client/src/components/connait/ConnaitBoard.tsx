@@ -1,11 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
-import { connaitVerdict, type ConnaitRound, type ConnaitState, type PlayerPublic } from '@julaika/shared';
+import { CONNAIT_GUESS_POINTS, CONNAIT_SCALE_BULLSEYE, connaitVerdict, isScale, type ConnaitRound, type ConnaitState, type PlayerPublic } from '@julaika/shared';
 import { avatarOf } from '../../lib/avatars';
 import { net } from '../../lib/net';
 import { serverNow, useGame } from '../../lib/store';
 import { bump, confetti, Presence, reducedMotion, shake, Ticker, useCountUp, useFlip } from '../../motion';
 import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
+import { scaleGap, ScaleDial } from './ConnaitScale';
 import './connait.css';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
@@ -142,6 +143,7 @@ function Stage() {
   const star = room.players.find((p) => p.id === k?.starId);
   const isStar = k?.starId === selfId;
   const reveal = phase === 'reveal' && k?.reveal ? k.reveal : null;
+  const scale = k?.question ? isScale(k.question) : false;
 
   // Suspense : un battement de cœur, puis les cartes se retournent ensemble.
   const [drum, setDrum] = useState(false);
@@ -163,9 +165,9 @@ function Stage() {
     if (!isStar && mine !== undefined && shown.answer !== null) shake(box.current);
   }, [Boolean(shown), k?.turn]);
 
-  // Touches 1 à 4 (ou A à D) pour répondre sans la souris.
+  // Touches 1 à 4 (ou A à D) pour répondre sans la souris (le curseur a ses flèches).
   useEffect(() => {
-    if (phase !== 'answer') return;
+    if (phase !== 'answer' || scale) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLElement && e.target.closest('input, textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
       const i = '1234'.indexOf(e.key) >= 0 ? '1234'.indexOf(e.key) : 'abcd'.indexOf(e.key.toLowerCase());
@@ -173,21 +175,26 @@ function Stage() {
     };
     addEventListener('keydown', onKey);
     return () => removeEventListener('keydown', onKey);
-  }, [phase]);
+  }, [phase, scale]);
 
   if (!k || !k.question || !star) return null;
+  const question = k.question;
 
   return (
     <div ref={box} className="relative flex min-h-[26rem] flex-col items-center gap-5 px-4 pb-6 pt-6 sm:px-8">
       <canvas ref={sparks} className="pointer-events-none absolute inset-0 z-[5] size-full" aria-hidden />
       {phase === 'answer' && <TimeBar endsAt={room.endsAt} turnKey={`${k.turn}-${k.question.topic}`} />}
-      <Spotlight star={star} isStar={isStar} topic={k.question.topic} turn={k.turn} />
+      <Spotlight star={star} isStar={isStar} topic={question.topic} turn={k.turn} scale={scale} />
 
-      <div className="grid w-full max-w-2xl gap-2.5 sm:grid-cols-2" role="radiogroup" aria-label="Réponses">
-        {k.question.options.map((option, i) => (
-          <Option key={`${k.turn}-${k.question!.topic}-${i}`} index={i} text={option} k={k} star={star} selfId={selfId} reveal={shown} drum={drum} />
-        ))}
-      </div>
+      {isScale(question) ? (
+        <ScaleDial question={question} k={k} star={star} selfId={selfId} reveal={shown} drum={drum} />
+      ) : (
+        <div className="grid w-full max-w-2xl gap-2.5 sm:grid-cols-2" role="radiogroup" aria-label="Réponses">
+          {question.options.map((option, i) => (
+            <Option key={`${k.turn}-${question.topic}-${i}`} index={i} text={option} k={k} star={star} selfId={selfId} reveal={shown} drum={drum} />
+          ))}
+        </div>
+      )}
 
       {drum ? (
         <p className="flex items-center gap-2 text-lg font-semibold" role="status">
@@ -217,7 +224,7 @@ function TimeBar({ endsAt, turnKey }: { endsAt: number | null; turnKey: string }
 }
 
 /** La vedette sous le projecteur, et le sujet de la question qui tombe mot à mot. */
-function Spotlight({ star, isStar, topic, turn }: { star: PlayerPublic; isStar: boolean; topic: string; turn: number }) {
+function Spotlight({ star, isStar, topic, turn, scale }: { star: PlayerPublic; isStar: boolean; topic: string; turn: number; scale: boolean }) {
   return (
     <div key={turn} className="flex flex-col items-center gap-2 text-center">
       <span className="m-pop relative grid size-20 place-items-center rounded-full p-[3px]">
@@ -226,6 +233,7 @@ function Spotlight({ star, isStar, topic, turn }: { star: PlayerPublic; isStar: 
       </span>
       <p className="m-rise text-xs uppercase tracking-[0.18em] text-muted" style={{ animationDelay: '80ms' }}>
         {isStar ? 'À propos de toi' : `À propos de ${star.name}`}
+        {scale && <span className="k-scale-tag ml-2 rounded-full bg-accent/20 px-2 py-0.5 normal-case tracking-normal text-ink">au curseur</span>}
       </p>
       <h2 key={topic} className="max-w-xl text-2xl font-semibold leading-tight tracking-[-0.03em] sm:text-3xl">
         {topic.split(' ').map((w, i) => (
@@ -333,6 +341,7 @@ function Option({
 
 /** Pendant la question : la consigne, qui a déjà répondu, et le joker de la vedette. */
 function Footer({ k, isStar, total }: { k: ConnaitState; isStar: boolean; total: number }) {
+  const scale = k.question ? isScale(k.question) : false;
   const players = useGame((s) => s.room!.players);
   const star = players.find((p) => p.id === k.starId);
   const done = players.filter((p) => k.answered.includes(p.id));
@@ -343,12 +352,16 @@ function Footer({ k, isStar, total }: { k: ConnaitState; isStar: boolean; total:
           <>
             <b className="text-ink">Réponds sincèrement</b> : les autres parient sur ta réponse.
           </>
+        ) : scale ? (
+          <>
+            Où se place <b className="text-ink">{star?.name}</b> ? Vise au plus près : à {CONNAIT_SCALE_BULLSEYE} près, c’est le maximum.
+          </>
         ) : (
           <>
             Que va répondre <b className="text-ink">{star?.name}</b> ? Parie sur sa réponse.
           </>
         )}
-        <span className="max-sm:hidden"> Touches 1 à 4.</span>
+        <span className="max-sm:hidden">{scale ? ' Flèches pour régler, Entrée pour valider.' : ' Touches 1 à 4.'}</span>
       </p>
       <div className="flex items-center gap-2 text-sm text-muted">
         <span className="flex -space-x-1.5">
@@ -387,8 +400,11 @@ function Outcome({ k, star, isStar, selfId }: { k: ConnaitState; star: PlayerPub
   let line: string;
   if (r.answer === null) line = isStar ? "Tu n'as pas répondu à temps…" : `${star.name} n'a pas répondu à temps.`;
   else if (isStar) line = round?.right ? `${round.right} sur ${round.total} te connaissent bien !` : 'Personne ne t’a deviné… quel mystère !';
-  else if (gain) line = 'Bien vu, tu le savais !';
   else if (mine === undefined) line = "Tu n'as pas parié.";
+  else if (isScale(k.question!)) {
+    const gap = scaleGap(r, selfId)!;
+    line = gap === 0 ? 'Dans le mille, pile au bon endroit !' : gain === CONNAIT_GUESS_POINTS ? `À ${gap} près, dans le mille !` : gain ? `À ${gap} près, pas mal du tout !` : `Raté de ${gap}… c'était ${r.answer}.`;
+  } else if (gain) line = 'Bien vu, tu le savais !';
   else line = `Raté ! C'était « ${k.question!.options[r.answer]} ».`;
 
   return (

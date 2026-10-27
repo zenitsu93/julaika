@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { INTRUS_CLUE_MAX, type IntrusClue, type IntrusResult, type IntrusState, type PlayerPublic } from '@julaika/shared';
 import { avatarOf } from '../../lib/avatars';
 import { net } from '../../lib/net';
-import { store, useGame } from '../../lib/store';
-import { confetti, shake, useCountUp, useFlip } from '../../motion';
+import { buzzer } from '../../lib/sounds';
+import { serverNow, store, useGame } from '../../lib/store';
+import { bump, confetti, shake, useCountUp, useFlip } from '../../motion';
 import { CallBar } from '../CallBar';
 import { Overlay } from '../Overlay';
 import { PlayerStrip } from '../PlayerStrip';
+import './intrus.css';
 
 /** Plateau de L'Intrus : ton mot secret, les sièges dans l'ordre de parole, puis le vote. */
 export function IntrusBoard() {
@@ -68,9 +70,17 @@ function Stage({ intrus }: { intrus: IntrusState }) {
     };
   }, [result?.intrusId, intrus.manche]);
 
+  // « Hésitation ! » : le buzzer retentit chez tout le monde et la table encaisse le choc.
+  useEffect(() => {
+    if (!intrus.hesitationBy) return;
+    buzzer();
+    shake(grid.current);
+  }, [intrus.hesitationBy]);
+
   return (
     <div ref={box} className="relative flex min-h-[28rem] flex-col gap-5 px-4 pb-5 pt-5 sm:px-6">
       <canvas ref={sparks} className="pointer-events-none absolute inset-0 z-[5] size-full" aria-hidden />
+      {intrus.hesitationBy && <Slam key={`${intrus.manche}-${intrus.clues.length}`} by={byId.get(intrus.hesitationBy) ?? null} />}
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:justify-between">
         <WordCard key={intrus.manche} word={intrus.word} />
         <Headline intrus={intrus} phase={phase} names={byId} selfId={selfId} />
@@ -89,6 +99,7 @@ function Stage({ intrus }: { intrus: IntrusState }) {
             canVote={phase === 'vote' && playing && id !== selfId && !!player}
             result={result}
             names={byId}
+            endsAt={room.endsAt}
           />
         ))}
       </ol>
@@ -195,11 +206,13 @@ interface SeatProps {
   canVote: boolean;
   result: IntrusResult | null;
   names: Map<string, PlayerPublic>;
+  endsAt: number | null;
 }
 
 /** Un siège : le joueur, ses indices, puis au dépouillement son mot et qui l'a désigné. */
-function Seat({ index, id, player, self, intrus, phase, clues, canVote, result, names }: SeatProps) {
+function Seat({ index, id, player, self, intrus, phase, clues, canVote, result, names, endsAt }: SeatProps) {
   const speaking = phase === 'clue' && intrus.speakerId === id;
+  const pressed = speaking && intrus.hesitationBy !== null;
   const voted = phase === 'vote' && intrus.voted.includes(id);
   const mine = intrus.myVote === id;
   const accused = phase === 'steal' && intrus.accusedId === id;
@@ -237,11 +250,18 @@ function Seat({ index, id, player, self, intrus, phase, clues, canVote, result, 
         )}
       </span>
       <span className="mt-2.5 flex min-h-7 flex-wrap gap-1">
-        {clues.map((c) => (
-          <span key={`${c.round}-${c.text}`} className="m-pop max-w-full truncate rounded-full border border-edge bg-page px-2 py-0.5 text-[13px]">
-            {c.text}
-          </span>
-        ))}
+        {clues.map((c) =>
+          c.hesitated ? (
+            <span key={`${c.round}-${c.text}`} className="i-shaky max-w-full truncate rounded-full border border-dashed border-bad/60 bg-bad/5 px-2 py-0.5 text-[13px]" title="Indice arraché après un « Hésitation ! »">
+              <span aria-hidden>🫨 </span>
+              {c.text}
+            </span>
+          ) : (
+            <span key={`${c.round}-${c.text}`} className="m-pop max-w-full truncate rounded-full border border-edge bg-page px-2 py-0.5 text-[13px]">
+              {c.text}
+            </span>
+          ),
+        )}
         {speaking && (
           <span className="rounded-full border border-dashed border-accent px-2 py-0.5 text-[13px] text-muted">
             <span className="m-dots">
@@ -252,6 +272,7 @@ function Seat({ index, id, player, self, intrus, phase, clues, canVote, result, 
           </span>
         )}
       </span>
+      {pressed && endsAt && <Fuse endsAt={endsAt} />}
       {result && (
         <span className="i-turn mt-2.5 flex items-center justify-between gap-2 border-t border-edge pt-2" style={{ animationDelay: `${300 + index * 80}ms` }}>
           <span className="min-w-0 truncate text-sm font-semibold">{isIntrus ? result.intrus : result.civil}</span>
@@ -276,7 +297,7 @@ function Seat({ index, id, player, self, intrus, phase, clues, canVote, result, 
     </>
   );
 
-  const base = `relative block w-full rounded-xl border p-3 text-left transition-[border-color,background-color,transform,box-shadow] duration-300 ${tone} ${speaking ? 'i-spot' : ''} ${player ? '' : 'opacity-50'}`;
+  const base = `relative block w-full rounded-xl border p-3 text-left transition-[border-color,background-color,transform,box-shadow] duration-300 ${tone} ${pressed ? 'i-hesit' : speaking ? 'i-spot' : ''} ${player ? '' : 'opacity-50'}`;
   return (
     <li data-flip={id} className="m-rise" style={{ animationDelay: `${index * 50}ms` }}>
       {canVote ? (
@@ -350,6 +371,8 @@ function Actions({ intrus, phase, selfId, names }: { intrus: IntrusState; phase:
       </form>
     );
 
+  if (phase === 'clue' && intrus.order.includes(selfId ?? '')) return <Hesitate intrus={intrus} names={names} selfId={selfId} />;
+
   if (phase === 'steal')
     return (
       <p className="m-rise text-center text-sm text-muted">
@@ -364,6 +387,112 @@ function Actions({ intrus, phase, selfId, names }: { intrus: IntrusState; phase:
 
   if (phase === 'reveal' && intrus.result) return <Verdict result={intrus.result} names={names} selfId={selfId} />;
   return null;
+}
+
+/** Le grand tampon « Hésitation ! » qui s'abat sur la table, signé par celui qui a crié. */
+function Slam({ by }: { by: PlayerPublic | null }) {
+  const [on, setOn] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setOn(false), 1700);
+    return () => clearTimeout(t);
+  }, []);
+  if (!on) return null;
+  return (
+    <div className="pointer-events-none absolute inset-0 z-[6] grid place-items-center" role="status">
+      <span className="i-slam-flash absolute inset-0" aria-hidden />
+      <span className="i-slam flex flex-col items-center gap-1 rounded-2xl border-4 border-bad bg-surface px-6 py-3 text-bad shadow-2xl">
+        <span className="text-3xl font-extrabold uppercase tracking-[-0.02em] sm:text-4xl">Hésitation !</span>
+        {by && (
+          <span className="flex items-center gap-1.5 text-sm font-medium text-ink">
+            <span aria-hidden>{avatarOf(by.avatar)}</span>
+            {by.name} a buzzé
+          </span>
+        )}
+      </span>
+    </div>
+  );
+}
+
+/** Mèche sous l'orateur pris en flagrant délit d'hésitation : elle se consume jusqu'à la fin de son temps. */
+function Fuse({ endsAt }: { endsAt: number }) {
+  const left = Math.max(0, endsAt - serverNow());
+  return (
+    <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-bad/15" aria-hidden>
+      <span key={endsAt} className="i-fuse block h-full rounded-full bg-bad" style={{ animationDuration: `${left}ms` }} />
+    </span>
+  );
+}
+
+/**
+ * Le bouton des auditeurs : « Hésitation ! » quand l'orateur cherche trop longtemps. Il se
+ * charge pendant le délai de grâce, puis s'allume ; une seule fois par manche.
+ */
+function Hesitate({ intrus, names, selfId }: { intrus: IntrusState; names: Map<string, PlayerPublic>; selfId: string | null }) {
+  const btn = useRef<HTMLButtonElement>(null);
+  const from = intrus.hesitateFrom;
+  const [ready, setReady] = useState(() => from !== null && serverNow() >= from);
+  const speaker = names.get(intrus.speakerId ?? '');
+  const mine = intrus.speakerId === selfId;
+
+  useEffect(() => {
+    if (from === null) return setReady(false);
+    const wait = from - serverNow();
+    setReady(wait <= 0);
+    if (wait <= 0) return;
+    const t = setTimeout(() => setReady(true), wait);
+    return () => clearTimeout(t);
+  }, [from, intrus.speakerId]);
+
+  const fire = () => {
+    if (!ready || !intrus.canHesitate || intrus.hesitationBy) return shake(btn.current);
+    bump(btn.current, 1.1);
+    net.send({ t: 'intrus', hesitate: true });
+  };
+
+  // Touche H pour buzzer sans quitter la visio des yeux.
+  useEffect(() => {
+    if (mine) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.target instanceof HTMLElement && e.target.closest('input, textarea')) || e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+      if (e.key.toLowerCase() === 'h') fire();
+    };
+    addEventListener('keydown', onKey);
+    return () => removeEventListener('keydown', onKey);
+  });
+
+  if (mine) return null;
+  if (intrus.hesitationBy)
+    return (
+      <p key="pressed" className="m-rise text-center text-sm text-muted">
+        <b className="text-bad">{names.get(intrus.hesitationBy)?.name ?? '…'}</b> a crié « Hésitation ! » : {speaker?.name ?? '…'} doit se décider, vite.
+      </p>
+    );
+  if (!intrus.canHesitate)
+    return (
+      <p key="used" className="m-fade text-center text-sm text-muted">
+        Tu as déjà buzzé cette manche. Écoute bien {speaker?.name ?? 'l’orateur'}…
+      </p>
+    );
+
+  return (
+    <div key={intrus.speakerId} className="m-rise flex flex-col items-center gap-1.5">
+      <button
+        ref={btn}
+        type="button"
+        onClick={fire}
+        aria-disabled={!ready}
+        className={`i-hesitate relative overflow-hidden rounded-full border-2 px-6 py-2.5 text-base font-bold tracking-[-0.01em] outline-none focus-visible:ring-2 focus-visible:ring-info ${
+          ready ? 'is-ready border-bad bg-bad text-white' : 'border-edge bg-surface text-muted'
+        }`}
+      >
+        {!ready && from !== null && <span key={from} className="i-charge absolute inset-y-0 left-0 bg-bad/15" style={{ animationDuration: `${Math.max(0, from - serverNow())}ms` }} aria-hidden />}
+        <span className="relative">✋ Hésitation !</span>
+      </button>
+      <p className="text-xs text-muted">
+        {speaker?.name ?? 'L’orateur'} cherche trop longtemps ? Buzze une fois par manche<span className="max-sm:hidden"> (touche H)</span>.
+      </p>
+    </div>
+  );
 }
 
 function Verdict({ result, names, selfId }: { result: IntrusResult; names: Map<string, PlayerPublic>; selfId: string | null }) {

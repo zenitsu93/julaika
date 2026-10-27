@@ -3,7 +3,13 @@ import {
   CONNAIT_GUESS_POINTS,
   CONNAIT_QUESTIONS,
   CONNAIT_REVEAL_TIME,
+  CONNAIT_SCALE_CLOSE,
+  CONNAIT_SCALE_MAX,
+  CONNAIT_SCALES,
   CONNAIT_STAR_POINTS,
+  connaitIsScaleTurn,
+  connaitScalePoints,
+  isScale,
   type ClientMsg,
   type ConnaitQuestion,
   type ConnaitReveal,
@@ -47,6 +53,7 @@ export class Connait {
 
   private readonly order: string[];
   private deck: ConnaitQuestion[] = [];
+  private scales: ConnaitQuestion[] = [];
   private timers: ReturnType<typeof setTimeout>[] = [];
 
   constructor(private readonly host: ConnaitHost) {
@@ -72,8 +79,10 @@ export class Connait {
       }
       return;
     }
+    const q = this.question;
     const pick = Number(msg.pick);
-    if (!Number.isInteger(pick) || pick < 0 || pick >= (this.question?.options.length ?? 0)) return;
+    const max = !q ? 0 : isScale(q) ? CONNAIT_SCALE_MAX + 1 : q.options.length;
+    if (!Number.isInteger(pick) || pick < 0 || pick >= max) return;
     this.picks.set(id, pick);
     this.host.broadcastState();
     this.checkAllAnswered();
@@ -149,11 +158,20 @@ export class Connait {
     const answer = this.picks.get(star) ?? null;
     const gains: Record<string, number> = {};
     const guessers = this.host.playerIds().filter((id) => id !== star);
+    const q = this.question!;
     let right = 0;
     for (const id of guessers) {
-      if (answer === null || this.picks.get(id) !== answer) continue;
-      right++;
-      gains[id] = CONNAIT_GUESS_POINTS;
+      const bet = this.picks.get(id);
+      if (answer === null || bet === undefined) continue;
+      if (isScale(q)) {
+        // Au curseur, on marque selon l'écart ; « connaître » la vedette, c'est viser assez près.
+        const points = connaitScalePoints(bet - answer);
+        if (points) gains[id] = points;
+        if (Math.abs(bet - answer) <= CONNAIT_SCALE_CLOSE) right++;
+      } else if (bet === answer) {
+        right++;
+        gains[id] = CONNAIT_GUESS_POINTS;
+      }
     }
     if (right) gains[star] = right * CONNAIT_STAR_POINTS;
     for (const [id, points] of Object.entries(gains)) this.host.addScore(id, points);
@@ -163,8 +181,8 @@ export class Connait {
       starId: star,
       name: who?.name ?? '?',
       avatar: who?.avatar ?? 0,
-      topic: this.question!.topic,
-      answer: answer === null ? null : this.question!.options[answer]!,
+      topic: q.topic,
+      answer: answer === null ? null : isScale(q) ? `${answer} sur ${CONNAIT_SCALE_MAX}` : q.options[answer]!,
       right,
       total: guessers.length,
     });
@@ -176,16 +194,21 @@ export class Connait {
     this.host.broadcastState();
   }
 
-  /** Question suivante du paquet, mélangé une fois : pas de doublon avant d'avoir tout vu. */
+  /**
+   * Question suivante, au curseur ou à choix selon le tour (un changement de question garde le
+   * même genre). Chaque paquet est mélangé une fois : pas de doublon avant d'avoir tout vu.
+   */
   private draw(): ConnaitQuestion {
-    if (!this.deck.length) {
-      this.deck = [...CONNAIT_QUESTIONS];
-      for (let i = this.deck.length - 1; i > 0; i--) {
+    const scale = connaitIsScaleTurn(this.turn);
+    const deck = scale ? this.scales : this.deck;
+    if (!deck.length) {
+      deck.push(...(scale ? CONNAIT_SCALES : CONNAIT_QUESTIONS));
+      for (let i = deck.length - 1; i > 0; i--) {
         const j = Math.floor(this.host.random() * (i + 1));
-        [this.deck[i], this.deck[j]] = [this.deck[j]!, this.deck[i]!];
+        [deck[i], deck[j]] = [deck[j]!, deck[i]!];
       }
     }
-    return this.deck.pop()!;
+    return deck.pop()!;
   }
 
   private clearTimers(): void {

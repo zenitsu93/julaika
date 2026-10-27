@@ -421,6 +421,40 @@ export function tick(urgent = false) {
   });
 }
 
+/**
+ * Un seul coup d'horloge (tic aigu, tac plus grave), pour une mèche qui brûle. `heat` (0 à 1)
+ * monte la note, durcit le timbre et pousse le volume : à la fin, ça claque comme une trotteuse affolée.
+ */
+export function clock(tac: boolean, heat = 0) {
+  if (isMuted) return;
+  const h = Math.min(1, Math.max(0, heat));
+  voice((v, t) => {
+    const f = (tac ? 1300 : 2050) * (1 + h * 0.35);
+    tone(v, h > 0.7 ? 'triangle' : 'sine', f, t, t + 0.05)
+      .connect(env(v, 0.2 + h * 0.14, t, 0.001, 0.004, 0.035))
+      .connect(v.out);
+    noise(v, t, t + 0.03)
+      .connect(filter(v, 'highpass', tac ? 2600 : 4200))
+      .connect(env(v, 0.16 + h * 0.12, t, 0.001, 0.002, 0.016))
+      .connect(v.out);
+    return 0.06;
+  });
+}
+
+/** Buzzer de plateau télé : deux coups rauques et graves, pour « Hésitation ! ». */
+export function buzzer() {
+  if (isMuted) return;
+  voice((v, t) => {
+    for (const at of [0, 0.2]) {
+      const s = t + at;
+      const lp = filter(v, 'lowpass', 1400, 1.2);
+      lp.connect(env(v, 0.32, s, 0.006, 0.12, 0.05)).connect(v.out);
+      for (const f of [110, 116.5, 165]) tone(v, 'square', f, s, s + 0.2).connect(lp);
+    }
+    return 0.45;
+  });
+}
+
 // ---- Muet ---------------------------------------------------------------------------------
 
 const MUTE_KEY = 'julaika:muted';

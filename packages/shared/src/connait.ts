@@ -1,12 +1,23 @@
 // Qui me connaît le mieux ? À chaque tour, un joueur est la vedette : une question sur lui,
 // quatre réponses possibles. Il répond en secret pendant que les autres parient sur sa
-// réponse, tous en même temps, puis tout se dévoile d'un coup.
+// réponse, tous en même temps, puis tout se dévoile d'un coup. Une question sur trois se
+// joue au curseur : la vedette se place entre deux extrêmes, les autres visent au plus près.
 
-export interface ConnaitQuestion {
+export interface ConnaitChoice {
   /** Le sujet, tourné pour se lire aussi bien par la vedette (« sur toi ») que par les autres. */
   topic: string;
   options: string[];
 }
+
+export interface ConnaitScale {
+  topic: string;
+  /** Libellés des deux bouts du curseur (0 et CONNAIT_SCALE_MAX). */
+  scale: [string, string];
+}
+
+export type ConnaitQuestion = ConnaitChoice | ConnaitScale;
+
+export const isScale = (q: ConnaitQuestion): q is ConnaitScale => 'scale' in q;
 
 export interface ConnaitRound {
   starId: string;
@@ -21,6 +32,7 @@ export interface ConnaitRound {
 }
 
 export interface ConnaitReveal {
+  /** Indice de la réponse (QCM) ou position sur le curseur, null si la vedette n'a pas répondu. */
   answer: number | null;
   /** Choix de chaque joueur (la vedette comprise), dévoilés ensemble. */
   picks: Record<string, number>;
@@ -50,6 +62,24 @@ export const CONNAIT_REVEAL_TIME = 8;
 export const CONNAIT_GUESS_POINTS = 100;
 export const CONNAIT_STAR_POINTS = 50;
 
+/** Curseur : de 0 à 100. À 5 près, c'est dans le mille ; à 12 près, ça compte comme « connaître ». */
+export const CONNAIT_SCALE_MAX = 100;
+export const CONNAIT_SCALE_BULLSEYE = 5;
+export const CONNAIT_SCALE_CLOSE = 12;
+/** Au-delà de cet écart, un pari au curseur ne rapporte plus rien. */
+export const CONNAIT_SCALE_MISS = 35;
+/** Une question sur trois est au curseur : les tours 2, 5, 8… (ainsi même une partie à deux en a une). */
+export const connaitIsScaleTurn = (turn: number) => turn % 3 === 2;
+
+/** Points d'un pari au curseur selon l'écart : 100 dans le mille, puis par dizaines jusqu'à 0. */
+export function connaitScalePoints(gap: number): number {
+  const d = Math.abs(gap);
+  if (d <= CONNAIT_SCALE_BULLSEYE) return CONNAIT_GUESS_POINTS;
+  if (d >= CONNAIT_SCALE_MISS) return 0;
+  const left = 1 - (d - CONNAIT_SCALE_BULLSEYE) / (CONNAIT_SCALE_MISS - CONNAIT_SCALE_BULLSEYE);
+  return Math.round(left * 10) * (CONNAIT_GUESS_POINTS / 10);
+}
+
 /** Titre de fin selon la part de paris justes de toute la partie. */
 export function connaitVerdict(right: number, total: number): { title: string; line: string } {
   const r = total ? right / total : 0;
@@ -60,7 +90,7 @@ export function connaitVerdict(right: number, total: number): { title: string; l
   return { title: 'Parfaits étrangers', line: 'Enchantés ! On recommence pour faire connaissance ?' };
 }
 
-export const CONNAIT_QUESTIONS: ConnaitQuestion[] = [
+export const CONNAIT_QUESTIONS: ConnaitChoice[] = [
   { topic: 'Le plat préféré', options: ['Pizza', 'Sushis', 'Un bon plat de maman', 'Burger frites'] },
   { topic: 'Le petit-déjeuner idéal', options: ['Croissant et café', 'Rien du tout', 'Pancakes', 'Salé : œufs, avocat'] },
   { topic: 'Un samedi soir parfait', options: ['Soirée canapé et série', 'Dîner entre amis', 'Danser jusqu’au bout de la nuit', 'Jeux de société'] },
@@ -107,4 +137,26 @@ export const CONNAIT_QUESTIONS: ConnaitQuestion[] = [
   { topic: 'Une soirée sans téléphone', options: ['Adore ça', 'Tient une heure', 'Ne tient pas 10 minutes', 'N’a jamais essayé'] },
   { topic: 'La série doudou', options: ['Friends', 'Une série coréenne', 'Un anime', 'Une télé-réalité'] },
   { topic: 'Le surnom idéal', options: ['Le rayon de soleil', 'Le chef', 'La tornade', 'Le doudou'] },
+];
+
+/** Questions au curseur : la vedette se situe entre deux extrêmes. */
+export const CONNAIT_SCALES: ConnaitScale[] = [
+  { topic: 'Le niveau de gourmandise', scale: ['Une salade, merci', 'Ventre sur pattes'] },
+  { topic: 'Le sens de l’orientation', scale: ['Perdu·e dans son quartier', 'Une boussole humaine'] },
+  { topic: 'Le niveau de jalousie', scale: ['Zen absolu', 'Détective privé'] },
+  { topic: 'La patience dans une file d’attente', scale: ['Explose en 2 minutes', 'Pourrait attendre des heures'] },
+  { topic: 'Le rangement de la chambre', scale: ['Champ de bataille', 'Catalogue de déco'] },
+  { topic: 'La frilosité', scale: ['En t-shirt en hiver', 'Trois pulls en été'] },
+  { topic: 'Le niveau en cuisine', scale: ['Brûle les pâtes', 'Chef étoilé'] },
+  { topic: 'La sensibilité devant un film triste', scale: ['Pas une larme', 'Inondation garantie'] },
+  { topic: 'Le temps passé à se préparer', scale: ['Prêt·e en 5 minutes', 'Une éternité'] },
+  { topic: 'L’amour des surprises', scale: ['Déteste ça', 'En redemande'] },
+  { topic: 'Le côté fêtard', scale: ['Au lit à 22 h', 'Ferme la boîte de nuit'] },
+  { topic: 'La ponctualité', scale: ['Toujours en retard', 'Dix minutes en avance'] },
+  { topic: 'Le niveau de bavardage', scale: ['Une tombe', 'Un moulin à paroles'] },
+  { topic: 'Le courage face aux petites bêtes', scale: ['Monte sur la chaise', 'Les attrape à la main'] },
+  { topic: 'La tolérance au piment', scale: ['Le poivre, c’est déjà trop', 'Plus ça pique, mieux c’est'] },
+  { topic: 'Le côté romantique', scale: ['Pas du tout fleur bleue', 'Roses et bougies'] },
+  { topic: 'La mauvaise foi en jeu', scale: ['Beau joueur', 'N’a jamais perdu, jamais'] },
+  { topic: 'L’addiction au téléphone', scale: ['Oublie où il est', 'Greffé à la main'] },
 ];

@@ -3,6 +3,7 @@ import { BOMB_LETTERS, BOMB_REJECT_TEXT, BOMB_WORD_MAX, foldWord, type BombEvent
 import { avatarOf } from '../../lib/avatars';
 import { net } from '../../lib/net';
 import { serverNow, useGame } from '../../lib/store';
+import { clock, play, tick } from '../../lib/sounds';
 import { bump, confetti, Presence, shake } from '../../motion';
 import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
@@ -82,13 +83,15 @@ function Arena() {
   const present = new Map(room.players.map((p) => [p.id, p]));
   const seats = (bomb?.order ?? room.players.map((p) => p.id)).flatMap((id) => present.get(id) ?? []);
   const holderIndex = seats.findIndex((p) => p.id === bomb?.holder);
+  const fuse = useFuseClock(room.phase === 'bomb' ? bomb?.litAt ?? null : null);
 
   return (
     <div ref={stage} className="flex flex-col items-center gap-4 px-3 pb-5 pt-4 sm:px-6">
       <div className="bomb-table relative mx-auto aspect-square w-full max-w-[30rem]">
-        <span className="bomb-ring" aria-hidden />
+        <span className="bomb-ring" style={{ '--heat': fuse.heat } as CSSProperties} aria-hidden />
+        {fuse.n > 0 && <span key={fuse.n} className="bomb-shock" style={{ '--heat': fuse.heat } as CSSProperties} aria-hidden />}
         {holderIndex >= 0 && <Pointer index={holderIndex} count={seats.length} />}
-        <Center bomb={bomb} boom={boom} names={present} />
+        <Center bomb={bomb} boom={boom} names={present} fuse={fuse} />
         {seats.map((p, i) => (
           <Seat key={p.id} player={p} index={i} count={seats.length} bomb={bomb} self={p.id === selfId} />
         ))}
@@ -117,19 +120,65 @@ function Pointer({ index, count }: { index: number; count: number }) {
   );
 }
 
-function Center({ bomb, boom, names }: { bomb: BombState | null; boom: Flash | null; names: Map<string, PlayerPublic> }) {
+/** Battement de la bombe (s) après `elapsed` secondes de mèche : de 1,15 s à 0,34 s en ~18 s. */
+const beatAt = (elapsed: number) => Math.max(BEAT_MIN, 1.15 - Math.floor(elapsed) * 0.045);
+const BEAT_MIN = 0.34;
+/** Mèche « chaude » (0 à 1) : suit l'accélération du battement, sans rien dire de l'explosion. */
+const heatAt = (elapsed: number) => Math.min(1, elapsed / 18);
+
+/**
+ * Le tic-tac de la mèche : un coup à chaque battement, de plus en plus serré. Chaque coup est
+ * programmé d'après l'horloge serveur, donc tout le salon entend la même accélération.
+ */
+function useFuseClock(litAt: number | null) {
+  const [tock, setTock] = useState({ n: 0, heat: 0, beat: 0 });
+  useEffect(() => {
+    setTock({ n: 0, heat: 0, beat: litAt === null ? 0 : beatAt(0) });
+    if (litAt === null) return;
+    let n = 0;
+    let timer: ReturnType<typeof setTimeout>;
+    const strike = () => {
+      const elapsed = Math.max(0, (serverNow() - litAt) / 1000);
+      const beat = beatAt(elapsed);
+      const heat = heatAt(elapsed);
+      n += 1;
+      clock(n % 2 === 0, heat);
+      setTock({ n, heat, beat });
+      timer = setTimeout(strike, beat * 1000);
+    };
+    strike();
+    return () => clearTimeout(timer);
+  }, [litAt]);
+  return tock;
+}
+
+type Fuse = ReturnType<typeof useFuseClock>;
+
+function Center({ bomb, boom, names, fuse }: { bomb: BombState | null; boom: Flash | null; names: Map<string, PlayerPublic>; fuse: Fuse }) {
   const now = useNow();
   const lit = bomb?.litAt != null;
   const countdown = bomb && !lit && now < bomb.startsAt ? Math.ceil((bomb.startsAt - now) / 1000) : 0;
   // Plus la mèche brûle, plus la bombe bat vite (sans jamais dire quand elle saute).
-  const elapsed = lit ? (now - bomb!.litAt!) / 1000 : 0;
-  const beat = lit ? Math.max(0.34, 1.15 - Math.floor(elapsed) * 0.045) : 0;
+  const { n, heat, beat } = fuse;
   const victim = boom?.kind === 'boom' ? names.get(boom.by) : undefined;
+
+  // 3, 2, 1 : un clic par chiffre, le dernier plus pressant.
+  useEffect(() => {
+    if (countdown > 0) tick(countdown === 1);
+  }, [countdown]);
+  useEffect(() => {
+    if (boom) play('boum');
+  }, [boom?.seq]);
 
   return (
     <div className="absolute left-1/2 top-[47%] flex w-[42%] -translate-x-1/2 -translate-y-1/2 flex-col items-center sm:top-1/2">
       <div key={boom ? `boom${boom.seq}` : 'calm'} className={`relative w-full ${boom ? 'bomb-blast' : ''}`}>
-        <BombGlyph lit={lit} beat={beat} className="w-full" />
+        <BombGlyph lit={lit} beat={beat} pulse={n} heat={heat} className="w-full" />
+        {lit && n > 0 && (
+          <span key={n} className={`bomb-tic ${n % 2 ? 'is-tic' : 'is-tac'}`} style={{ '--heat': heat } as CSSProperties} aria-hidden>
+            {n % 2 ? 'tic' : 'tac'}
+          </span>
+        )}
         {bomb && (
           <span
             key={bomb.syllable}
