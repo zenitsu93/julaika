@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { serverNow, useGame } from '../lib/store';
+import { MeetButton } from './MeetButton';
 
 function useCountdown(endsAt: number | null): number {
   const [now, setNow] = useState(serverNow);
@@ -40,6 +41,7 @@ export function TopBar() {
       <div className="min-w-0 flex-1 truncate text-center font-mono text-lg font-bold tracking-[0.3em] sm:text-xl" aria-live="polite">
         {room.hint ?? (room.phase === 'choosing' ? <span className="text-sm font-normal tracking-normal text-muted">choix du mot…</span> : '')}
       </div>
+      <MeetButton />
       <button className="btn-ghost px-2.5 py-1.5 font-mono" onClick={copy} title="Copier le lien d'invitation">
         {copied ? 'Lien copié' : `#${room.code}`}
       </button>
