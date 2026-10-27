@@ -1,4 +1,5 @@
 import {
+  ALIBI_MIN_PLAYERS,
   DEFAULT_SETTINGS,
   DrawOp,
   INTRUS_MIN_PLAYERS,
@@ -27,6 +28,7 @@ import {
   type ServerMsg,
   type Trap,
 } from '@julaika/shared';
+import { Alibi } from './alibi';
 import { Bombe } from './bombe';
 import { Connait } from './connait';
 import type { PairGenerator, WordGenerator } from './deepseek';
@@ -102,6 +104,7 @@ export class Room {
   private bomb: Bombe | null = null;
   private photo: Photomaton | null = null;
   private sourire: Sourire | null = null;
+  private alibi: Alibi | null = null;
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -180,7 +183,7 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire) {
+    if (this.wave || this.tel || this.intrus || this.bac || this.connait || this.bomb || this.photo || this.sourire || this.alibi) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
       this.intrus?.onLeave(id);
@@ -189,6 +192,7 @@ export class Room {
       this.bomb?.onLeave(id);
       this.photo?.onLeave(id);
       this.sourire?.onLeave(id);
+      this.alibi?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -245,6 +249,9 @@ export class Room {
         break;
       case 'sourire':
         if (msg && typeof msg === 'object') this.sourire?.handle(id, msg);
+        break;
+      case 'alibi':
+        if (msg && typeof msg === 'object') this.alibi?.handle(id, msg);
         break;
       case 'sound':
         // Boîte à sons, dans tous les jeux : l'émetteur l'a déjà joué chez lui.
@@ -347,6 +354,7 @@ export class Room {
     if (this.game === 'bombe') return this.startBomb();
     if (this.game === 'photomaton') return this.startPhoto();
     if (this.game === 'sourire') return this.startSourire();
+    if (this.game === 'alibi') return this.startAlibi();
     this.usedWords.clear();
     this.nextRound();
   }
@@ -704,6 +712,33 @@ export class Room {
     this.sourire.start();
   }
 
+  private startAlibi(): void {
+    if (this.players.size < ALIBI_MIN_PLAYERS) {
+      this.sendTo(this.hostId!, { t: 'error', message: `Il faut au moins ${ALIBI_MIN_PLAYERS} joueurs pour L'Alibi.` });
+      return;
+    }
+    this.alibi?.dispose();
+    this.alibi = new Alibi({
+      playerIds: () => [...this.players.keys()],
+      name: (id) => this.players.get(id)?.name ?? '?',
+      rounds: () => this.settings.rounds,
+      random: this.random,
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      system: (text) => this.system(text),
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      endGame: () => this.endGame(),
+    });
+    this.alibi.start();
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -735,6 +770,8 @@ export class Room {
     this.photo = null;
     this.sourire?.dispose();
     this.sourire = null;
+    this.alibi?.dispose();
+    this.alibi = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -839,6 +876,7 @@ export class Room {
       bomb: this.bomb?.state() ?? null,
       photo: this.photo?.state() ?? null,
       sourire: this.sourire?.stateFor(id) ?? null,
+      alibi: this.alibi?.stateFor(id) ?? null,
     };
   }
 
@@ -882,6 +920,7 @@ export class Room {
     this.bomb?.dispose();
     this.photo?.dispose();
     this.sourire?.dispose();
+    this.alibi?.dispose();
   }
 }
 

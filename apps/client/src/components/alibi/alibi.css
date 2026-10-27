@@ -1,0 +1,414 @@
+/* L'Alibi : dossier qui tombe, carnet manuscrit, pièce à conviction suspendue, tampons du juge,
+   barreaux du verdict, et le marteau de la carte d'accueil. */
+
+/* ---- Carte d'accueil : le marteau frappe, la pièce se balance -------------------------- */
+
+@keyframes al-gavel {
+  0%,
+  50%,
+  100% {
+    transform: rotate(0deg);
+  }
+  64% {
+    transform: rotate(10deg);
+  }
+  74% {
+    transform: rotate(-46deg);
+  }
+  79% {
+    transform: rotate(-38deg);
+  }
+  84% {
+    transform: rotate(-46deg);
+  }
+}
+.al-gavel {
+  animation: al-gavel 2.4s var(--ease-out) infinite;
+}
+@keyframes al-sparks {
+  0%,
+  73%,
+  90%,
+  100% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  76% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+.al-sparks {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: al-sparks 2.4s var(--ease-out) infinite;
+}
+@keyframes al-swing {
+  0%,
+  100% {
+    transform: rotate(7deg);
+  }
+  50% {
+    transform: rotate(-7deg);
+  }
+}
+.al-art-tag {
+  animation: al-swing 3.2s ease-in-out infinite;
+}
+.al-teaser .al-gavel,
+.al-deliberate .al-gavel {
+  animation-duration: 3.6s;
+}
+
+/* ---- Concertation ---------------------------------------------------------------------- */
+
+/* Le dossier kraft glisse sur la table en tournant légèrement. */
+@keyframes al-folder {
+  from {
+    transform: translateY(-40px) rotate(-4deg);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(4px) rotate(0.6deg);
+    opacity: 1;
+  }
+}
+.al-folder {
+  background: linear-gradient(160deg, #e9d3a6, #dcbd82);
+  color: #2a1a12;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.5) inset,
+    0 22px 40px -26px rgb(40 20 10 / 0.7);
+  animation: al-folder 0.6s var(--ease-out) backwards;
+}
+.al-tab {
+  background: #dcbd82;
+  color: #4b2e21;
+}
+@keyframes al-stamp-in {
+  0%,
+  55% {
+    transform: scale(2.4) rotate(-8deg);
+    opacity: 0;
+  }
+  75% {
+    transform: scale(0.92) rotate(-8deg);
+    opacity: 1;
+  }
+}
+.al-stamp-in {
+  animation: al-stamp-in 0.9s var(--ease-out) backwards;
+}
+@keyframes al-caret {
+  50% {
+    opacity: 0;
+  }
+}
+.al-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.12em;
+  background: currentColor;
+  animation: al-caret 0.9s steps(1) infinite;
+}
+
+/* La mèche : la barre se vide, et rougit sur la fin. */
+.al-fuse > i {
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+  transform: scaleX(var(--left, 1));
+  background: linear-gradient(90deg, var(--color-accent), var(--color-gold));
+  border-radius: inherit;
+}
+.al-fuse > i::after {
+  content: '';
+  position: absolute;
+  right: -3px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: var(--color-gold);
+  box-shadow: 0 0 10px 3px rgb(217 164 65 / 0.7);
+  animation: m-breathe 0.6s ease-in-out infinite;
+}
+
+@keyframes al-in-left {
+  from {
+    transform: translateX(-30px);
+    opacity: 0;
+  }
+}
+@keyframes al-in-right {
+  from {
+    transform: translateX(30px);
+    opacity: 0;
+  }
+}
+.al-in-left {
+  animation: al-in-left 0.5s var(--ease-spring) 0.25s backwards;
+}
+.al-in-right {
+  animation: al-in-right 0.5s var(--ease-spring) 0.35s backwards;
+}
+
+/* Carnet à spirale : lignes bleu pâle, marge rouge, écriture à la main. */
+.al-notebook {
+  position: relative;
+  background:
+    linear-gradient(90deg, transparent 1.4rem, rgb(220 38 38 / 0.35) 1.4rem, rgb(220 38 38 / 0.35) calc(1.4rem + 1px), transparent calc(1.4rem + 1px)),
+    repeating-linear-gradient(180deg, transparent 0 1.55rem, rgb(37 99 235 / 0.14) 1.55rem calc(1.55rem + 1px)),
+    #fffaf0;
+  color: #2a1a12;
+  box-shadow: 0 18px 36px -24px rgb(40 20 10 / 0.6);
+}
+.al-hand {
+  font-family: 'Caveat', var(--font-script);
+}
+@keyframes al-note {
+  from {
+    transform: translateX(-10px) rotate(-3deg);
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
+.al-note {
+  transform: rotate(var(--tilt, 0deg));
+  animation: al-note 0.35s var(--ease-out) backwards;
+}
+@keyframes al-whisper {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+.al-whisper {
+  animation: al-whisper 1.6s ease-in-out infinite;
+}
+
+/* ---- Photo d'identité judiciaire ------------------------------------------------------- */
+
+.al-mug {
+  background:
+    repeating-linear-gradient(180deg, transparent 0 18px, rgb(75 46 33 / 0.18) 18px 19px),
+    var(--color-page);
+  transition:
+    box-shadow 0.4s ease,
+    border-color 0.4s ease;
+}
+.al-mug.al-hot {
+  box-shadow: 0 0 0 4px rgb(217 164 65 / 0.25);
+  animation: al-hot 1.6s ease-in-out infinite;
+}
+@keyframes al-hot {
+  50% {
+    box-shadow: 0 0 0 8px rgb(217 164 65 / 0.1);
+  }
+}
+.al-plate {
+  background: #2a1a12;
+  color: var(--color-butter);
+}
+
+/* ---- Audience -------------------------------------------------------------------------- */
+
+.al-table {
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgb(217 164 65 / 0.16), transparent 60%),
+    linear-gradient(180deg, rgb(75 46 33 / 0.06), rgb(75 46 33 / 0.14));
+}
+/* La pièce tombe du plafond au bout de sa ficelle, rebondit, puis se balance doucement. */
+@keyframes al-drop {
+  0% {
+    transform: translateY(-140%) rotate(-10deg);
+    opacity: 0;
+  }
+  55% {
+    transform: translateY(6%) rotate(5deg);
+    opacity: 1;
+  }
+  75% {
+    transform: translateY(-2%) rotate(-3deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes al-sway {
+  0%,
+  100% {
+    transform: rotate(1.2deg);
+  }
+  50% {
+    transform: rotate(-1.2deg);
+  }
+}
+.al-exhibit {
+  transform-origin: 50% -2rem;
+  animation:
+    al-drop 0.75s var(--ease-out) backwards,
+    al-sway 3.4s ease-in-out 0.75s infinite;
+}
+.al-string {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 2px;
+  height: 2.5rem;
+  background: var(--color-accent);
+}
+.al-tag {
+  position: relative;
+  background: var(--color-butter);
+  color: #2a1a12;
+  border: 2px dashed rgb(75 46 33 / 0.35);
+  box-shadow: 0 20px 34px -22px rgb(40 20 10 / 0.7);
+}
+.al-tag::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  border-radius: 50%;
+  border: 2px solid var(--color-accent);
+  background: var(--color-page);
+}
+/* Le sablier de la pièce : un anneau conique qui se vide. */
+.al-ring {
+  background: conic-gradient(var(--color-accent) calc(var(--left, 1) * 360deg), rgb(75 46 33 / 0.15) 0);
+}
+.al-ring::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: var(--color-surface);
+}
+.al-cred {
+  transition:
+    width 0.7s var(--ease-spring),
+    background-color 0.4s ease;
+}
+.al-buzz:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+.al-buzz:not(:disabled):active {
+  transform: translateY(1px) scale(0.98);
+}
+
+/* Le tampon de l'objection s'écrase sur la salle, puis s'efface. */
+@keyframes al-objection {
+  0% {
+    transform: scale(3) rotate(-14deg);
+    opacity: 0;
+  }
+  22% {
+    transform: scale(0.94) rotate(-8deg);
+    opacity: 1;
+  }
+  30% {
+    transform: scale(1.04) rotate(-8deg);
+  }
+  80% {
+    transform: scale(1) rotate(-8deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.06) rotate(-8deg);
+    opacity: 0;
+  }
+}
+.al-objection {
+  background: color-mix(in oklab, var(--color-surface) 88%, transparent);
+  backdrop-filter: blur(2px);
+  box-shadow: 0 30px 60px -30px rgb(0 0 0 / 0.5);
+  animation: al-objection 1.4s var(--ease-out) forwards;
+}
+
+/* ---- Verdict --------------------------------------------------------------------------- */
+
+@keyframes al-verdict {
+  0%,
+  20% {
+    transform: scale(2.6) rotate(-6deg);
+    opacity: 0;
+  }
+  45% {
+    transform: scale(0.94) rotate(-3deg);
+    opacity: 1;
+  }
+  60%,
+  100% {
+    transform: rotate(-3deg);
+  }
+}
+.al-verdict {
+  animation: al-verdict 0.9s var(--ease-out) backwards;
+}
+@keyframes al-bar {
+  0% {
+    transform: translateY(-110%);
+  }
+  70% {
+    transform: translateY(3%);
+  }
+}
+.al-bars > i {
+  width: 7px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #3b2a20, #8a7464 45%, #3b2a20);
+  box-shadow: 0 6px 12px -4px rgb(0 0 0 / 0.5);
+  animation: al-bar 0.55s var(--ease-out) backwards;
+}
+@keyframes al-reveal {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+}
+.al-reveal {
+  animation: al-reveal 0.8s var(--ease-out) 0.5s backwards;
+}
+@keyframes al-juror {
+  50% {
+    transform: rotateY(90deg);
+  }
+}
+.al-juror.is-done {
+  animation: al-juror 0.45s var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .al-gavel,
+  .al-sparks,
+  .al-art-tag,
+  .al-folder,
+  .al-stamp-in,
+  .al-caret,
+  .al-in-left,
+  .al-in-right,
+  .al-note,
+  .al-whisper,
+  .al-mug.al-hot,
+  .al-exhibit,
+  .al-objection,
+  .al-verdict,
+  .al-bars > i,
+  .al-reveal,
+  .al-juror.is-done,
+  .al-fuse > i::after {
+    animation: none;
+  }
+  .al-objection {
+    opacity: 1;
+  }
+}

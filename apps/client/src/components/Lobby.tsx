@@ -1,4 +1,4 @@
-import { BOMB_MAX_LIVES, INTRUS_MIN_PLAYERS, SETTINGS_LIMITS, TRAPS, type Difficulty, type RoomGame, type RoomSettings } from '@julaika/shared';
+import { ALIBI_MIN_PLAYERS, BOMB_MAX_LIVES, INTRUS_MIN_PLAYERS, SETTINGS_LIMITS, TRAPS, type Difficulty, type RoomGame, type RoomSettings } from '@julaika/shared';
 import { useEffect, useRef } from 'react';
 import { net } from '../lib/net';
 import { TRAP_INFO, TRAP_MODE_LABELS } from '../lib/traps';
@@ -69,6 +69,12 @@ const SOURIRE_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
+// L'Alibi : chacun est juge une fois par tour.
+const ALIBI_FIELDS: typeof FIELDS = [
+  { key: 'rounds', label: 'Tours (chacun juge)' },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
 const RULES: Partial<Record<RoomGame, string[]>> = {
   wavelength: [
     'Le télépathe voit où se cache la cible entre deux extrêmes, et donne un indice.',
@@ -115,6 +121,12 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
     'Au moindre sourire, on appuie sur « Il a souri ! » (ou Espace) : plus il craque tôt, plus l’attaquant marque.',
     'Puis on inverse les rôles. Allumez vos caméras, c’est bien plus drôle !',
   ],
+
+  alibi: [
+    'Deux complices sont accusés d’une bêtise absurde : 30 s en huis clos pour accorder leur version (les autres ne les entendent plus).',
+    'Les pièces à conviction tombent une à une : le complice désigné a 10 s pour l’intégrer à l’histoire, à voix haute.',
+    'Le juge buzze « Contradiction ! » ou « Hésitation ! » et la crédibilité fond. À quatre ou plus, le jury tranche.',
+  ],
 };
 
 export function Lobby() {
@@ -126,7 +138,7 @@ export function Lobby() {
   const set = (settings: Partial<RoomSettings>) => net.send({ t: 'settings', settings });
   const level = useIndicator(LEVELS.findIndex((l) => l.value === room.settings.difficulty));
   const trapMode = useIndicator(TRAP_MODE_LABELS.findIndex((l) => l.value === room.settings.traps));
-  const minPlayers = room.game === 'intrus' ? INTRUS_MIN_PLAYERS : 2;
+  const minPlayers = room.game === 'intrus' ? INTRUS_MIN_PLAYERS : room.game === 'alibi' ? ALIBI_MIN_PLAYERS : 2;
   const canStart = room.players.length >= minPlayers;
   const start = useRef<HTMLButtonElement>(null);
 
@@ -139,7 +151,7 @@ export function Lobby() {
     <div className="panel p-5 text-left shadow-sm">
       <h2 className="mb-4 text-lg font-semibold">Réglages du salon <span className="font-mono text-muted">#{room.code}</span></h2>
       <div className="grid grid-cols-2 gap-3">
-        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : FIELDS).map(({ key, label, step, max: cap }) => {
+        {(wave ? WAVE_FIELDS : room.game === 'telephone' ? TEL_FIELDS : room.game === 'intrus' ? INTRUS_FIELDS : room.game === 'petitbac' ? BAC_FIELDS : room.game === 'connait' ? CONNAIT_FIELDS : room.game === 'bombe' ? BOMB_FIELDS : room.game === 'photomaton' ? PHOTO_FIELDS : room.game === 'sourire' ? SOURIRE_FIELDS : room.game === 'alibi' ? ALIBI_FIELDS : FIELDS).map(({ key, label, step, max: cap }) => {
           const [min, limit] = SETTINGS_LIMITS[key];
           const max = cap ?? limit;
           return (
