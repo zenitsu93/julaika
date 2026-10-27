@@ -113,11 +113,62 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, x: number, y: number,
   shown.forEach((l, i) => ctx.fillText(l, x, y + i * line));
 }
 
+/** Polaroids déjà rendus en PNG : sur iPhone, le partage doit partir tout de suite après le toucher. */
+const ready = new Map<string, File>();
+const pending = new Map<string, Promise<File>>();
+const keyOf = (image: string, caption: string, by: string) => `${by}|${caption}|${image.length}|${image.slice(-48)}`;
+
+/** Prépare le fichier PNG du polaroid (une seule fois par tirage). */
+export function preparePolaroid(image: string, caption: string, by = '', filename = 'polaroid-julaika.png'): Promise<File> {
+  const key = keyOf(image, caption, by);
+  const done = ready.get(key);
+  if (done) return Promise.resolve(done);
+  let p = pending.get(key);
+  if (!p) {
+    p = polaroidCanvas(image, caption, by)
+      .then((canvas) => new Promise<Blob>((ok, ko) => canvas.toBlob((b) => (b ? ok(b) : ko(new Error('PNG'))), 'image/png')))
+      .then((blob) => {
+        const file = new File([blob], filename, { type: 'image/png' });
+        ready.set(key, file);
+        // On garde les derniers tirages seulement.
+        if (ready.size > 24) ready.delete(ready.keys().next().value!);
+        return file;
+      })
+      .finally(() => pending.delete(key));
+    pending.set(key, p);
+  }
+  return p;
+}
+
+/**
+ * Enregistre le polaroid. Sur téléphone, la feuille de partage s'ouvre avec l'image (sur iPhone :
+ * « Enregistrer l'image » la range dans Photos) ; ailleurs, le PNG se télécharge.
+ * Renvoie 'shared', 'saved', ou 'cancelled' si on a refermé la feuille.
+ */
+export async function savePolaroid(image: string, caption: string, by = '', filename = 'polaroid-julaika.png'): Promise<'shared' | 'saved' | 'cancelled'> {
+  const file = ready.get(keyOf(image, caption, by)) ?? (await preparePolaroid(image, caption, by, filename));
+  const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+  if (touch && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'Polaroid julaïka' });
+      return 'shared';
+    } catch (e) {
+      if ((e as DOMException)?.name === 'AbortError') return 'cancelled';
+      // Partage refusé (geste trop ancien…) : on retombe sur le téléchargement.
+    }
+  }
+  const url = URL.createObjectURL(file);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  return 'saved';
+}
+
 /** Enregistre le polaroid en PNG. */
 export async function downloadPolaroid(image: string, caption: string, by = '', filename = 'polaroid-julaika.png') {
-  const canvas = await polaroidCanvas(image, caption, by);
-  const a = document.createElement('a');
-  a.href = canvas.toDataURL('image/png');
-  a.download = filename;
-  a.click();
+  await savePolaroid(image, caption, by, filename);
 }

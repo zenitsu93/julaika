@@ -1,5 +1,5 @@
 import { ALIBI_MIN_PLAYERS, BOMB_MAX_LIVES, INTRUS_MIN_PLAYERS, SETTINGS_LIMITS, TRAPS, type Difficulty, type GameMode, type RoomGame, type RoomSettings } from '@julaika/shared';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { net } from '../lib/net';
 import { TRAP_INFO, TRAP_MODE_LABELS } from '../lib/traps';
 import { CerveauModes } from './cerveau/CerveauModes';
@@ -201,8 +201,8 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
 
   photomaton: [
     'Une consigne absurde s’affiche : prépare ta plus belle tête devant la caméra.',
-    '3, 2, 1… flash ! Ta caméra est figée en polaroid, en même temps que celle des autres.',
-    'Les tirages se posent côte à côte : note ceux des autres de 1 à 5 étoiles.',
+    '5, 4, 3, 2, 1… flash ! Ta caméra est figée en polaroid, en même temps que celle des autres.',
+    'Les tirages se posent côte à côte : note ceux des autres de 1 à 5 étoiles, puis valide. On attend que tout le monde ait fini.',
   ],
 
   flash: [
@@ -381,16 +381,7 @@ export function Lobby() {
                   <Ticker value={Math.min(max, room.settings[key])} />
                 </div>
               ) : (
-              <input
-                type="number"
-                className="input font-mono tabular-nums"
-                min={min}
-                max={max}
-                step={step ?? 1}
-                disabled={!isHost}
-                value={Math.min(max, room.settings[key])}
-                onChange={(e) => set({ [key]: Number(e.target.value) })}
-              />
+              <NumberField label={label} min={min} max={max} step={step ?? 1} value={Math.min(max, room.settings[key])} onCommit={(v) => set({ [key]: v })} />
               )}
             </label>
           );
@@ -512,6 +503,57 @@ export function Lobby() {
           {error}
         </p>
       )}
+    </div>
+  );
+}
+
+/**
+ * Un nombre réglable : on tape librement (la valeur part quand on quitte le champ ou valide),
+ * ou on appuie sur − et +. Avant, chaque touche partait aussitôt : effacer « 3 » donnait 1,
+ * taper « 5 » donnait 15, ramené à 10, et on restait coincé au maximum.
+ */
+function NumberField({ label, value, min, max, step, onCommit }: { label: string; value: number; min: number; max: number; step: number; onCommit: (v: number) => void }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const minus = useRef<HTMLButtonElement>(null);
+  const plus = useRef<HTMLButtonElement>(null);
+  const clamp = (v: number) => Math.max(min, Math.min(max, Math.round(v / step) * step));
+  const commit = () => {
+    if (draft === null) return;
+    const v = Number(draft.replace(',', '.'));
+    if (draft.trim() !== '' && Number.isFinite(v) && clamp(v) !== value) onCommit(clamp(v));
+    setDraft(null);
+  };
+  const nudge = (d: number, el: HTMLButtonElement | null) => {
+    const v = clamp(value + d * step);
+    bump(el, 0.88);
+    if (v !== value) onCommit(v);
+  };
+  return (
+    <div className="flex items-stretch gap-1">
+      <button ref={minus} type="button" aria-label={`${label} : moins`} disabled={value <= min} onClick={() => nudge(-1, minus.current)} className="input w-10 shrink-0 px-0 text-center font-mono text-lg leading-none transition enabled:hover:bg-edge/50 disabled:opacity-40">
+        −
+      </button>
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        aria-label={label}
+        className="input min-w-0 flex-1 text-center font-mono tabular-nums"
+        value={draft ?? String(value)}
+        onFocus={(e) => e.currentTarget.select()}
+        onChange={(e) => setDraft(e.target.value.replace(/[^0-9]/g, '').slice(0, 3))}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur();
+          else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            nudge(e.key === 'ArrowUp' ? 1 : -1, null);
+          }
+        }}
+      />
+      <button ref={plus} type="button" aria-label={`${label} : plus`} disabled={value >= max} onClick={() => nudge(1, plus.current)} className="input w-10 shrink-0 px-0 text-center font-mono text-lg leading-none transition enabled:hover:bg-edge/50 disabled:opacity-40">
+        +
+      </button>
     </div>
   );
 }

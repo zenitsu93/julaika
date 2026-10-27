@@ -350,6 +350,120 @@
   animation: pm-fan 4.5s ease-in-out infinite;
 }
 
+/* ---- Annonce de la notation, validation, pause, téléchargement -------------------- */
+
+/* Le bandeau d'annonce tombe doucement, puis glisse vers le haut et s'efface à l'ouverture. */
+@keyframes pm-intro-in {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+}
+.pm-intro {
+  animation: pm-intro-in 0.45s ease-out both;
+}
+.pm-intro > * {
+  animation: pm-intro-card 0.6s cubic-bezier(0.2, 0.9, 0.25, 1.2) both;
+}
+@keyframes pm-intro-card {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94) rotate(-1.5deg);
+  }
+}
+@keyframes pm-intro-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+.pm-intro.pm-intro-out {
+  animation: pm-intro-out 0.5s ease-in 0.25s forwards;
+  pointer-events: none;
+}
+.pm-intro.pm-intro-out > * {
+  animation: pm-intro-card-out 0.55s cubic-bezier(0.5, 0, 0.75, 0) forwards;
+}
+@keyframes pm-intro-card-out {
+  to {
+    opacity: 0;
+    transform: translateY(-28px) scale(0.96);
+  }
+}
+
+/* Valider : la barre se remplit à chaque note, puis le bouton luit quand tout est noté. */
+.pm-validate-fill {
+  transition: width 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes pm-validate-glow {
+  0%,
+  100% {
+    box-shadow: 0 10px 24px -12px rgb(40 20 10 / 0.6), 0 0 0 0 color-mix(in oklab, var(--color-accent) 55%, transparent);
+  }
+  50% {
+    box-shadow: 0 10px 24px -12px rgb(40 20 10 / 0.6), 0 0 0 7px color-mix(in oklab, var(--color-accent) 0%, transparent);
+  }
+}
+.pm-validate-ready {
+  animation: pm-validate-glow 1.6s ease-in-out infinite;
+}
+
+/* Pause : l'icône se retourne en changeant ; les deux barres du voile respirent l'une après l'autre. */
+@keyframes pm-pauseicon {
+  from {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.4);
+  }
+}
+.pm-pauseicon {
+  animation: pm-pauseicon 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+@keyframes pm-pausebar {
+  0%,
+  100% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scaleY(0.72);
+    opacity: 0.7;
+  }
+}
+.pm-pausemark > span {
+  animation: pm-pausebar 1.4s ease-in-out infinite;
+  transform-origin: 50% 50%;
+}
+
+/* Télécharger : la flèche plonge au survol, sautille pendant la préparation, la coche se trace. */
+@keyframes pola-save-dip {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  45% {
+    transform: translateY(3px);
+  }
+}
+.pola-save:hover .pola-save-arrow,
+.pola-save:focus-visible .pola-save-arrow {
+  animation: pola-save-dip 0.6s ease-in-out infinite;
+}
+.pola-save-busy {
+  animation: pola-save-dip 0.45s ease-in-out infinite;
+}
+@keyframes pola-save-ok {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.pola-save-ok path {
+  stroke-dasharray: 1;
+  animation: pola-save-ok 0.4s ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pola,
   .pola-toss,
@@ -366,13 +480,22 @@
   .pm-crown,
   .pm-halo,
   .pm-fan,
-  .pm-rec {
+  .pm-rec,
+  .pm-intro,
+  .pm-intro > *,
+  .pm-validate-ready,
+  .pm-pauseicon,
+  .pm-pausemark > span,
+  .pola-save-arrow,
+  .pola-save-busy,
+  .pola-save-ok path {
     animation: none !important;
     transition: none !important;
   }
   .pm-flash,
   .pm-shutter,
-  .pm-spark {
+  .pm-spark,
+  .pm-intro.pm-intro-out {
     display: none;
   }
 }

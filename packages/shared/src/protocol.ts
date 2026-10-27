@@ -181,7 +181,7 @@ export const DEFAULT_SETTINGS: RoomSettings = {
 };
 
 export const SETTINGS_LIMITS = {
-  rounds: [1, 10],
+  rounds: [1, 20],
   drawTime: [30, 240],
   maxPlayers: [2, 16],
   wordChoices: [1, 5],
@@ -344,6 +344,10 @@ export type ClientMsg =
   | { t: 'bomb'; typing: string }
   | { t: 'photo'; image: string | null }
   | { t: 'photo'; vote: string; stars: number }
+  /** Photomaton : « J'ai fini de noter ». */
+  | { t: 'photo'; ready: true }
+  /** Photomaton : l'hôte met en pause ou relance la partie. */
+  | { t: 'photo'; pause: boolean }
   /** Mime : le mimeur répond à `mimeSnap` avec l'image de sa caméra (null sans caméra). */
   | { t: 'mimeShot'; finder: string; image: string | null }
   /** Boîte à sons : un bruitage joué chez tout le salon (dans tous les jeux). */
