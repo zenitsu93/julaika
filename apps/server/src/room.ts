@@ -1,6 +1,7 @@
 import {
   DEFAULT_SETTINGS,
   DrawOp,
+  INTRUS_MIN_PLAYERS,
   MAX_CALL,
   SETTINGS_LIMITS,
   checkGuess,
@@ -8,10 +9,12 @@ import {
   isDifficulty,
   maskWord,
   parseMeetUrl,
+  normalize,
   type ChatLine,
   type ClientMsg,
   type Difficulty,
   type IceServer,
+  type IntrusPair,
   type Phase,
   type PlayerPublic,
   type RoomGame,
@@ -19,7 +22,9 @@ import {
   type RoomState,
   type ServerMsg,
 } from '@julaika/shared';
-import type { WordGenerator } from './deepseek';
+import type { PairGenerator, WordGenerator } from './deepseek';
+import { Intrus } from './intrus';
+import { INTRUS_PAIRS } from './intrusPairs';
 import { Telephone } from './telephone';
 import { Wavelength } from './wavelength';
 import { WORDS_FR } from './words';
@@ -71,6 +76,11 @@ export class Room {
 
   private wave: Wavelength | null = null;
   private tel: Telephone | null = null;
+  private intrus: Intrus | null = null;
+  // Paires de L'Intrus générées par l'IA, et mots déjà sortis dans ce salon.
+  private pairs: IntrusPair[] = [];
+  private pairing = false;
+  private usedPairs = new Set<string>();
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -90,6 +100,7 @@ export class Room {
     private readonly random: () => number = Math.random,
     private readonly iceServers: (playerId: string) => IceServer[] = () => [],
     private readonly generateWords: WordGenerator | null = null,
+    private readonly generatePairs: PairGenerator | null = null,
   ) {
     this.code = code;
   }
@@ -121,7 +132,10 @@ export class Room {
     this.system(`${player.name} a rejoint la partie.`);
     this.broadcastState(id);
     // Les mots sont commandés dès qu'une partie devient possible, pour être prêts au lancement.
-    if (this.players.size >= 2) this.refillWords();
+    if (this.players.size >= 2) {
+      this.refillWords();
+      this.refillPairs();
+    }
     return id;
   }
 
@@ -143,9 +157,10 @@ export class Room {
       this.toLobby();
       return;
     }
-    if (this.wave || this.tel) {
+    if (this.wave || this.tel || this.intrus) {
       this.wave?.onLeave(id);
       this.tel?.onLeave(id);
+      this.intrus?.onLeave(id);
       this.broadcastState();
       return;
     }
@@ -184,6 +199,9 @@ export class Room {
         break;
       case 'tel':
         if (msg && typeof msg === 'object') this.tel?.handle(id, msg);
+        break;
+      case 'intrus':
+        if (msg && typeof msg === 'object') this.intrus?.handle(id, msg);
         break;
       case 'clear':
         if (this.tel) this.tel.clear(id);
@@ -274,6 +292,7 @@ export class Room {
     this.round = 0;
     if (this.game === 'wavelength') return this.startWave();
     if (this.game === 'telephone') return this.startTel();
+    if (this.game === 'intrus') return this.startIntrus();
     this.usedWords.clear();
     this.nextRound();
   }
@@ -451,6 +470,63 @@ export class Room {
     this.tel.start();
   }
 
+  private startIntrus(): void {
+    if (this.players.size < INTRUS_MIN_PLAYERS) {
+      this.sendTo(this.hostId!, { t: 'error', message: `Il faut au moins ${INTRUS_MIN_PLAYERS} joueurs pour L'Intrus.` });
+      return;
+    }
+    this.intrus?.dispose();
+    this.intrus = new Intrus({
+      playerIds: () => [...this.players.keys()],
+      name: (id) => this.players.get(id)?.name ?? '?',
+      rounds: () => this.settings.rounds,
+      random: this.random,
+      nextPair: () => this.nextPair(),
+      addScore: (id, points) => {
+        const p = this.players.get(id);
+        if (p) p.score += points;
+      },
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      error: (id, message) => this.sendTo(id, { t: 'error', message }),
+      system: (text) => this.system(text),
+      endGame: () => this.endGame(),
+      toLobby: () => this.toLobby(),
+    });
+    this.intrus.start();
+  }
+
+  /** Paire suivante : celles de l'IA d'abord, sinon la liste intégrée, jamais deux fois le même mot. */
+  private nextPair(): IntrusPair {
+    const fresh = (p: IntrusPair) => !this.usedPairs.has(normalize(p.civil)) && !this.usedPairs.has(normalize(p.intrus));
+    let pair = this.pairs.find(fresh);
+    if (pair) this.pairs = this.pairs.filter((p) => p !== pair);
+    else {
+      const pool = INTRUS_PAIRS.filter(fresh);
+      const from = pool.length ? pool : INTRUS_PAIRS;
+      pair = from[Math.floor(this.random() * from.length)]!;
+    }
+    this.usedPairs.add(normalize(pair.civil));
+    this.usedPairs.add(normalize(pair.intrus));
+    // Une fois sur deux, les rôles des deux mots s'inversent : « plage » n'est pas toujours aux civils.
+    const flip = this.random() < 0.5;
+    this.refillPairs();
+    return flip ? { civil: pair.intrus, intrus: pair.civil } : pair;
+  }
+
+  private refillPairs(): void {
+    if (this.game !== 'intrus' || !this.generatePairs || this.pairing || this.pairs.length >= 6) return;
+    this.pairing = true;
+    this.generatePairs(12, [...this.usedPairs].slice(-AVOID_MAX))
+      .then((pairs) => void (this.pairs = [...this.pairs, ...pairs]))
+      .catch(() => {}) // la liste intégrée prend le relais
+      .finally(() => (this.pairing = false));
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -469,6 +545,8 @@ export class Room {
     this.wave = null;
     this.tel?.dispose();
     this.tel = null;
+    this.intrus?.dispose();
+    this.intrus = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -506,7 +584,7 @@ export class Room {
   /** Recommande des mots à l'IA quand le stock de la difficulté choisie descend sous trois tours. */
   private refillWords(): void {
     const { difficulty, customOnly, customWords, wordChoices } = this.settings;
-    if (!this.generateWords || this.generating.has(difficulty)) return;
+    if (!this.generateWords || this.game !== 'dessin' || this.generating.has(difficulty)) return;
     if (customOnly && customWords.length >= wordChoices) return;
     if (this.generated[difficulty].length >= wordChoices * 3) return;
     this.generating.add(difficulty);
@@ -555,6 +633,7 @@ export class Room {
       meetUrl: this.meetUrl,
       wave: this.wave?.stateFor(id) ?? null,
       tel: this.tel?.state() ?? null,
+      intrus: this.intrus?.stateFor(id) ?? null,
     };
   }
 
@@ -592,6 +671,7 @@ export class Room {
     this.clearTimers();
     this.wave?.dispose();
     this.tel?.dispose();
+    this.intrus?.dispose();
   }
 }
 

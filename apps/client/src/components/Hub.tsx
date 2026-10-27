@@ -195,7 +195,34 @@ const TelArt = () => (
   </svg>
 );
 
-const ART: Record<GameId, JSX.Element> = { dessin: <DrawArt />, mime: <MimeArt />, wavelength: <WaveArt />, motdujour: <MotArt />, telephone: <TelArt /> };
+/** Trois silhouettes pareilles ; la quatrième, en jaune, se trahit et la loupe la trouve. */
+const IntrusArt = () => (
+  <svg viewBox="0 0 220 140" className="mx-auto max-h-36 w-full" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    {[36, 82, 128].map((x, i) => (
+      <g key={x} className="intrus-head" style={{ animationDelay: `${i * 1.1}s`, transformOrigin: `${x}px 112px` }}>
+        <circle cx={x} cy="56" r="15" fill="currentColor" fillOpacity=".18" strokeWidth="5" />
+        <path d={`M${x - 22} 112c2-20 12-28 22-28s20 8 22 28`} fill="currentColor" fillOpacity=".18" strokeWidth="5" />
+      </g>
+    ))}
+    <g className="soon-bob" style={{ transformOrigin: '176px 100px' }}>
+      <circle cx="176" cy="56" r="15" className="fill-gold stroke-gold" strokeWidth="5" />
+      <path d="M154 112c2-20 12-28 22-28s20 8 22 28" className="fill-gold stroke-gold" strokeWidth="5" />
+    </g>
+    <g className="intrus-lens">
+      <circle cx="176" cy="60" r="27" strokeWidth="6" />
+      <path d="m196 80 14 14" strokeWidth="8" />
+    </g>
+  </svg>
+);
+
+const ART: Record<GameId, JSX.Element> = {
+  dessin: <DrawArt />,
+  mime: <MimeArt />,
+  wavelength: <WaveArt />,
+  motdujour: <MotArt />,
+  telephone: <TelArt />,
+  intrus: <IntrusArt />,
+};
 
 /** Carte d'un jeu en préparation : même mise en page, écrin en pointillés et sans clic. */
 function SoonCard({ game, className, style }: { game: (typeof SOON)[number]; className: string; style: CSSProperties }) {
@@ -228,22 +255,6 @@ const svg = (body: JSX.Element, viewBox = '0 0 200 140') => (
 );
 
 const SOON_ART: Record<SoonId, JSX.Element> = {
-  // Quatre têtes pareilles, une qui n'est pas comme les autres.
-  intrus: svg(
-    <>
-      {[40, 80, 120].map((x) => (
-        <g key={x}>
-          <circle cx={x} cy="58" r="15" strokeWidth="5" />
-          <path d={`M${x - 22} 112c2-20 12-28 22-28s20 8 22 28`} strokeWidth="5" />
-        </g>
-      ))}
-      <g className="soon-bob" style={{ transformOrigin: '160px 90px' }}>
-        <circle cx="160" cy="58" r="15" className="stroke-gold" strokeWidth="5" />
-        <path d="M138 112c2-20 12-28 22-28s20 8 22 28" className="stroke-gold" strokeWidth="5" />
-        <path d="M154 54a6 6 0 1 1 8 6v4M158 70v.5" className="stroke-gold" strokeWidth="4" />
-      </g>
-    </>,
-  ),
   // Un mot barré d'un trait rouge, encore et encore.
   interdits: svg(
     <>

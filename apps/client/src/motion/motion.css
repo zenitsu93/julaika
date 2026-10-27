@@ -1095,3 +1095,106 @@
     box-shadow: 0 0 0 9px rgb(124 58 237 / 0);
   }
 }
+
+/* L'Intrus ------------------------------------------------------------------------------ */
+
+/* Accueil : la loupe passe sur chaque silhouette et s'arrête sur l'intrus. */
+@keyframes intrus-lens {
+  0%,
+  10% {
+    transform: translateX(-140px);
+  }
+  25%,
+  35% {
+    transform: translateX(-94px);
+  }
+  50%,
+  60% {
+    transform: translateX(-48px);
+  }
+  75%,
+  100% {
+    transform: translateX(0);
+  }
+}
+.intrus-lens {
+  animation: intrus-lens 4.4s cubic-bezier(0.65, 0, 0.25, 1) infinite;
+}
+/* La silhouette sous la loupe se redresse un instant. */
+@keyframes intrus-head {
+  0%,
+  14%,
+  100% {
+    transform: none;
+  }
+  6% {
+    transform: translateY(-5px) scaleY(1.04);
+  }
+}
+.intrus-head {
+  transform-box: view-box;
+  animation: intrus-head 4.4s ease-in-out infinite;
+}
+
+/* Carte du mot : distribuée face cachée, elle se retourne ; un clic la recache. */
+.i-card {
+  perspective: 900px;
+}
+.i-card-inner {
+  transform-style: preserve-3d;
+  transition: transform 0.7s var(--ease-spring);
+}
+.i-card[data-hidden='true'] .i-card-inner {
+  transform: rotateY(180deg);
+}
+.i-face {
+  backface-visibility: hidden;
+}
+.i-back {
+  transform: rotateY(180deg);
+}
+@keyframes i-deal {
+  from {
+    transform: translate(-30px, -24px) rotate(-10deg) scale(0.85);
+    opacity: 0;
+  }
+}
+.i-deal {
+  animation: i-deal 0.55s var(--ease-spring) backwards;
+}
+/* Siège de qui parle : un halo jaune respire autour de la carte. */
+@keyframes i-spot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px var(--color-accent), 0 0 0 6px color-mix(in srgb, var(--color-accent) 18%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 2px var(--color-accent), 0 0 0 12px transparent;
+  }
+}
+.i-spot {
+  animation: i-spot 1.6s ease-in-out infinite;
+}
+/* Bulletin de vote qui tombe dans l'urne (pastille « a voté »). */
+@keyframes i-ballot {
+  0% {
+    transform: translateY(-14px) rotate(-12deg);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(2px) rotate(3deg);
+    opacity: 1;
+  }
+}
+.i-ballot {
+  animation: i-ballot 0.45s var(--ease-out) backwards;
+}
+/* Révélation : la carte du joueur se retourne pour montrer son mot. */
+@keyframes i-turn {
+  0% {
+    transform: perspective(700px) rotateY(90deg);
+  }
+}
+.i-turn {
+  animation: i-turn 0.6s var(--ease-spring) backwards;
+}
