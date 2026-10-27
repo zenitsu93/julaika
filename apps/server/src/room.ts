@@ -14,11 +14,13 @@ import {
   type IceServer,
   type Phase,
   type PlayerPublic,
+  type RoomGame,
   type RoomSettings,
   type RoomState,
   type ServerMsg,
 } from '@julaika/shared';
 import type { WordGenerator } from './deepseek';
+import { Wavelength } from './wavelength';
 import { WORDS_FR } from './words';
 
 export interface Conn {
@@ -63,7 +65,10 @@ export class Room {
   word: string | null = null;
   endsAt: number | null = null;
   meetUrl = '';
+  /** Jeu du salon, fixé à sa création. */
+  game: RoomGame = 'dessin';
 
+  private wave: Wavelength | null = null;
   private choices: string[] = [];
   private drawQueue: string[] = [];
   private revealed = new Set<number>();
@@ -135,6 +140,11 @@ export class Room {
       this.toLobby();
       return;
     }
+    if (this.wave) {
+      this.wave.onLeave(id);
+      this.broadcastState();
+      return;
+    }
     if (this.drawerId === id && (this.phase === 'choosing' || this.phase === 'drawing')) {
       this.endTurn();
       return;
@@ -164,6 +174,9 @@ export class Room {
         break;
       case 'chat':
         this.chat(player, msg.text);
+        break;
+      case 'wave':
+        if (msg && typeof msg === 'object') this.wave?.handle(id, msg);
         break;
       case 'clear':
         if (this.isDrawing(id)) {
@@ -249,6 +262,7 @@ export class Room {
     }
     for (const p of this.players.values()) p.score = 0;
     this.round = 0;
+    if (this.game === 'wavelength') return this.startWave();
     this.usedWords.clear();
     this.nextRound();
   }
@@ -384,6 +398,27 @@ export class Room {
     this.after(TURN_END_TIME, () => this.nextTurn());
   }
 
+  private startWave(): void {
+    this.wave?.dispose();
+    this.wave = new Wavelength({
+      playerIds: () => [...this.players.keys()],
+      name: (id) => this.players.get(id)?.name ?? '?',
+      turnTime: () => this.settings.drawTime,
+      rounds: () => this.settings.rounds,
+      random: this.random,
+      setPhase: (phase, endsAt, round) => {
+        this.phase = phase;
+        this.endsAt = endsAt;
+        this.round = round;
+      },
+      broadcastState: () => this.broadcastState(),
+      broadcast: (msg, except) => this.broadcast(msg, except),
+      system: (text) => this.system(text),
+      endGame: () => this.endGame(),
+    });
+    this.wave.start();
+  }
+
   private endGame(): void {
     this.clearTimers();
     this.phase = 'gameEnd';
@@ -398,6 +433,8 @@ export class Room {
 
   private toLobby(): void {
     this.clearTimers();
+    this.wave?.dispose();
+    this.wave = null;
     this.phase = 'lobby';
     this.round = 0;
     this.drawerId = null;
@@ -473,6 +510,7 @@ export class Room {
     }
     return {
       code: this.code,
+      game: this.game,
       phase: this.phase,
       settings: this.settings,
       players: this.publicPlayers(),
@@ -481,6 +519,7 @@ export class Room {
       endsAt: this.endsAt,
       hint,
       meetUrl: this.meetUrl,
+      wave: this.wave?.stateFor(id) ?? null,
     };
   }
 
@@ -516,6 +555,7 @@ export class Room {
 
   dispose(): void {
     this.clearTimers();
+    this.wave?.dispose();
   }
 }
 

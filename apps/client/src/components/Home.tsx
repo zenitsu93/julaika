@@ -50,7 +50,8 @@ export function Home({ game, onBack }: { game: GameId | null; onBack: () => void
       localStorage.setItem('julaika:name', JSON.stringify(name));
       localStorage.setItem('julaika:avatar', JSON.stringify(avatar));
     } catch {}
-    net.connect(name, avatar, room || undefined);
+    // Le jeu ne compte qu'à la création : avec un code, on rejoint le jeu du salon.
+    net.connect(name, avatar, room || undefined, game === 'wavelength' ? 'wavelength' : 'dessin');
   };
 
   return (

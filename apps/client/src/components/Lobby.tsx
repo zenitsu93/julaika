@@ -18,8 +18,16 @@ const LEVELS: { value: Difficulty; label: string }[] = [
   { value: 'difficile', label: 'Difficile' },
 ];
 
+// Wavelength : pas de mots à régler, une carte par joueur et par manche.
+const WAVE_FIELDS: typeof FIELDS = [
+  { key: 'rounds', label: 'Cartes par joueur' },
+  { key: 'drawTime', label: 'Temps par étape (s)', step: 10 },
+  { key: 'maxPlayers', label: 'Joueurs max' },
+];
+
 export function Lobby() {
   const room = useGame((s) => s.room!);
+  const wave = room.game === 'wavelength';
   const isHost = useGame((s) => s.room!.players.find((p) => p.id === s.selfId)?.isHost ?? false);
   const error = useGame((s) => s.error);
   const set = (settings: Partial<RoomSettings>) => net.send({ t: 'settings', settings });
@@ -36,7 +44,7 @@ export function Lobby() {
     <div className="panel p-5 text-left shadow-sm">
       <h2 className="mb-4 text-lg font-semibold">Réglages du salon <span className="font-mono text-muted">#{room.code}</span></h2>
       <div className="grid grid-cols-2 gap-3">
-        {FIELDS.map(({ key, label, step }) => {
+        {(wave ? WAVE_FIELDS : FIELDS).map(({ key, label, step }) => {
           const [min, max] = SETTINGS_LIMITS[key];
           return (
             <label key={key} className="text-sm">
@@ -62,6 +70,20 @@ export function Lobby() {
           );
         })}
       </div>
+      {wave ? (
+        <ol className="mt-4 space-y-1.5 text-sm text-muted">
+          <li>
+            <b className="text-ink">1.</b> Le télépathe voit où se cache la cible entre deux extrêmes, et donne un indice.
+          </li>
+          <li>
+            <b className="text-ink">2.</b> Les autres placent l'aiguille ensemble (parlez-vous en visio !), puis valident.
+          </li>
+          <li>
+            <b className="text-ink">3.</b> Le volet s'ouvre : jusqu'à 4 points pour l'équipe. On change de télépathe.
+          </li>
+        </ol>
+      ) : (
+      <>
       <div className="mt-3 text-sm">
         <span className="mb-1 block text-muted">Difficulté des mots</span>
         <div ref={level.container} role="group" aria-label="Difficulté des mots" className="relative grid grid-cols-3 gap-1 rounded-md border border-edge p-1">
@@ -99,6 +121,8 @@ export function Lobby() {
         <input type="checkbox" disabled={!isHost} checked={room.settings.customOnly} onChange={(e) => set({ customOnly: e.target.checked })} />
         Uniquement mes mots
       </label>
+      </>
+      )}
       {isHost ? (
         <button ref={start} className="btn-primary mt-5 w-full py-2.5" disabled={!canStart} onClick={() => net.send({ t: 'start' })}>
           {canStart ? 'Lancer la partie' : 'En attente de joueurs…'}

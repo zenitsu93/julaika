@@ -125,6 +125,7 @@ const untilt = (e: PointerEvent<HTMLButtonElement>) => {
 const SKINS: Record<GameId, string> = {
   dessin: 'border-accent bg-accent text-[#18181b]',
   mime: 'border-primary bg-primary text-on-primary',
+  wavelength: 'border-edge bg-surface text-ink',
 };
 
 function GameCard({ game, className, style, onPick }: { game: GameInfo; className: string; style: CSSProperties; onPick: () => void }) {
@@ -148,7 +149,7 @@ function GameCard({ game, className, style, onPick }: { game: GameInfo; classNam
             <span>{game.players}</span>
           )}
         </span>
-        <span className="hub-pop m-float">{game.id === 'dessin' ? <DrawArt /> : <MimeArt />}</span>
+        <span className="hub-pop m-float">{game.id === 'dessin' ? <DrawArt /> : game.id === 'mime' ? <MimeArt /> : <WaveArt />}</span>
         <span className="hub-pop block">
           <span className="block text-4xl font-semibold tracking-[-0.04em]">{game.name}</span>
           <span className="mt-1 block text-[15px] opacity-75">{game.pitch}</span>
@@ -169,5 +170,20 @@ const MimeArt = () => (
     <circle cx="30" cy="20" r="10" className="fill-current opacity-30" />
     <path d="M12 56c2-14 10-20 18-20s16 6 18 20" className="fill-current opacity-30" />
     <path className="m-wave" d="M46 34l6-16" stroke="#f5b700" strokeWidth="5" strokeLinecap="round" />
+  </svg>
+);
+
+/** Le cadran de Wavelength : les zones de points et l'aiguille qui cherche la cible. */
+const WaveArt = () => (
+  <svg viewBox="0 0 200 120" className="mx-auto max-h-36 w-full" aria-hidden>
+    <path d="M20 106a80 80 0 0 1 160 0" fill="none" stroke="currentColor" strokeOpacity=".15" strokeWidth="26" />
+    <path d="M118.7 28.2A80 80 0 0 1 177.8 87.3" fill="none" stroke="#2563eb" strokeOpacity=".55" strokeWidth="26" />
+    <path d="M135.2 34.2A80 80 0 0 1 171.8 70.8" fill="none" stroke="#d97706" strokeWidth="26" />
+    <path d="M150.0 43.6A80 80 0 0 1 162.4 56.0" fill="none" stroke="#f5b700" strokeWidth="26" />
+    <g className="m-needle" style={{ transformOrigin: '100px 106px' }}>
+      <path d="M100 106 149.5 56.5" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
+    </g>
+    <circle cx="100" cy="106" r="9" className="fill-current" />
+    <circle cx="100" cy="106" r="3.5" fill="#f5b700" />
   </svg>
 );

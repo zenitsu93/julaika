@@ -364,3 +364,72 @@
     animation: none;
   }
 }
+
+/* Wavelength ---------------------------------------------------------------------------- */
+
+/* Carte de l'accueil : l'aiguille hésite autour de la cible. */
+@keyframes m-needle {
+  0%,
+  100% {
+    transform: rotate(-38deg);
+  }
+  45% {
+    transform: rotate(6deg);
+  }
+  70% {
+    transform: rotate(-4deg);
+  }
+}
+.m-needle {
+  animation: m-needle 3.2s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+
+/* Volet du cadran : il balaie le demi-disque pour dévoiler la cible. */
+.w-shutter {
+  transform-box: view-box;
+  transition: transform 0.9s cubic-bezier(0.65, 0, 0.25, 1);
+}
+/* Zones de points : elles s'ouvrent en éventail depuis la cible. */
+@keyframes w-fan {
+  from {
+    transform: rotate(var(--w-from, 0deg)) scale(0.6);
+    opacity: 0;
+  }
+}
+.w-fan {
+  transform-box: view-box;
+  animation: w-fan 0.5s var(--ease-spring) backwards;
+}
+/* Poignée de l'aiguille : un halo respire quand c'est à toi de la placer. */
+@keyframes w-halo {
+  from {
+    r: 14;
+    opacity: 0.45;
+  }
+  to {
+    r: 26;
+    opacity: 0;
+  }
+}
+.w-halo {
+  animation: w-halo 1.6s ease-out infinite;
+}
+/* Indice qui arrive : les mots tombent un à un. */
+.w-word {
+  display: inline-block;
+  animation: m-drop 0.42s var(--ease-out) backwards;
+}
+/* Points du tour : le badge claque puis se pose. */
+@keyframes w-stamp {
+  0% {
+    transform: scale(2.2) rotate(-8deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.94) rotate(2deg);
+    opacity: 1;
+  }
+}
+.w-stamp {
+  animation: w-stamp 0.5s var(--ease-out) backwards;
+}
