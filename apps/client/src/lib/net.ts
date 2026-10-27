@@ -1,5 +1,6 @@
 import { decodeDraw, type ClientMsg, type ServerMsg } from '@julaika/shared';
 import { board } from './board';
+import { call } from './call';
 import { store } from './store';
 
 const MAX_CHAT = 120;
@@ -33,6 +34,7 @@ class Net {
     ws.onclose = () => {
       if (this.ws !== ws) return;
       this.stopPing();
+      call.leave(false);
       store.set({ status: 'closed' });
     };
   }
@@ -47,6 +49,7 @@ class Net {
 
   close() {
     this.stopPing();
+    call.leave(false);
     const ws = this.ws;
     this.ws = null;
     ws?.close();
@@ -61,6 +64,12 @@ class Net {
     switch (msg.t) {
       case 'welcome':
         board.reset();
+        call.configure({
+          selfId: msg.selfId,
+          ice: msg.ice,
+          send: (to, data) => this.send({ t: 'rtc', to, data }),
+          announce: (inCall, cam, mic) => this.send({ t: 'call', inCall, cam, mic }),
+        });
         store.set({ status: 'online', selfId: msg.selfId, room: msg.state, clockOffset: msg.now - Date.now(), error: null });
         history.replaceState(null, '', `/r/${msg.state.code}`);
         break;
@@ -72,6 +81,7 @@ class Net {
           turnEnd: phase === 'turnEnd' ? s.turnEnd : null,
           ranking: phase === 'gameEnd' ? s.ranking : null,
         }));
+        call.sync(msg.state.players);
         break;
       }
       case 'chat':
@@ -91,6 +101,9 @@ class Net {
         break;
       case 'undo':
         board.undo();
+        break;
+      case 'rtc':
+        void call.onSignal(msg.from, msg.data);
         break;
       case 'pong': {
         // Demi aller-retour : estimation simple et suffisante pour un compte à rebours.

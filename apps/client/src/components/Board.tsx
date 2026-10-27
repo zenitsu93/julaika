@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { CANVAS_H, CANVAS_W } from '@julaika/shared';
 import { Pen, board } from '../lib/board';
 import { net } from '../lib/net';
+import { useCall } from '../lib/call';
 import { useGame } from '../lib/store';
+import { CallBar } from './CallBar';
 import { Overlay } from './Overlay';
 import { PlayerStrip } from './PlayerStrip';
 import { Toolbar } from './Toolbar';
@@ -10,6 +12,7 @@ import { Toolbar } from './Toolbar';
 export function Board() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [pen] = useState(() => new Pen((buf) => net.sendBinary(buf)));
+  const inCall = useCall().joined;
   const canDraw = useGame((s) => s.room!.phase === 'drawing' && s.room!.drawerId === s.selfId);
 
   useEffect(() => {
@@ -30,7 +33,11 @@ export function Board() {
     <section className="flex min-w-0 flex-col gap-3">
       <PlayerStrip />
       {/* Le tableau garde son ratio 4:3 et tient dans la hauteur de l’écran, dock compris. */}
-      <div className="relative mx-auto w-full max-w-[max(20rem,calc((100dvh-15rem)*4/3))] overflow-hidden rounded-lg border border-edge">
+      <div
+        className={`relative mx-auto w-full overflow-hidden rounded-lg border border-edge ${
+          inCall ? 'max-w-[max(20rem,calc((100dvh-24rem)*4/3))]' : 'max-w-[max(20rem,calc((100dvh-19rem)*4/3))]'
+        }`}
+      >
         <canvas
           ref={canvas}
           width={CANVAS_W}
@@ -52,6 +59,7 @@ export function Board() {
         <Overlay />
       </div>
       {canDraw && <Toolbar pen={pen} />}
+      <CallBar />
     </section>
   );
 }

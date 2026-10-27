@@ -1,6 +1,7 @@
 import {
   DEFAULT_SETTINGS,
   DrawOp,
+  MAX_CALL,
   SETTINGS_LIMITS,
   checkGuess,
   decodeDraw,
@@ -8,6 +9,7 @@ import {
   parseMeetUrl,
   type ChatLine,
   type ClientMsg,
+  type IceServer,
   type Phase,
   type PlayerPublic,
   type RoomSettings,
@@ -28,6 +30,9 @@ interface Player {
   guessed: boolean;
   turnGain: number;
   conn: Conn;
+  inCall: boolean;
+  cam: boolean;
+  mic: boolean;
 }
 
 export const CHOOSE_TIME = 15;
@@ -66,6 +71,7 @@ export class Room {
     code: string,
     private readonly onEmpty: (room: Room) => void = () => {},
     private readonly random: () => number = Math.random,
+    private readonly iceServers: (playerId: string) => IceServer[] = () => [],
   ) {
     this.code = code;
   }
@@ -83,11 +89,14 @@ export class Room {
       guessed: false,
       turnGain: 0,
       conn,
+      inCall: false,
+      cam: false,
+      mic: false,
     };
     this.players.set(id, player);
     if (!this.hostId) this.hostId = id;
 
-    this.sendTo(id, { t: 'welcome', selfId: id, state: this.stateFor(id), now: Date.now() });
+    this.sendTo(id, { t: 'welcome', selfId: id, state: this.stateFor(id), now: Date.now(), ice: this.iceServers(id) });
     for (const stroke of this.strokes) for (const packet of stroke) conn.send(packet);
     if (this.phase === 'choosing' && this.drawerId === id) this.sendTo(id, { t: 'choices', words: this.choices });
     this.system(`${player.name} a rejoint la partie.`);
@@ -169,6 +178,26 @@ export class Room {
           }
         }
         break;
+      case 'call': {
+        const inCall = Boolean(msg.inCall);
+        if (inCall && !player.inCall && [...this.players.values()].filter((p) => p.inCall).length >= MAX_CALL) {
+          this.sendTo(id, { t: 'error', message: `La visio est limitée à ${MAX_CALL} personnes.` });
+          break;
+        }
+        player.inCall = inCall;
+        player.cam = inCall && Boolean(msg.cam);
+        player.mic = inCall && Boolean(msg.mic);
+        this.broadcastState();
+        break;
+      }
+      case 'rtc': {
+        // Relais de signalisation, seulement entre deux participants de la visio du même salon.
+        const target = this.players.get(String(msg.to));
+        if (player.inCall && target?.inCall && target.id !== id && msg.data && typeof msg.data === 'object') {
+          this.sendTo(target.id, { t: 'rtc', from: id, data: msg.data });
+        }
+        break;
+      }
       case 'ping':
         this.sendTo(id, { t: 'pong', at: msg.at, now: Date.now() });
         break;
@@ -393,6 +422,9 @@ export class Room {
       isHost: p.id === this.hostId,
       guessed: p.guessed,
       connected: true,
+      inCall: p.inCall,
+      cam: p.cam,
+      mic: p.mic,
     }));
   }
 

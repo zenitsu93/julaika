@@ -32,11 +32,11 @@ export function MeetButton() {
     <div className="relative flex items-center gap-1">
       {meetUrl ? (
         <a className="btn-primary px-2.5 py-1.5" href={meetUrl} target="_blank" rel="noopener noreferrer" title={meetUrl}>
-          🎥 <span className="hidden sm:inline">Rejoindre la visio</span>
+          🎥 <span className="hidden sm:inline">Ouvrir Google Meet</span>
         </a>
       ) : (
         <button className="btn-ghost px-2.5 py-1.5" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-          🎥 <span className="hidden sm:inline">Ajouter une visio</span>
+          🎥 <span className="hidden sm:inline">Google Meet</span>
         </button>
       )}
       {isHost && meetUrl && (

@@ -50,7 +50,25 @@ export interface PlayerPublic {
   isHost: boolean;
   guessed: boolean;
   connected: boolean;
+  /** Présence dans la visio intégrée, et état caméra / micro (pour afficher l'avatar à la place). */
+  inCall: boolean;
+  cam: boolean;
+  mic: boolean;
 }
+
+/** Visio en maillage pair à pair : au-delà, le débit montant de chacun ne suit plus. */
+export const MAX_CALL = 8;
+
+export interface IceServer {
+  urls: string | string[];
+  username?: string;
+  credential?: string;
+}
+
+/** Signalisation WebRTC relayée telle quelle par le serveur. */
+export type RtcSignal =
+  | { sdp: { type: 'offer' | 'answer'; sdp: string } }
+  | { candidate: { candidate: string; sdpMid?: string | null; sdpMLineIndex?: number | null } };
 
 export interface RoomState {
   code: string;
@@ -101,10 +119,13 @@ export type ClientMsg =
   | { t: 'clear' }
   | { t: 'undo' }
   | { t: 'meet'; url: string }
+  | { t: 'call'; inCall: boolean; cam: boolean; mic: boolean }
+  | { t: 'rtc'; to: string; data: RtcSignal }
   | { t: 'ping'; at: number };
 
 export type ServerMsg =
-  | { t: 'welcome'; selfId: string; state: RoomState; now: number }
+  | { t: 'welcome'; selfId: string; state: RoomState; now: number; ice: IceServer[] }
+  | { t: 'rtc'; from: string; data: RtcSignal }
   | { t: 'state'; state: RoomState }
   | { t: 'chat'; line: ChatLine }
   | { t: 'choices'; words: string[] }

@@ -45,9 +45,17 @@ lettre près affiche « tu chauffes ». Ceux qui ont trouvé discutent entre eux
 
 ## Visio
 
-Google Meet refuse d'être intégré dans une page (iframe bloquée), donc l'hôte crée une réunion sur
-meet.google.com/new et colle son lien via « Ajouter une visio ». Le lien est validé côté serveur
-(uniquement `https://meet.google.com/xxx-xxxx-xxx`) et chaque joueur voit « Rejoindre la visio ».
+**Intégrée (sous le dessin)** : WebRTC en maillage pair à pair jusqu'à 8 personnes, vidéo 320×240
+à 15 i/s plafonnée à 250 kb/s par flux. La signalisation passe par le WebSocket du jeu ; seul le
+joueur à l'identifiant le plus petit initie chaque connexion, et couper la caméra remplace la piste
+sans renégocier. STUN public par défaut ; pour les NAT stricts (4G, entreprise), activer le relais
+coturn décrit dans `deploy/turnserver.conf` (identifiants temporaires dérivés de `TURN_SECRET`).
+
+**Google Meet** (optionnel) :
+
+Meet refuse d'être intégré dans une page (iframe bloquée), donc l'hôte crée une réunion sur
+meet.google.com/new et colle son lien via « Google Meet ». Le lien est validé côté serveur
+(uniquement `https://meet.google.com/xxx-xxxx-xxx`) et chaque joueur voit « Ouvrir Google Meet ».
 
 ## Thème
 
