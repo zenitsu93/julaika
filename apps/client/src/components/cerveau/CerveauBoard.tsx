@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { CANVAS_H, CANVAS_W, CERVEAU_SPLIT, type CerveauModel, type CerveauState, type PlayerPublic } from '@julaika/shared';
 import { avatarOf } from '../../lib/avatars';
 import { BoardCanvas, Pen } from '../../lib/board';
 import { useCall } from '../../lib/call';
-import { cerveauPages, flatten, inkLayers, type CerveauPage } from '../../lib/cerveau';
+import { albumFile, cerveauPages, flatten, inkLayers, type CerveauPage } from '../../lib/cerveau';
+import { saveImageFile, type SaveResult } from '../../lib/polaroid';
 import { net } from '../../lib/net';
 import { serverNow, useGame } from '../../lib/store';
 import { attachWipe, bump, confetti, Presence, useCountUp, useSpeaking } from '../../motion';
@@ -514,6 +515,7 @@ function Album() {
   const shown = useCountUp(avg, { from: 0, delay: 300, duration: 1200 });
   const best = pages.reduce<CerveauPage | null>((b, p) => (!b || p.score > b.score ? p : b), null);
   const name = (id: string) => players.find((p) => p.id === id)?.name ?? '?';
+  const grid = useRef<HTMLUListElement>(null);
 
   return (
     <div className="flex flex-col items-center gap-5 p-4 sm:p-6">
@@ -528,9 +530,9 @@ function Album() {
         </p>
       </div>
       {pages.length > 0 ? (
-        <ul className="grid w-full grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] sm:gap-5">
+        <ul ref={grid} className="cv-album grid w-full grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] sm:gap-5">
           {pages.map((p, i) => (
-            <li key={p.turn} className="cv-page" style={{ animationDelay: `${300 + i * 120}ms`, ['--tilt' as string]: `${((i * 37) % 7) - 3}deg` }}>
+            <li key={p.turn} className="cv-page" tabIndex={0} style={{ animationDelay: `${300 + i * 120}ms`, ['--tilt' as string]: `${((i * 37) % 7) - 3}deg` }}>
               <figure className="pola relative m-0 rounded-sm bg-white p-2 pb-3 text-cacao">
                 <div className="relative overflow-hidden">
                   <img src={p.image} alt={`Dessin de ${name(p.duo[0])} et ${name(p.duo[1])}`} className="block aspect-[4/3] w-full" />
@@ -555,6 +557,7 @@ function Album() {
       ) : (
         <p className="text-muted">Les dessins de cette partie ont été faits avant ton arrivée.</p>
       )}
+      {pages.length > 0 && <SaveAlbum pages={pages} name={name} avg={avg} grid={grid} delay={500 + pages.length * 120} />}
       {isHost ? (
         <button className="btn-primary px-6 py-2.5" onClick={() => net.send({ t: 'cerveau', next: true })}>
           Retour au salon
@@ -563,5 +566,80 @@ function Album() {
         <p className="text-sm text-muted">L'hôte va vous ramener au salon.</p>
       )}
     </div>
+  );
+}
+
+const SAVED_LABEL: Record<SaveResult, string> = {
+  shared: 'Album partagé',
+  saved: 'Album enregistré',
+  sheet: 'Album prêt',
+  cancelled: 'Enregistrer l’album',
+};
+
+/**
+ * Enregistrer l'album en une image. Le PNG est fabriqué dès l'arrivée sur l'album pour que,
+ * au téléphone, la feuille de partage (Photos sur iPhone, Galerie sur Android) s'ouvre au toucher.
+ * Au moment de l'enregistrement, un flash d'appareil photo passe sur les tirages.
+ */
+function SaveAlbum({ pages, name, avg, grid, delay }: { pages: CerveauPage[]; name: (id: string) => string; avg: number; grid: RefObject<HTMLUListElement | null>; delay: number }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState<SaveResult | null>(null);
+  const print = { pages, name, avg, icon: (k: CerveauPage['kind']) => KIND_INFO[k].icon };
+
+  useEffect(() => {
+    let live = true;
+    albumFile(print).then((f) => live && setFile(f), () => {});
+    return () => {
+      live = false;
+    };
+  }, [pages, avg]);
+
+  const flash = () => {
+    const el = grid.current;
+    if (!el) return;
+    el.classList.remove('is-flash');
+    void el.offsetWidth;
+    el.classList.add('is-flash');
+  };
+
+  const save = async (btn: HTMLButtonElement) => {
+    bump(btn);
+    setBusy(true);
+    try {
+      // Fichier déjà prêt : le partage part dans le même geste, condition de Safari.
+      const result = await saveImageFile(file ?? (await albumFile(print)));
+      if (result !== 'cancelled') flash();
+      setDone(result);
+    } catch {
+      setDone(null);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const ok = done && done !== 'cancelled';
+  return (
+    <button
+      type="button"
+      className={`cv-save btn-ghost m-rise relative overflow-hidden px-5 py-2.5 ${!file ? 'is-developing' : ''} ${ok ? 'is-done' : ''}`}
+      style={{ animationDelay: `${delay}ms` }}
+      disabled={busy}
+      onClick={(e) => void save(e.currentTarget)}
+      aria-live="polite"
+    >
+      {ok ? (
+        <svg key="ok" viewBox="0 0 24 24" className="cv-save-ok size-5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path pathLength={1} d="M5 12.5l4.5 4.5L19 7.5" />
+        </svg>
+      ) : (
+        <svg key="dl" viewBox="0 0 24 24" className="cv-save-icon size-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
+        </svg>
+      )}
+      <span key={done ?? 'idle'} className="m-rise">
+        {busy ? 'Préparation…' : done ? SAVED_LABEL[done] : 'Enregistrer l’album'}
+      </span>
+    </button>
   );
 }
