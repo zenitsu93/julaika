@@ -1,6 +1,6 @@
 // Mots interdits (façon Taboo) : à chaque tour, un joueur fait deviner des mots à l'oral, en
 // visio, sans prononcer le mot ni ses mots interdits. Les autres crient leurs réponses (ou les
-// tapent dans le chat). À trois et plus, un gardien voit la carte et buzze au moindre écart ;
+// tapent dans la boîte de réponse). À trois et plus, un gardien voit la carte et buzze au moindre écart ;
 // à deux, l'oreille du navigateur (reconnaissance vocale) et l'honnêteté font l'arbitre.
 
 import { normalize } from './text';
@@ -18,7 +18,7 @@ export interface InterditsPlay {
   word: string;
   ban: string[];
   outcome: InterditsOutcome;
-  /** Qui a trouvé (dans le chat) ou buzzé ; null si c'est le joueur qui fait deviner. */
+  /** Qui a trouvé (réponse tapée) ou buzzé ; null si c'est le joueur qui fait deviner. */
   by: string | null;
   /** Mot interdit entendu, quand le buzz le précise. */
   heard: string | null;
@@ -51,7 +51,7 @@ export const INTERDITS_SKIPS = 3;
 export const INTERDITS_GRACE_MS = 600;
 
 /**
- * Points. Mot trouvé : 100 pour celui qui fait deviner ; 100 à qui l'a tapé dans le chat, ou
+ * Points. Mot trouvé : 100 pour celui qui fait deviner ; 100 à qui l'a tapé, ou
  * 50 à chaque devineur quand il a été dit à l'oral. Buzz : 50 de moins pour celui qui fait deviner,
  * 50 de plus pour le gardien qui l'a pris.
  */

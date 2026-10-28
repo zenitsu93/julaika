@@ -252,7 +252,7 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
 
   interdits: [
     'À ton tour, une carte : fais deviner le mot à voix haute, en visio, sans dire les mots interdits.',
-    'Les autres crient leurs réponses ou les tapent dans le chat. Trouvé ? Entrée, carte suivante !',
+    'Les autres crient leurs réponses ou les tapent dans la boîte de réponse. Trouvé ? Entrée, carte suivante !',
     'À trois et plus, un gardien voit la carte et buzze ; à deux, l’oreille de l’arbitre (reconnaissance vocale) s’en charge.',
   ],
 

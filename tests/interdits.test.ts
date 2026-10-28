@@ -86,7 +86,7 @@ describe('Mots interdits', () => {
     expect(conns[0]!.json.some((m) => m.t === 'chat' && m.line.kind === 'msg' && m.line.text === word.toUpperCase())).toBe(false);
   });
 
-  it('celui qui explique et le gardien ne peuvent pas écrire dans le chat', () => {
+  it('celui qui explique et le gardien ne peuvent rien taper, les essais ratés passent en bulles', () => {
     const { room, conns, ids } = setup(3);
     toExplain();
     room.handle(ids[0]!, { t: 'chat', text: 'indice secret' });

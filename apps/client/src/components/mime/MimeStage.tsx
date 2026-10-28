@@ -72,7 +72,7 @@ export function MimeStage() {
               )}
             </p>
             <p className="mt-1 text-sm text-white/60">
-              {self ? 'Allume ta caméra, ou mime en vrai devant tes amis.' : 'Pas de caméra : regarde-le mimer en vrai et devine dans le chat.'}
+              {self ? 'Allume ta caméra, ou mime en vrai devant tes amis.' : 'Pas de caméra : regarde-le mimer en vrai et tape ta réponse.'}
             </p>
             {self && miming && !view.cam && (
               <button className="btn-primary m-pop mt-4" onClick={() => (view.joined ? void call.toggle('video') : void call.join(true, false))}>
@@ -103,13 +103,8 @@ export function MimeStage() {
       )}
       {!self && miming && (
         <>
-          {/* Grand écran : le chat est à côté, les bruitages gardent leur rangée. */}
-          <div className="mime-cheer m-rise absolute inset-x-3 bottom-3 z-10 mx-auto max-w-md rounded-xl bg-black/45 p-1.5 backdrop-blur-md max-lg:hidden">
-            <p className="mb-1 px-1 text-left font-mono text-[10px] font-semibold tracking-[0.18em] text-white/70 uppercase">Bruitages pour {mimer.name}</p>
-            <SoundBoard compact only={CHEERS} />
-          </div>
-          {/* Téléphone, tablette : la réponse se tape sur la vidéo, les bruitages se replient derrière 👏. */}
-          <div className="absolute inset-x-2 bottom-2 z-20 mx-auto max-w-md lg:hidden" style={stage.on ? { bottom: 'max(0.5rem, env(safe-area-inset-bottom))' } : undefined}>
+          {/* La réponse se tape sur la vidéo, les bruitages se replient derrière 👏. */}
+          <div className="absolute inset-x-2 bottom-2 z-20 mx-auto max-w-md" style={stage.on ? { bottom: 'max(0.5rem, env(safe-area-inset-bottom))' } : undefined}>
             <GuessBox
               variant="stage"
               inputRef={stage.input}
@@ -250,7 +245,7 @@ function Bursts() {
   );
 }
 
-/** Le chat n'est pas à côté de la scène (téléphone, tablette) : sous la largeur lg de Tailwind. */
+/** Téléphone, tablette : sous la largeur lg de Tailwind, la scène passe en salle obscure. */
 const narrow = () => typeof matchMedia === 'function' && matchMedia('(max-width: 1023.98px)').matches;
 
 /**

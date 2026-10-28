@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useGame } from '../lib/store';
 import { animate, reducedMotion } from '../motion';
+import { Annonces } from './Annonces';
 import { AgentsBoard } from './agents/AgentsBoard';
 import { AlibiBoard } from './alibi/AlibiBoard';
 import { ArcadeBoard } from './arcade/ArcadeBoard';
@@ -9,7 +10,6 @@ import { BrasBoard } from './bras/BrasBoard';
 import { Board } from './Board';
 import { BacBoard } from './bac/BacBoard';
 import { CadBoard } from './cadavre/CadBoard';
-import { Chat } from './Chat';
 import { InterditsBoard } from './interdits/InterditsBoard';
 import { IntrusBoard } from './intrus/IntrusBoard';
 import { CerveauBoard } from './cerveau/CerveauBoard';
@@ -60,9 +60,9 @@ export function Game({ onQuit }: { onQuit: () => void }) {
       {swaps > 0 && <div key={swaps} className="page-breath" aria-hidden />}
       <ReconnectBanner />
       <TopBar onQuit={quit.ask} onSwitch={picker.isHost ? picker.open : undefined} />
-      <div ref={board} className="grid flex-1 gap-3 lg:grid-cols-[1fr_20rem]">
+      <Annonces />
+      <div ref={board} className="grid flex-1">
         {game === 'wavelength' ? <WaveBoard /> : game === 'telephone' ? <TelBoard /> : game === 'intrus' ? <IntrusBoard /> : game === 'petitbac' ? <BacBoard /> : game === 'connait' ? <ConnaitBoard /> : game === 'bombe' ? <BombBoard /> : game === 'photomaton' ? <PhotoBoard /> : game === 'sourire' ? <SourireBoard /> : game === 'brasdefer' ? <BrasBoard /> : game === 'flash' ? <FlashBoard /> : game === 'cadavre' ? <CadBoard /> : game === 'interdits' ? <InterditsBoard /> : game === 'motamot' ? <StoryBoard /> : game === 'agents' ? <AgentsBoard /> : game === 'fredonne' ? <FredBoard /> : game === 'alibi' ? <AlibiBoard /> : game === 'pitch' ? <PitchBoard /> : game === 'cerveau' ? <CerveauBoard /> : game === 'verite' ? <AovBoard /> : game === 'quiz' ? <QuizBoard /> : game === 'foot' || game === 'oreillers' || game === 'drap' ? <ArcadeBoard /> : <Board />}
-        <Chat />
       </div>
       <EndDock onAsk={quit.ask} onSwitch={picker.isHost ? picker.open : undefined} />
       {quit.dialog}

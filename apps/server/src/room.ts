@@ -741,27 +741,17 @@ export class Room {
     if (!text) return;
     if (this.interdits?.chat(player.id, text)) return;
     if (this.fred?.chat(player.id, text)) return;
-    const line: ChatLine = { from: player.id, name: player.name, text, kind: 'msg' };
-
+    // Plus de chat libre (on se parle en visio) : seules les réponses comptent, le reste est ignoré.
     const canGuess = this.phase === 'drawing' && this.word && player.id !== this.drawerId && !player.guessed;
-    if (canGuess) {
-      const result = checkGuess(text, this.word!);
-      if (result === 'correct') return this.correctGuess(player);
-      this.broadcast({ t: 'chat', line });
-      if (result === 'close') {
-        this.sendTo(player.id, { t: 'chat', line: { from: null, name: null, text: `« ${text} » : tu chauffes !`, kind: 'close' } });
-      }
-      return;
-    }
-
-    // Ceux qui ont trouvé (et le dessinateur) discutent entre eux pour ne rien dévoiler.
-    const insider = this.phase === 'drawing' && (player.guessed || player.id === this.drawerId);
-    if (insider) {
-      line.kind = 'guessed';
-      for (const p of this.players.values()) if (p.guessed || p.id === this.drawerId) this.sendTo(p.id, { t: 'chat', line });
-      return;
-    }
+    if (!canGuess) return;
+    const result = checkGuess(text, this.word!);
+    if (result === 'correct') return this.correctGuess(player);
+    // Les essais ratés passent en bulles éphémères chez tout le monde, comme sur skribbl.
+    const line: ChatLine = { from: player.id, name: player.name, text, kind: 'msg' };
     this.broadcast({ t: 'chat', line });
+    if (result === 'close') {
+      this.sendTo(player.id, { t: 'chat', line: { from: null, name: null, text: `« ${text} » : tu chauffes !`, kind: 'close' } });
+    }
   }
 
   private correctGuess(player: Player): void {

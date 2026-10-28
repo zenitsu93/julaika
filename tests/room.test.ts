@@ -26,7 +26,7 @@ describe('Room', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
-  it('retire les caractères invisibles des pseudos et du chat', () => {
+  it('retire les caractères invisibles des pseudos et ignore le chat libre', () => {
     const room = new Room('TEST', undefined, () => 0);
     const conn = new FakeConn();
     const id = room.join(conn, 'Ju\u202Elaïka\u200B', 0)!;
@@ -34,8 +34,9 @@ describe('Room', () => {
     expect(room.players.get(room.join(new FakeConn(), '\u200B\u200B', 0)!)!.name).toMatch(/^Artiste\d+$/);
     room.handle(id, { t: 'chat', text: '\u200B\u2066' });
     expect(conn.json.filter((m) => m.t === 'chat' && m.line.kind === 'msg')).toHaveLength(0);
+    // Au salon, rien à deviner : le texte tapé n'est relayé à personne (on se parle en visio).
     room.handle(id, { t: 'chat', text: '👩‍❤️‍👨' });
-    expect(conn.last('chat')!.line.text).toBe('👩‍❤️‍👨');
+    expect(conn.json.filter((m) => m.t === 'chat' && m.line.kind === 'msg')).toHaveLength(0);
   });
 
   it('le premier joueur est hôte et seul lui peut lancer', () => {
@@ -81,15 +82,15 @@ describe('Room', () => {
     expect(room.drawerId).toBe(ids[1]);
   });
 
-  it('le chat de ceux qui ont trouvé reste privé', () => {
+  it('ceux qui ont trouvé et le dessinateur ne diffusent rien', () => {
     const { room, conns, ids } = setup();
     room.handle(ids[0]!, { t: 'start' });
     room.handle(ids[0]!, { t: 'choose', index: 0 });
     room.handle(ids[1]!, { t: 'chat', text: room.word! });
-    const before = conns[2]!.json.length;
+    const before = conns.map((c) => c.json.length);
     room.handle(ids[1]!, { t: 'chat', text: 'trop facile' });
-    expect(conns[2]!.json.length).toBe(before);
-    expect(conns[0]!.last('chat')!.line.kind).toBe('guessed');
+    room.handle(ids[0]!, { t: 'chat', text: room.word! });
+    expect(conns.map((c) => c.json.length)).toEqual(before);
   });
 
   it('relaie le dessin, refuse celui des non-dessinateurs, rejoue pour les nouveaux', () => {

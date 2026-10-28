@@ -151,7 +151,7 @@ function Pick({ f }: { f: FredState }) {
               <span>.</span>
             </span>
           </p>
-          <p className="mt-1 text-sm text-muted">Prépare tes oreilles : tu taperas le titre dans le chat.</p>
+          <p className="mt-1 text-sm text-muted">Prépare tes oreilles : tu taperas le titre ici.</p>
           <div className="mt-4">
             <Style style={f.style} delay={200} />
           </div>
@@ -416,7 +416,7 @@ function Ring({ endsAt, left, total }: { endsAt: number | null; left: number; to
   );
 }
 
-/** Champ de réponse sous la scène (pratique au téléphone) : il passe par le chat. */
+/** Champ de réponse sous la scène : la proposition part au serveur, qui la juge. */
 function Answer() {
   const [text, setText] = useState('');
   const input = useRef<HTMLInputElement>(null);

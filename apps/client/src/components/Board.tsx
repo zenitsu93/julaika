@@ -115,9 +115,9 @@ export function Board() {
         <Reaction />
       </div>
       <Presence>{canDraw ? <Toolbar pen={pen} trap={trapKind ? { kind: trapKind, color: trapColor } : null} /> : null}</Presence>
-      {/* Téléphone : la réponse se tape juste sous le dessin, sans descendre jusqu'au chat. */}
+      {/* La réponse se tape juste sous le dessin. */}
       {guessing && (
-        <div className="mx-auto w-full max-w-md lg:hidden">
+        <div className="mx-auto w-full max-w-md">
           <GuessBox variant="bar" />
         </div>
       )}
