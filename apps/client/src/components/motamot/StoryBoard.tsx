@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { STORY_EVERY, STORY_POINTS, STORY_WORD_MAX, storyText, type PlayerPublic, type StoryState, type StoryWord } from '@julaika/shared';
+import { STORY_EVERY, STORY_POINTS, STORY_WORD_MAX, storyHeard, storyText, type PlayerPublic, type StoryState, type StoryWord } from '@julaika/shared';
 import { avatarOf } from '../../lib/avatars';
 import { net } from '../../lib/net';
 import { tick } from '../../lib/sounds';
@@ -8,6 +8,7 @@ import { serverNow, useGame } from '../../lib/store';
 import { bump, confetti, Presence, reducedMotion, shake } from '../../motion';
 import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
+import { dicteeSupported, useDictee, useDicteeMode } from './dictee';
 import './story.css';
 
 /** Plateau de Mot à mot : la page qui s'écrit, puis la lecture à voix haute. */
@@ -140,7 +141,14 @@ function Writing({ s }: { s: StoryState }) {
         )}
       </div>
 
-      {s.turn && endsAt && <Fuse key={`${s.written}:${s.turn}`} endsAt={endsAt} />}
+      {s.turn && endsAt && (
+        <div key={`${s.written}:${s.turn}`} className="mx-auto flex w-full max-w-xl items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <Fuse endsAt={endsAt} />
+          </div>
+          <Chrono endsAt={endsAt} now={now} mine={mine} />
+        </div>
+      )}
 
       {s.turn && selfId && s.order.includes(selfId) ? (
         <>
@@ -271,18 +279,64 @@ function Fuse({ endsAt }: { endsAt: number }) {
   );
 }
 
+/** Le chrono du tour : un cadran qui se vide et les secondes qui sautent, rouges à la fin. */
+function Chrono({ endsAt, now, mine }: { endsAt: number; now: number; mine: boolean }) {
+  const [d] = useState(() => Math.max(0.2, (endsAt - serverNow()) / 1000));
+  const sec = Math.max(0, Math.ceil((endsAt - now) / 1000));
+  const hot = sec <= 2;
+  return (
+    <div
+      className={`st-chrono relative grid shrink-0 place-items-center ${mine ? 'size-16' : 'size-12'} ${hot ? 'is-hot' : ''}`}
+      role="timer"
+      aria-label={`${sec} seconde${sec > 1 ? 's' : ''}`}
+    >
+      <svg viewBox="0 0 40 40" className="absolute inset-0 size-full -rotate-90" aria-hidden>
+        <circle cx="20" cy="20" r="17" fill="none" strokeWidth="3" className="stroke-edge" />
+        <circle cx="20" cy="20" r="17" fill="none" strokeWidth="3" strokeLinecap="round" pathLength={100} className="st-dial" style={{ '--d': `${d}s` } as CSSProperties} />
+      </svg>
+      <span key={sec} className={`st-sec font-mono font-bold tabular-nums ${mine ? 'text-2xl' : 'text-lg'}`}>
+        {sec}
+      </span>
+    </div>
+  );
+}
+
+/** Micro : une capsule, des barres qui dansent quand il écoute. */
+function MicIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor" fillOpacity=".15" />
+      <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" />
+    </svg>
+  );
+}
+
 const PUNCT = [',', '.', '!', '?'];
 
 /** Saisie du mot : Espace ou Entrée valide, les boutons collent une ponctuation et valident. */
 function WordInput({ s, mine, selfId, draft, setDraft }: { s: StoryState; mine: boolean; selfId: string; draft: string; setDraft: (v: string) => void }) {
   const field = useRef<HTMLInputElement>(null);
   const form = useRef<HTMLFormElement>(null);
+  const micBtn = useRef<HTMLButtonElement>(null);
+  const [mic, setMic] = useDicteeMode();
+  // Au micro, ce qui est entendu s'écrit en direct ; la phrase finie pose le mot.
+  const voice = useDictee(mic && mine, s.written, (text, final) => {
+    const word = storyHeard(text);
+    if (!word) return;
+    type(word);
+    if (final) submit('', word);
+  });
 
   useEffect(() => () => setDraft(''), []);
-  // Mon tour : le champ s'anime et ce que j'avais préparé part aussitôt chez les autres.
+  // Micro refusé par le navigateur : retour au clavier.
+  useEffect(() => {
+    if (voice.denied) setMic(false);
+  }, [voice.denied]);
+  // Mon tour : le champ s'anime et ce que j'avais préparé part aussitôt chez les autres. Au
+  // micro, pas de focus : sur téléphone, le clavier cacherait la page pour rien.
   useEffect(() => {
     if (!mine) return;
-    field.current?.focus({ preventScroll: true });
+    if (!mic) field.current?.focus({ preventScroll: true });
     bump(form.current, 1.03);
     if (draft) net.send({ t: 'motamot', typing: draft });
   }, [mine, s.written]);
@@ -296,9 +350,9 @@ function WordInput({ s, mine, selfId, draft, setDraft }: { s: StoryState; mine: 
     setDraft(v);
     if (mine) net.send({ t: 'motamot', typing: v });
   };
-  const submit = (suffix = '') => {
+  const submit = (suffix = '', said?: string) => {
     if (!mine) return shake(field.current);
-    const word = (draft + suffix).trim();
+    const word = ((said ?? draft) + suffix).trim();
     if (!/[\p{L}\p{N}]/u.test(word)) return shake(field.current);
     net.send({ t: 'motamot', word });
   };
@@ -315,12 +369,25 @@ function WordInput({ s, mine, selfId, draft, setDraft }: { s: StoryState; mine: 
       <p className="text-center text-sm">
         {mine ? (
           <>
-            <b>À toi !</b> <span className="text-muted">{s.rule ? s.rule.text : 'Un mot, vite'}</span>
+            <b>À toi !</b> <span className="text-muted">{s.rule ? s.rule.text : mic ? 'Dis ton mot' : 'Un mot, vite'}</span>
           </>
+        ) : mic ? (
+          <span className="text-muted">Micro prêt : il s’ouvrira à ton tour.</span>
         ) : (
           <span className="text-muted">Prépare ton prochain mot, il partira à ton tour.</span>
         )}
       </p>
+      {mic && mine && (
+        <p className="st-listen m-pop mx-auto flex items-center gap-2 rounded-full bg-gold/15 px-3 py-1 text-sm font-medium text-accent" role="status">
+          <span className={`st-bars ${voice.listening ? 'is-live' : ''}`} aria-hidden>
+            <i />
+            <i />
+            <i />
+            <i />
+          </span>
+          {voice.listening ? 'J’écoute…' : 'Le micro s’ouvre…'}
+        </p>
+      )}
       {/* Téléphone : le clavier peut cacher la page ; la fin de la phrase reste sous les yeux. */}
       <p className="truncate text-center text-base italic text-muted sm:hidden" aria-hidden>
         … {s.words.slice(-3).map((w) => w.text).join(' ')}
@@ -336,7 +403,7 @@ function WordInput({ s, mine, selfId, draft, setDraft }: { s: StoryState; mine: 
           autoCorrect="off"
           spellCheck={false}
           enterKeyHint="send"
-          placeholder={mine ? 'Ton mot…' : 'Prépare ton mot…'}
+          placeholder={mic ? (mine ? 'Parle, ou tape…' : 'Ton mot, au micro ou au clavier…') : mine ? 'Ton mot…' : 'Prépare ton mot…'}
           value={draft}
           onKeyDown={(e) => {
             if (e.key === ' ') {
@@ -346,10 +413,35 @@ function WordInput({ s, mine, selfId, draft, setDraft }: { s: StoryState; mine: 
           }}
           onChange={(e) => type(e.target.value)}
         />
+        {dicteeSupported() && (
+          <button
+            ref={micBtn}
+            type="button"
+            aria-pressed={mic}
+            aria-label={mic ? 'Couper le micro, revenir au clavier' : 'Dire mon mot au micro'}
+            title={mic ? 'Micro activé' : 'Dire son mot au micro'}
+            onClick={() => {
+              bump(micBtn.current);
+              if (!mic) voice.retry();
+              setMic(!mic);
+              if (mic && mine) field.current?.focus({ preventScroll: true });
+            }}
+            className={`st-mic relative grid size-11 shrink-0 place-items-center rounded-full border transition-[background-color,border-color,color] duration-300 ${
+              mic ? 'border-gold bg-gold text-cacao' : 'border-edge text-muted hover:border-accent hover:text-ink'
+            } ${mic && voice.listening ? 'is-live' : ''}`}
+          >
+            <MicIcon />
+          </button>
+        )}
         <button className="btn-primary shrink-0 transition-opacity" disabled={!mine}>
           Poser
         </button>
       </div>
+      {voice.denied ? (
+        <p className="m-rise text-center text-xs text-bad">Micro refusé par le navigateur : tape ton mot (ou autorise le micro et réessaie).</p>
+      ) : (
+        mic && <p className="text-center text-xs text-muted">Dis « virgule » ou « point » juste après ton mot pour ponctuer.</p>
+      )}
       <div className="flex justify-center gap-1.5" role="group" aria-label="Ponctuation">
         {PUNCT.map((p) => (
           <button

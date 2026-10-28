@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { STORY_COUNTDOWN, STORY_EVERY, STORY_FILLER, STORY_LENGTH, STORY_POINTS, STORY_RULE_TIME, STORY_TIME, checkStoryRule, cleanStoryWord, type ServerMsg } from '@julaika/shared';
+import { STORY_COUNTDOWN, STORY_EVERY, STORY_FILLER, STORY_LENGTH, STORY_POINTS, STORY_RULE_FACTOR, STORY_TIME, checkStoryRule, cleanStoryWord, storyHeard, type ServerMsg } from '@julaika/shared';
 import { Room, type Conn } from '../apps/server/src/room';
 
 class FakeConn implements Conn {
@@ -35,6 +35,33 @@ describe('Mot à mot', () => {
     expect(cleanStoryWord('peut-être...')).toBe('peut-être…');
     expect(cleanStoryWord('!!!')).toBeNull();
     expect(cleanStoryWord('')).toBeNull();
+  });
+
+  it('ramène la dictée à un mot, ponctuation dite comprise', () => {
+    expect(storyHeard('chat virgule')).toBe('chat,');
+    expect(storyHeard("Mayonnaise point d'exclamation")).toBe('Mayonnaise!');
+    expect(storyHeard('pourquoi point d’interrogation')).toBe('pourquoi?');
+    expect(storyHeard('soudain point de suspension')).toBe('soudain…');
+    expect(storyHeard('  dansait ')).toBe('dansait');
+    expect(storyHeard('point')).toBe('point');
+    expect(storyHeard('')).toBeNull();
+  });
+
+  it('le temps par mot se règle dans le salon', () => {
+    const room = new Room('MOT2', undefined, () => 0);
+    room.game = 'motamot';
+    const ids = [new FakeConn(), new FakeConn()].map((c, i) => room.join(c, `J${i}`, i)!);
+    room.handle(ids[0]!, { t: 'settings', settings: { rounds: 1, wordTime: 10 } });
+    room.handle(ids[0]!, { t: 'settings', settings: { wordTime: 99 } });
+    expect(room.stateFor(ids[0]!).settings.wordTime).toBe(15);
+    room.handle(ids[0]!, { t: 'settings', settings: { wordTime: 10 } });
+    room.handle(ids[0]!, { t: 'start' });
+    vi.advanceTimersByTime(STORY_COUNTDOWN);
+    const mot = () => room.stateFor(ids[0]!).motamot!;
+    vi.advanceTimersByTime(9_900);
+    expect(mot().written).toBe(0);
+    vi.advanceTimersByTime(200);
+    expect(mot().written).toBe(1);
   });
 
   it('vérifie les contraintes du serveur, laisse les autres au jury', () => {
@@ -97,7 +124,7 @@ describe('Mot à mot', () => {
     // Le tour sous contrainte dure plus longtemps.
     vi.advanceTimersByTime(STORY_TIME * 1000);
     expect(mot().written).toBe(STORY_EVERY - 1);
-    vi.advanceTimersByTime((STORY_RULE_TIME - STORY_TIME) * 1000);
+    vi.advanceTimersByTime((STORY_RULE_FACTOR - 1) * STORY_TIME * 1000);
     expect(mot().written).toBe(STORY_EVERY);
     expect(mot().words.at(-1)!.rule).toEqual(rule);
   });

@@ -7,11 +7,11 @@ import { bannedHeard, type InterditsCard } from '@julaika/shared';
  * personne d'autre ne voit la carte. Chrome et Edge l'ont ; ailleurs, le bouton n'apparaît pas.
  */
 
-interface Recognition {
+export interface Recognition {
   lang: string;
   continuous: boolean;
   interimResults: boolean;
-  onresult: ((e: { resultIndex: number; results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onresult: ((e: { resultIndex: number; results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal?: boolean }> }) => void) | null;
   onend: (() => void) | null;
   onerror: ((e: { error: string }) => void) | null;
   start(): void;
@@ -20,7 +20,7 @@ interface Recognition {
 
 type RecognitionCtor = new () => Recognition;
 
-function ctor(): RecognitionCtor | null {
+export function ctor(): RecognitionCtor | null {
   if (typeof window === 'undefined') return null;
   const w = window as unknown as { SpeechRecognition?: RecognitionCtor; webkitSpeechRecognition?: RecognitionCtor };
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
@@ -91,7 +91,7 @@ export function useEcoute(card: InterditsCard | null, cardNo: number, on: boolea
   return { heard, denied, listening: active };
 }
 
-function tryStart(r: Recognition) {
+export function tryStart(r: Recognition) {
   try {
     r.start();
   } catch {

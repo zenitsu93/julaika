@@ -305,3 +305,106 @@
     opacity: 1;
   }
 }
+
+/* Le chrono : le cadran se vide en même temps que la mèche, la seconde saute à chaque
+   changement, et tout rougit et frémit sur les deux dernières. */
+@keyframes st-dial {
+  from {
+    stroke-dashoffset: 0;
+    stroke: var(--color-accent);
+  }
+  70% {
+    stroke: var(--color-accent);
+  }
+  to {
+    stroke-dashoffset: 100;
+    stroke: var(--color-bad);
+  }
+}
+.st-dial {
+  stroke-dasharray: 100;
+  animation: st-dial var(--d, 6s) linear both;
+}
+@keyframes st-sec {
+  from {
+    transform: translateY(-35%) scale(1.35);
+    opacity: 0;
+    filter: blur(3px);
+  }
+}
+.st-sec {
+  display: inline-block;
+  animation: st-sec 0.32s var(--ease-spring) backwards;
+}
+@keyframes st-chrono-hot {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(-6deg) scale(1.06);
+  }
+  75% {
+    transform: rotate(6deg) scale(1.06);
+  }
+}
+.st-chrono.is-hot {
+  color: var(--color-bad);
+  animation: st-chrono-hot 0.36s ease-in-out infinite;
+}
+
+/* Micro : halo or qui s'échappe tant qu'il écoute. */
+@keyframes st-mic-ring {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-gold) 60%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 12px color-mix(in srgb, var(--color-gold) 0%, transparent);
+  }
+}
+.st-mic.is-live {
+  animation: st-mic-ring 1.2s var(--ease-out) infinite;
+}
+.st-mic svg {
+  transition: transform 0.35s var(--ease-spring);
+}
+.st-mic[aria-pressed='true'] svg {
+  transform: scale(1.1);
+}
+
+/* « J'écoute… » : quatre barres d'égaliseur qui dansent, immobiles tant que le micro s'ouvre. */
+.st-bars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 14px;
+}
+.st-bars > i {
+  width: 3px;
+  height: 100%;
+  border-radius: 2px;
+  background: currentColor;
+  transform: scaleY(0.3);
+  transition: transform 0.3s var(--ease-out);
+}
+@keyframes st-bar {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+.st-bars.is-live > i {
+  animation: st-bar 0.8s ease-in-out infinite;
+}
+.st-bars.is-live > i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.st-bars.is-live > i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.st-bars.is-live > i:nth-child(4) {
+  animation-delay: 0.45s;
+}

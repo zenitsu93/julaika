@@ -1,4 +1,4 @@
-// Mot à mot : une histoire écrite à plusieurs, un mot chacun, 4 secondes par mot. De temps en
+// Mot à mot : une histoire écrite à plusieurs, un mot chacun, quelques secondes par mot. De temps en
 // temps une contrainte tombe sur celui qui joue (« un verbe », « place le mot Mayonnaise »…).
 // À la fin, l'histoire est lue à voix haute et chacun vote pour son mot préféré.
 
@@ -60,9 +60,9 @@ export interface StoryState {
   kept: Record<string, number>;
 }
 
-/** Temps pour un mot, et pour un mot sous contrainte (s). */
-export const STORY_TIME = 4;
-export const STORY_RULE_TIME = 8;
+/** Temps pour un mot par défaut (s), réglable dans le salon ; sous contrainte, il double. */
+export const STORY_TIME = 6;
+export const STORY_RULE_FACTOR = 2;
 /** Une contrainte tous les N mots. */
 export const STORY_EVERY = 6;
 /** Longueur d'une histoire : tant de mots par joueur, entre ces bornes. */
@@ -89,6 +89,27 @@ export function cleanStoryWord(raw: string): string | null {
     .replace(/\.\.\.$/, '…')
     .slice(0, STORY_WORD_MAX);
   return WORD_RE.test(first) ? first : null;
+}
+
+/** Ponctuation dite à voix haute, de la plus longue à la plus courte. */
+const SPOKEN_PUNCT: [RegExp, string][] = [
+  [/\bpoints? d['’ ]?exclamation\b/gi, '!'],
+  [/\bpoints? d['’ ]?interrogation\b/gi, '?'],
+  [/\bpoints? de suspension\b/gi, '…'],
+  [/\bvirgule\b/gi, ','],
+  [/\bpoint\b/gi, '.'],
+];
+
+/**
+ * Ce que la reconnaissance vocale a entendu, ramené à un mot de l'histoire : « chat virgule »
+ * devient « chat, » ; si rien d'autre n'a été dit, « point » reste un mot.
+ */
+export function storyHeard(transcript: string): string | null {
+  let text = String(transcript ?? '').trim();
+  const spoken = text;
+  for (const [re, mark] of SPOKEN_PUNCT) text = text.replace(re, mark);
+  text = text.replace(/\s+([,.!?…])/g, '$1').trim();
+  return cleanStoryWord(text) ?? cleanStoryWord(spoken);
 }
 
 /** Le mot sans sa ponctuation, en minuscules et sans accents, pour vérifier les contraintes. */

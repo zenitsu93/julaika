@@ -121,9 +121,10 @@ const INTERDITS_FIELDS: typeof FIELDS = [
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
-// Mot à mot : le nombre d'histoires, le reste est fixé (4 s par mot).
+// Mot à mot : le nombre d'histoires et le temps par mot (doublé sous contrainte).
 const STORY_FIELDS: typeof FIELDS = [
   { key: 'rounds', label: 'Histoires' },
+  { key: 'wordTime', label: 'Secondes par mot' },
   { key: 'maxPlayers', label: 'Joueurs max' },
 ];
 
@@ -221,7 +222,7 @@ const RULES: Partial<Record<RoomGame, string[]>> = {
   ],
 
   motamot: [
-    'Une histoire s’écrit un mot chacun, à tour de rôle : 4 secondes par mot, Espace pour valider.',
+    'Une histoire s’écrit un mot chacun, à tour de rôle, le chrono en vue (6 secondes par défaut). Tape-le et Espace, ou touche 🎤 et dis-le.',
     'Tous les 6 mots, une contrainte tombe : « un verbe », « place le mot Mayonnaise »… Les autres peuvent recaler les tricheurs.',
     'À la fin, l’histoire est lue à voix haute : vote pour ton mot préféré !',
   ],

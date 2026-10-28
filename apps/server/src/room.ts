@@ -1202,6 +1202,7 @@ export class Room {
       playerIds: () => [...this.players.keys()],
       name: (id) => this.players.get(id)?.name ?? '?',
       rounds: () => this.settings.rounds,
+      wordTime: () => this.settings.wordTime,
       random: this.random,
       setPhase: (phase, endsAt, round) => {
         this.phase = phase;
