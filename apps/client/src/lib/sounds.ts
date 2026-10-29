@@ -30,9 +30,12 @@ export const SOUND_INFO: Record<SoundId, { label: string; emoji: string }> = {
 };
 
 const VOLUME = 0.55;
+/** Les échantillons enregistrés (samples.ts) sont déjà masterisés : ils sortent sans compresseur. */
+const SAMPLE_VOLUME = 0.8;
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
+let samples: GainNode | null = null;
 let noiseBuf: AudioBuffer | null = null;
 
 /** Contexte audio, créé à la demande et relancé s'il a été suspendu (onglet en veille, iOS…). */
@@ -50,6 +53,9 @@ function audio(): AudioContext | null {
     master = ctx.createGain();
     master.gain.value = isMuted ? 0 : VOLUME;
     master.connect(comp).connect(ctx.destination);
+    samples = ctx.createGain();
+    samples.gain.value = isMuted ? 0 : SAMPLE_VOLUME;
+    samples.connect(ctx.destination);
     // Deux secondes de bruit blanc, partagées par tous les bruitages (lues en boucle, départ au hasard).
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     const data = noiseBuf.getChannelData(0);
@@ -503,6 +509,12 @@ export function whoosh(up = true) {
   });
 }
 
+/** Contexte et sortie des échantillons enregistrés, pour samples.ts. */
+export function sampleBus(): { c: AudioContext; out: GainNode } | null {
+  const c = audio();
+  return c && samples ? { c, out: samples } : null;
+}
+
 // ---- Muet ---------------------------------------------------------------------------------
 
 const MUTE_KEY = 'julaika:muted';
@@ -527,6 +539,7 @@ export function setMuted(b: boolean) {
   }
   // Coupe net ce qui joue déjà, et rouvre en douceur.
   if (ctx && master) master.gain.setTargetAtTime(b ? 0 : VOLUME, ctx.currentTime, 0.015);
+  if (ctx && samples) samples.gain.setTargetAtTime(b ? 0 : SAMPLE_VOLUME, ctx.currentTime, 0.015);
   for (const l of muteListeners) l();
 }
 

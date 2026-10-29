@@ -53,6 +53,7 @@ const MIME: Record<string, string> = {
   '.ico': 'image/x-icon',
   '.webmanifest': 'application/manifest+json',
   '.woff2': 'font/woff2',
+  '.mp3': 'audio/mpeg',
 };
 
 // Sert le build du client : un seul process, un seul port à déployer.
