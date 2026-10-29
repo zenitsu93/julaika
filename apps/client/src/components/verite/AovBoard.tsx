@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent, type R
 import { AOV_HEAT_BONUS, AOV_JOKERS, AOV_LEVEL_INFO, AOV_POINTS, AOV_LEVELS, AOV_SPIN_MS, aovTitles, type AovHeat, type AovKind, type AovState, type PlayerPublic } from '@julaika/shared';
 import { avatarOf } from '../../lib/avatars';
 import { net } from '../../lib/net';
+import { preloadSamples, sample } from '../../lib/samples';
 import { play } from '../../lib/sounds';
 import { serverNow, useGame } from '../../lib/store';
 import { bump, confetti, Presence, reducedMotion, shake, Ticker, useCountUp, useFlip, useIndicator } from '../../motion';
@@ -20,6 +21,7 @@ const KIND: Record<AovKind, { label: string; icon: string; tone: string }> = {
 /** Plateau d'Action ou vérité : la bouteille, le choix, la carte, puis le verdict des autres. */
 export function AovBoard() {
   const phase = useGame((s) => s.room!.phase);
+  useEffect(() => preloadSamples('aov-tourbillon', 'aov-trinque', 'aov-fanfare'), []);
   return (
     <section className="flex min-w-0 flex-col gap-3">
       <PlayerBar />
@@ -251,9 +253,11 @@ function Wheel({ a, players }: { a: AovState; players: PlayerPublic[] }) {
     const duration = reducedMotion() ? 0 : left;
     el.style.transition = `transform ${duration}ms cubic-bezier(0.12, 0.7, 0.18, 1)`;
     el.style.transform = `rotate(${angle.current}deg)`;
+    // Un souffle par tour, calé sur le ralenti de la bouteille ; deux verres qui trinquent à l'arrêt.
+    if (duration > 0) void sample('aov-tourbillon', { since: a.spinAt });
     const t = setTimeout(() => {
       setLanded(true);
-      play('ding');
+      void sample('aov-trinque');
     }, duration);
     return () => clearTimeout(t);
   }, [a.spinAt, a.turn]);
@@ -405,11 +409,11 @@ function Dare({ a }: { a: AovState }) {
   const jokers = selfId ? (a.jokers[selfId] ?? 0) : 0;
   const points = useCountUp(verdict === 'done' && a.history.at(-1) ? lastGain(a) : 0, { from: 0, delay: 350, duration: 600 });
 
-  // Verdict : confettis et bravo si c'est validé, trombone triste et secousse sinon.
+  // Verdict : confettis et fanfare si c'est validé, trombone triste et secousse sinon.
   useEffect(() => {
     if (!verdict) return;
     if (verdict === 'done') {
-      play('bravo');
+      void sample('aov-fanfare');
       return confetti(sparks.current, 110);
     }
     play('trombone');

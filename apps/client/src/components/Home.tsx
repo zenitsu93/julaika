@@ -181,6 +181,10 @@ export function Home({ game, onBack }: { game: GameId | null; onBack: () => void
           )}
         </form>
       </div>
+      {/* Crédit exigé par la licence CC-BY des instruments enregistrés (détail dans assets/sfx/CREDITS.md). */}
+      <p className="mx-auto mt-10 max-w-md px-4 text-center text-[11px] leading-relaxed text-muted">
+        Sons : Kenney et OpenGameArt (CC0) · instruments FluidR3 GM de Frank Wen (CC-BY 3.0)
+      </p>
     </main>
   );
 }

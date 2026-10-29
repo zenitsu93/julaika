@@ -2,14 +2,20 @@ import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, typ
 import { QUIZ_READ_MS, quizVerdict, type PlayerPublic, type QuizRound, type QuizState } from '@julaika/shared';
 import { avatarOf } from '../../lib/avatars';
 import { net } from '../../lib/net';
-import { serverNow, useGame } from '../../lib/store';
+import { preloadSamples, sample } from '../../lib/samples';
+import { serverNow, store, useGame } from '../../lib/store';
 import { bump, confetti, Presence, shake, Ticker, useCountUp, useFlip } from '../../motion';
 import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
 import './quiz.css';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
-const pick = (index: number) => net.send({ t: 'quiz', pick: index });
+/** Verrouille une réponse : un « tok » de bois tout de suite, sans attendre le serveur. */
+function pick(index: number) {
+  if ((store.get().room?.quiz?.mine ?? null) !== null) return;
+  void sample('quiz-bois');
+  net.send({ t: 'quiz', pick: index });
+}
 
 /** Ce que dit la machine pendant que l'IA écrit les questions, une ligne après l'autre. */
 const PREP_LINES = ['On fouille les archives…', 'On vérifie les bonnes réponses…', 'On glisse quelques pièges…', 'On mélange les propositions…', 'Presque prêt…'];
@@ -17,6 +23,7 @@ const PREP_LINES = ['On fouille les archives…', 'On vérifie les bonnes répon
 /** Plateau du quiz : le classement en direct, puis la machine à questions, les questions et le podium. */
 export function QuizBoard() {
   const phase = useGame((s) => s.room!.phase);
+  useEffect(() => preloadSamples('quiz-harpe', 'quiz-cartes', 'quiz-bois', 'quiz-coeur', 'quiz-bravo', 'quiz-rate', 'quiz-podium'), []);
   return (
     <section className="flex min-w-0 flex-col gap-3">
       <ScoreBar />
@@ -217,23 +224,35 @@ function Stage() {
   const phase = room.phase;
   const reveal = phase === 'reveal' ? (q?.reveal ?? null) : null;
 
-  // Les réponses s'ouvrent après la lecture : un rendu pile à ce moment-là.
+  // Une harpe qui monte quand la nouvelle question se pose.
+  useEffect(() => {
+    if (phase === 'answer' && q?.openAt && q.openAt > serverNow()) void sample('quiz-harpe');
+  }, [q?.index]);
+
+  // Les réponses s'ouvrent après la lecture : un rendu pile à ce moment-là, et quatre cartes posées sur le tapis.
   const [open, setOpen] = useState(false);
   useEffect(() => {
     if (phase !== 'answer' || !q?.openAt) return setOpen(phase === 'reveal');
     const wait = q.openAt - serverNow();
     setOpen(wait <= 0);
     if (wait <= 0) return;
-    const t = setTimeout(() => setOpen(true), wait);
+    const t = setTimeout(() => {
+      setOpen(true);
+      void sample('quiz-cartes');
+    }, wait);
     return () => clearTimeout(t);
   }, [phase, q?.index, q?.openAt]);
 
-  // Ton résultat : confettis si tu as trouvé, petite secousse si tu t'es trompé.
+  // Ton résultat : confettis et petite fanfare si tu as trouvé, secousse et cordes qui tombent sinon.
   const box = useRef<HTMLDivElement>(null);
   const sparks = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     if (!reveal || !selfId) return;
-    if (reveal.gains[selfId]) return confetti(sparks.current, reveal.fastest === selfId ? 120 : 70);
+    if (reveal.gains[selfId]) {
+      void sample('quiz-bravo');
+      return confetti(sparks.current, reveal.fastest === selfId ? 120 : 70);
+    }
+    void sample('quiz-rate', { gain: reveal.picks[selfId] !== undefined ? 1 : 0.7 });
     if (reveal.picks[selfId] !== undefined) shake(box.current);
   }, [Boolean(reveal), q?.index]);
 
@@ -310,8 +329,12 @@ function Countdown({ phase, openAt, endsAt, turnKey }: { phase: string; openAt: 
   const ref = useRef<HTMLSpanElement>(null);
   const left = phase === 'answer' && endsAt ? Math.max(0, Math.ceil((endsAt - Math.max(now, openAt ?? now)) / 1000)) : 0;
   const urgent = phase === 'answer' && left <= 5 && left > 0 && now >= (openAt ?? 0);
+  // Les cinq dernières secondes : un cœur qui bat, un peu plus fort et plus vite à chaque fois.
   useEffect(() => {
-    if (urgent) bump(ref.current, 1.15);
+    if (!urgent) return;
+    bump(ref.current, 1.15);
+    const heat = (5 - left) / 4;
+    void sample('quiz-coeur', { gain: 0.55 + 0.45 * heat, rate: 1 + 0.1 * heat });
   }, [urgent && left]);
   const start = openAt ?? now;
   const read = Math.max(0, start - serverNow());
@@ -405,7 +428,7 @@ function Option({ index, text, q, reveal, selfId }: { index: number; text: strin
           bump(btn.current, 1.03);
           pick(index);
         }}
-        className={`q-option q-unfold relative flex min-h-16 items-center gap-3 overflow-hidden rounded-xl border px-3.5 py-3 text-left transition-[transform,border-color,background-color,opacity] duration-300 outline-none focus-visible:ring-2 focus-visible:ring-info disabled:cursor-default ${tone}`}
+        className={`q-option q-fan ${index % 2 ? 'q-fan-r' : ''} relative flex min-h-16 items-center gap-3 overflow-hidden rounded-xl border px-3.5 py-3 text-left transition-[transform,border-color,background-color,opacity] duration-300 outline-none focus-visible:ring-2 focus-visible:ring-info disabled:cursor-default ${tone}`}
         style={{ animationDelay: reveal ? '0ms' : `${index * 70}ms` }}
       >
         {/* Part des joueurs qui ont choisi cette réponse, en fond de carte. */}
@@ -525,7 +548,9 @@ function Podium() {
   const verdict = quizVerdict(right, total);
   const champion = ranking[0];
 
+  // Roulement de timbales et fanfare : le coup de cymbale tombe avec les confettis.
   useEffect(() => {
+    void sample('quiz-podium');
     let stop = () => {};
     const t = setTimeout(() => (stop = confetti(canvas.current, 140)), 1300);
     return () => {

@@ -134,23 +134,50 @@
   background-image: radial-gradient(16rem circle at var(--qx, 50%) var(--qy, 50%), color-mix(in srgb, var(--color-gold) 14%, transparent), transparent 60%);
 }
 
-/* Les réponses s'ouvrent : elles se déplient vers le haut, une à une. */
-@keyframes q-unfold {
+/* Les réponses s'ouvrent en éventail : les cartes de gauche arrivent de la gauche, celles de
+   droite de la droite, légèrement inclinées, et se posent avec un petit rebond. */
+@keyframes q-fan {
   0% {
-    transform: perspective(600px) rotateX(-70deg) translateY(10px);
+    transform: translateX(var(--q-dx, -56px)) rotate(var(--q-tilt, -7deg)) scale(0.94);
     opacity: 0;
   }
-  70% {
-    transform: perspective(600px) rotateX(8deg);
+  60% {
     opacity: 1;
   }
   100% {
     transform: none;
   }
 }
-.q-unfold {
-  transform-origin: top center;
-  animation: q-unfold 0.55s var(--ease-out) backwards;
+.q-fan {
+  transform-origin: center bottom;
+  animation: q-fan 0.6s var(--ease-spring) backwards;
+}
+.q-fan-r {
+  --q-dx: 56px;
+  --q-tilt: 7deg;
+}
+/* Sur téléphone les cartes sont empilées : elles montent toutes du bas, en éventail serré. */
+@media (max-width: 639px) {
+  .q-fan,
+  .q-fan-r {
+    --q-dx: 0px;
+    --q-tilt: 0deg;
+  }
+  @keyframes q-fan {
+    0% {
+      transform: translateY(18px) rotate(var(--q-tilt-m, -2deg)) scale(0.96);
+      opacity: 0;
+    }
+    60% {
+      opacity: 1;
+    }
+    100% {
+      transform: none;
+    }
+  }
+  .q-fan-r {
+    --q-tilt-m: 2deg;
+  }
 }
 
 /* Révélation : la bonne réponse pulse en or. */
@@ -291,7 +318,7 @@
     color: var(--color-ink);
     background: none;
   }
-  .q-unfold,
+  .q-fan,
   .q-step,
   .q-crown,
   .q-bar,
