@@ -99,6 +99,18 @@ interface Player {
   inCall: boolean;
   cam: boolean;
   mic: boolean;
+  /** Compte du joueur, s'il est connecté : sa partie ira dans son historique. */
+  userId: string | null;
+}
+
+/** Une partie terminée, racontée au serveur pour l'historique des joueurs qui ont un compte. */
+export interface PartyEnd {
+  id: string;
+  game: RoomGame;
+  mode: string;
+  started: number;
+  ended: number;
+  players: { userId: string | null; name: string; avatar: number; score: number }[];
 }
 
 export const CHOOSE_TIME = 15;
@@ -140,6 +152,11 @@ export class Room {
   game: RoomGame = 'dessin';
   /** Appelé quand l'hôte change de jeu (pour préparer ce dont le nouveau jeu a besoin). */
   onGame: (game: RoomGame) => void = () => {};
+  /** Appelé à chaque fin de partie (podium) : l'historique des comptes. */
+  onGameEnd: (party: PartyEnd) => void = () => {};
+  /** Identifiant de la partie en cours : relie l'historique et les images de l'album. */
+  party: string | null = null;
+  private partyStart = 0;
 
   /** Piège du tour en cours (manches piégées du Dessin). */
   trap: Trap | null = null;
@@ -221,7 +238,7 @@ export class Room {
 
   // ---- Cycle de vie des joueurs ----------------------------------------------
 
-  join(conn: Conn, name: string, avatar: number): string | null {
+  join(conn: Conn, name: string, avatar: number, userId: string | null = null): string | null {
     if (this.players.size >= this.settings.maxPlayers) return null;
     const id = `p${nextId++}`;
     const player: Player = {
@@ -238,6 +255,7 @@ export class Room {
       inCall: false,
       cam: false,
       mic: false,
+      userId,
     };
     this.players.set(id, player);
     if (!this.hostId) this.hostId = id;
@@ -600,6 +618,8 @@ export class Room {
     }
     for (const p of this.players.values()) p.score = 0;
     this.round = 0;
+    this.party = randomBytes(9).toString('base64url');
+    this.partyStart = Date.now();
     if (this.game === 'wavelength') return this.startWave();
     if (this.game === 'telephone') return this.startTel();
     if (this.game === 'intrus') return this.startIntrus();
@@ -1416,9 +1436,28 @@ export class Room {
     this.word = null;
     this.endsAt = Date.now() + GAME_END_TIME * 1000;
     const ranking = this.publicPlayers().sort((a, b) => b.score - a.score);
+    this.recordParty();
     this.broadcast({ t: 'gameEnd', ranking });
     this.broadcastState();
     this.after(GAME_END_TIME, () => this.toLobby());
+  }
+
+  /** Raconte la partie finie à l'historique (une seule fois par partie). */
+  private recordParty(): void {
+    if (!this.party) return;
+    const party: PartyEnd = {
+      id: this.party,
+      game: this.game,
+      mode: this.game === 'dessin' ? this.settings.mode : '',
+      started: this.partyStart,
+      ended: Date.now(),
+      players: [...this.players.values()].map((p) => ({ userId: p.userId, name: p.name, avatar: p.avatar, score: p.score })),
+    };
+    try {
+      this.onGameEnd(party);
+    } catch (e) {
+      console.warn('[historique]', (e as Error).message);
+    }
   }
 
   private toLobby(): void {
@@ -1566,6 +1605,7 @@ export class Room {
     return {
       code: this.code,
       game: this.game,
+      party: this.party,
       phase: this.phase,
       settings: this.settings,
       players: this.publicPlayers(),

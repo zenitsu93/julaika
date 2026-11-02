@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Home, codeFromUrl } from './components/Home';
 import { Hub } from './components/Hub';
 import { Game } from './components/Game';
@@ -7,18 +7,48 @@ import { MusicPlayer } from './components/MusicPlayer';
 import { SoundToasts } from './components/SoundBoard';
 import { saveChosenGame, type GameId } from './lib/games';
 import { inRoom, useGame } from './lib/store';
+import { refreshAccount, useAccount } from './lib/account';
+import { startKeeper } from './lib/keeper';
+import { go, usePage, type Page as AccountPage } from './lib/route';
+import { Landing, landingSeen } from './components/account/Landing';
+import { AuthPage } from './components/account/AuthCard';
+import { ResetPage } from './components/account/ResetPage';
+import { AlbumPage } from './components/account/AlbumPage';
+import { HistoryPage } from './components/account/HistoryPage';
+import { SettingsPage } from './components/account/SettingsPage';
+
+// Le compte se charge dès l'ouverture, et les images des parties sont gardées pour l'album.
+void refreshAccount();
+startKeeper();
 
 export function App() {
   const online = useGame(inRoom);
+  const route = usePage();
+  const { ready, user } = useAccount();
+  // Première visite sans compte : la landing, sauf pour un lien d'invitation (/r/CODE).
+  useEffect(() => {
+    if (ready && !user && !route && location.pathname === '/' && !landingSeen()) history.replaceState(null, '', '/bienvenue'), go('bienvenue');
+  }, [ready]);
   // Un lien d'invitation (/r/CODE) saute l'accueil des jeux : on va droit au pseudo.
   const [screen, setScreen] = useState<{ game: GameId | null } | null>(() => (codeFromUrl() ? { game: null } : null));
   // Chaque changement de page rejoue la « respiration » (fil d'or, page qui monte, logo qui hoche).
-  const page = online ? 'salon' : screen ? (screen.game ?? 'code') : 'accueil';
+  const page = online ? 'salon' : route ?? (screen ? (screen.game ?? 'code') : 'accueil');
   return (
     <>
       <div key={`fil-${page}`} className="page-breath" aria-hidden />
       <div key={page} className="page-in h-full">
-        <Page online={online} screen={screen} setScreen={setScreen} />
+        {!online && route ? (
+          <AccountScreen
+            route={route}
+            onReplay={(game) => {
+              saveChosenGame(game);
+              setScreen({ game });
+              go(null);
+            }}
+          />
+        ) : (
+          <Page online={online} screen={screen} setScreen={setScreen} />
+        )}
       </div>
       {/* Hors de la page : la musique continue quand on change d'écran. */}
       <MusicPlayer />
@@ -56,4 +86,13 @@ function Page({
   // Le mot du jour se joue seul, sans salon : pas de pseudo à saisir avant.
   if (screen.game === 'motdujour') return <MotDuJour onBack={() => setScreen(null)} />;
   return <Home game={screen.game} onBack={() => setScreen(null)} />;
+}
+
+function AccountScreen({ route, onReplay }: { route: AccountPage; onReplay: (game: GameId) => void }) {
+  if (route === 'bienvenue') return <Landing />;
+  if (route === 'connexion' || route === 'inscription') return <AuthPage start={route} />;
+  if (route === 'mot-de-passe') return <ResetPage />;
+  if (route === 'album') return <AlbumPage />;
+  if (route === 'historique') return <HistoryPage onReplay={onReplay} />;
+  return <SettingsPage />;
 }

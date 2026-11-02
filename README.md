@@ -118,6 +118,10 @@ Toutes les variables sont facultatives ; le serveur lit un `.env` à la racine.
 | `YOUTUBE_API_KEY` | Recherche du lecteur de musique (YouTube Data API v3, clé gratuite). Sans clé : on colle des liens YouTube. |
 | `TURN_URLS`, `TURN_SECRET` | Relais TURN de la visio pour les réseaux stricts (4G, entreprise). |
 | `MOT_DATA_DIR`, `MOT_TZ` | Dossier des classements du Mot du jour et son fuseau (Europe/Paris par défaut). |
+| `DATA_DIR` | Dossier des comptes (`julaika.db`) et des images d'album (`album/`). `data` par défaut. |
+| `PUBLIC_URL` | Adresse publique du site (`https://julaika.2nbdigital.com`), pour les liens des e-mails et le retour de Google. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | Envoi des codes à 6 chiffres (boîte o2switch, port 465). Sans `SMTP_HOST`, le code s'affiche dans les logs. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | « Continuer avec Google ». Sans eux, le bouton n'apparaît pas. |
 | `PORT` | Port du serveur (3001 par défaut). |
 
 ## Architecture
@@ -144,6 +148,10 @@ Chaque jeu a son fichier côté serveur (`apps/server/src/<jeu>.ts`) et son doss
   flux, signalisation par le WebSocket du jeu, relais coturn en secours.
 - **Musique** : lecteur YouTube intégré qui ne se démonte jamais d'une page à l'autre ; la clé de recherche
   reste sur le serveur (`/api/musique`, avec cache), et l'écoute partagée ne transmet que le morceau, l'état et la position.
+- **Comptes** : base SQLite intégrée à Node (`node:sqlite`, aucune dépendance), mots de passe en scrypt,
+  session dans un cookie HttpOnly dont seul l'empreinte est gardée en base. Les images d'album sont des
+  fichiers WebP sur le disque du VPS ; le client les repère en fin de manche et les envoie (`lib/keeper.ts`).
+  Un invité garde les siennes 24 h dans son navigateur, le temps de créer un compte.
 - Limitation de débit par connexion et heartbeat pour couper les sockets mortes.
 
 ## Déployer
@@ -161,6 +169,9 @@ Production : un VPS, derrière un Caddy partagé qui sert déjà d'autres sites 
 
 Relais de la visio : mettre `COMPOSE_PROFILES=turn`, `TURN_SECRET` et `TURN_URLS` dans `.env`,
 ouvrir 3478 (tcp et udp) et 49160 à 49200 (udp). Réglages dans `deploy/turnserver.conf`.
+
+Comptes et albums : tout vit dans le volume `julaika-data`. `deploy/backup-o2switch.sh` l'envoie chaque
+nuit sur l'hébergement o2switch (mode d'emploi en tête du script).
 
 VPS neuf sans autre site : `DOMAIN=jeu.exemple.com docker compose -f docker-compose.standalone.yml up -d --build`
 (Caddy inclus, HTTPS automatique). Avec nginx à la place : `deploy/nginx.conf`.

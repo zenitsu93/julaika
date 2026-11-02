@@ -12,10 +12,14 @@ services:
     # DEEPSEEK_API_KEY pour générer les mots selon la difficulté (sans clé : listes intégrées),
     # TURN_URLS et TURN_SECRET pour le relais de la visio (voir deploy/turnserver.conf),
     # YOUTUBE_API_KEY pour la recherche du lecteur de musique (sans clé : liens YouTube collés seulement).
+    # Comptes : PUBLIC_URL (https://julaika.2nbdigital.com), SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
+    # et MAIL_FROM pour les codes par e-mail (boîte o2switch ; sans SMTP_HOST, le code part dans les logs),
+    # GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET pour « Continuer avec Google » (sans eux, le bouton est caché).
     env_file:
       - path: .env
         required: false
-    # Classements du mot du jour (un fichier JSON par jour).
+    # Classements du mot du jour, comptes (julaika.db) et images des albums (album/).
+    # Sauvegarde chaque nuit vers o2switch : deploy/backup-o2switch.sh.
     volumes:
       - data:/app/data
     # Bornes et durcissement : un emballement du jeu ne gêne pas les autres sites du VPS, et le

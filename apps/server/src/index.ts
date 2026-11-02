@@ -11,6 +11,11 @@ import { iceServersFor } from './ice';
 import { MotDuJour, isToken } from './motdujour';
 import { musicSearch } from './musique';
 import { Room } from './room';
+import { accountApi } from './accountApi';
+import { Accounts } from './accounts';
+import { Album } from './album';
+import { openDb } from './db';
+import { mailer } from './mail';
 
 const PORT = Number(process.env.PORT ?? 3001);
 const STATIC_DIR = process.env.STATIC_DIR ?? fileURLToPath(new URL('../../client/dist', import.meta.url));
@@ -21,6 +26,15 @@ const generateDares = deepseekDares();
 const generateQuiz = deepseekQuiz();
 const mot = new MotDuJour(process.env.MOT_DATA_DIR ?? 'data/mot', Date.now, process.env.MOT_TZ || 'Europe/Paris');
 const motBuckets = keyedBuckets(30, 2);
+// Comptes : une base SQLite et un dossier d'images, dans le volume de données.
+const DATA_DIR = process.env.DATA_DIR ?? 'data';
+const db = openDb(join(DATA_DIR, 'julaika.db'));
+const accounts = new Accounts(db);
+const album = new Album(db, join(DATA_DIR, 'album'));
+const mail = mailer();
+const google =
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? { clientId: process.env.GOOGLE_CLIENT_ID, secret: process.env.GOOGLE_CLIENT_SECRET } : null;
+const api = accountApi({ accounts, album, mail, google, site: process.env.PUBLIC_URL || undefined });
 const music = musicSearch(process.env.YOUTUBE_API_KEY || undefined);
 // Une recherche coûte 1 % du quota YouTube du jour : 6 d'un coup par IP, puis une toutes les 10 s.
 const musicBuckets = keyedBuckets(6, 0.1);
@@ -50,6 +64,8 @@ const MIME: Record<string, string> = {
   '.css': 'text/css',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.jpg': 'image/jpeg',
   '.ico': 'image/x-icon',
   '.webmanifest': 'application/manifest+json',
   '.woff2': 'font/woff2',
@@ -66,6 +82,14 @@ const http = createServer(async (req, res) => {
     return;
   }
   if (url.pathname.startsWith('/api/musique')) return musicApi(req, res, url);
+  try {
+    if (await api.handle(req, res, url)) return;
+  } catch (e) {
+    console.error('[comptes]', e);
+    if (!res.headersSent) res.writeHead(500, { 'content-type': 'application/json' }).end('{"error":"serveur"}');
+    else res.end();
+    return;
+  }
   if (url.pathname.startsWith('/api/mot')) return motApi(req, res, url);
   const safe = normalizePath(url.pathname).replace(/^(\.\.[/\\])+/, '');
   let file = join(STATIC_DIR, safe);
@@ -151,7 +175,10 @@ setInterval(() => {
   motBuckets.prune();
   musicBuckets.prune();
   joinBuckets.prune();
+  api.prune();
 }, 60_000).unref();
+// Sessions et codes périmés : un ménage par heure.
+setInterval(() => accounts.prune(), 3_600_000).unref();
 
 const wss = new WebSocketServer({
   server: http,
@@ -164,6 +191,11 @@ const wss = new WebSocketServer({
 
 wss.on('connection', (ws: WebSocket & { alive?: boolean }, req: IncomingMessage) => {
   const ip = clientIp(req);
+  // Joueur connecté à son compte (cookie de session) : ses parties iront dans son historique.
+  let userId: string | null = null;
+  try {
+    userId = api.userOf(req).user?.id ?? null;
+  } catch {}
   if (!connections.add(ip)) {
     ws.close(1013, 'trop de connexions');
     return;
@@ -248,7 +280,7 @@ wss.on('connection', (ws: WebSocket & { alive?: boolean }, req: IncomingMessage)
         }
       }
       room = code ? rooms.get(code)! : createRoom(isRoomGame(msg.game) ? msg.game : 'dessin', isGameMode(msg.mode) ? msg.mode : 'dessin');
-      playerId = room.join(conn, String(msg.name ?? ''), Number(msg.avatar) || 0);
+      playerId = room.join(conn, String(msg.name ?? ''), Number(msg.avatar) || 0, userId);
       if (!playerId) {
         room = null;
         conn.send(JSON.stringify({ t: 'error', message: 'Salon complet.' }));
@@ -318,6 +350,7 @@ function createRoom(game: RoomGame, mode: GameMode): Room {
     ai(generateQuiz),
   );
   room.game = game;
+  room.onGameEnd = (party) => album.record(party);
   // La carte « Mime » de l'accueil ouvre un salon de dessin réglé en mime.
   if (game === 'dessin') room.settings = { ...room.settings, mode };
   rooms.set(code, room);
@@ -340,6 +373,7 @@ function toBytes(data: unknown): Uint8Array {
 for (const signal of ['SIGTERM', 'SIGINT'] as const) {
   process.on(signal, () => {
     mot.flush();
+    db.close();
     process.exit(0);
   });
 }
