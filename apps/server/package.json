@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "@julaika/shared": "workspace:*",
-    "@types/node": "^22.0.0",
+    "@types/node": "^26.6.6",
     "@types/ws": "^8.18.1",
     "esbuild": "^0.25.0",
     "tsx": "^4.20.0"
