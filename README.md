@@ -171,7 +171,9 @@ Relais de la visio : mettre `COMPOSE_PROFILES=turn`, `TURN_SECRET` et `TURN_URLS
 ouvrir 3478 (tcp et udp) et 49160 à 49200 (udp). Réglages dans `deploy/turnserver.conf`.
 
 Comptes et albums : tout vit dans le volume `julaika-data`. `deploy/backup-o2switch.sh` l'envoie chaque
-nuit sur l'hébergement o2switch (mode d'emploi en tête du script).
+nuit sur l'hébergement o2switch, dans `~/sauvegardes-julaika` (14 copies de la base, images retirées
+gardées 14 jours ; mode d'emploi en tête du script). Cron du VPS :
+`15 4 * * * $HOME/julaika/deploy/backup-o2switch.sh >> $HOME/sauvegardes/julaika.log 2>&1`.
 
 VPS neuf sans autre site : `DOMAIN=jeu.exemple.com docker compose -f docker-compose.standalone.yml up -d --build`
 (Caddy inclus, HTTPS automatique). Avec nginx à la place : `deploy/nginx.conf`.
