@@ -5,20 +5,25 @@ import { Wordmark } from '../Logo';
 import { GoogleButton, Icon } from './ui';
 
 const VERBS = ['dessiné', 'mimé', 'photographié', 'inventé', 'fredonné'];
-const SEEN = 'julaika:bienvenue';
+export const GUEST_KEY = 'julaika:invite';
 
-/** La landing a déjà été vue (ou écartée) : on ne la remontre pas à l'arrivée sur « / ». */
-export function landingSeen() {
+/**
+ * Le visiteur a cliqué « Jouer sans compte » pendant cette visite : l'accueil des jeux lui est ouvert.
+ * Sinon, sans compte, « / » mène à la landing. Retenu pour l'onglet seulement : à la prochaine visite
+ * (ou après une déconnexion), la landing revient.
+ */
+export function guestChosen() {
   try {
-    return localStorage.getItem(SEEN) === '1';
+    return sessionStorage.getItem(GUEST_KEY) === '1';
   } catch {
     return true;
   }
 }
-export function markLandingSeen() {
+export function playAsGuest() {
   try {
-    localStorage.setItem(SEEN, '1');
+    sessionStorage.setItem(GUEST_KEY, '1');
   } catch {}
+  go(null);
 }
 
 /** Le verbe du titre change toutes les 2,2 s : l'ancien monte et se floute, le nouveau arrive d'en bas. */
@@ -59,11 +64,9 @@ function Enter({ children }: { children: string }) {
 
 /** Landing « Le carnet » : titre qui tourne, deux rubans de jeux, trois étapes. */
 export function Landing() {
-  // Vue une fois suffit : au prochain passage sur « / », on va droit aux jeux.
-  useEffect(markLandingSeen, []);
   const half = Math.ceil(GAMES.length / 2);
   const rows = [GAMES.slice(0, half), GAMES.slice(half)];
-  const guest = () => go(null);
+  const guest = playAsGuest;
   return (
     <main className="relative min-h-full overflow-x-clip pb-14">
       <header className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">

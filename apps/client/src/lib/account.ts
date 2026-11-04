@@ -84,6 +84,10 @@ export async function signedIn(user: UserPublic) {
 
 export async function logout() {
   await api('/api/auth/deconnexion', { body: {} }).catch(() => {});
+  // Déconnecté, on repart de la landing : l'accueil des jeux attend un nouveau « Jouer sans compte ».
+  try {
+    sessionStorage.removeItem('julaika:invite');
+  } catch {}
   set({ user: null, stats: null });
 }
 
