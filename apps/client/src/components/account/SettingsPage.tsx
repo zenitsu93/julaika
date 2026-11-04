@@ -49,7 +49,7 @@ export function SettingsPage() {
             className="btn-ghost w-max"
             onClick={async () => {
               await logout();
-              go(null);
+              go('bienvenue');
             }}
           >
             Me déconnecter
@@ -208,7 +208,7 @@ function Remove({ user }: { user: UserPublic }) {
     try {
       await api('/api/compte/supprimer', { body: { password: user.hasPassword ? password : '' } });
       await logout();
-      go(null);
+      go('bienvenue');
     } catch (err) {
       setError(err instanceof ApiError && err.status === 401 ? 'Ce n’est pas le bon mot de passe.' : errText(err));
       setBusy(false);

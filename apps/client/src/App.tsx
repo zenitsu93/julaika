@@ -10,7 +10,7 @@ import { inRoom, useGame } from './lib/store';
 import { refreshAccount, useAccount } from './lib/account';
 import { startKeeper } from './lib/keeper';
 import { go, usePage, type Page as AccountPage } from './lib/route';
-import { Landing, landingSeen } from './components/account/Landing';
+import { Landing, guestChosen } from './components/account/Landing';
 import { AuthPage } from './components/account/AuthCard';
 import { ResetPage } from './components/account/ResetPage';
 import { AlbumPage } from './components/account/AlbumPage';
@@ -25,10 +25,14 @@ export function App() {
   const online = useGame(inRoom);
   const route = usePage();
   const { ready, user } = useAccount();
-  // Première visite sans compte : la landing, sauf pour un lien d'invitation (/r/CODE).
+  // Sans compte, « / » mène à la landing tant qu'on n'a pas cliqué « Jouer sans compte »
+  // (les liens d'invitation /r/CODE vont, eux, droit au salon).
   useEffect(() => {
-    if (ready && !user && !route && location.pathname === '/' && !landingSeen()) history.replaceState(null, '', '/bienvenue'), go('bienvenue');
-  }, [ready]);
+    if (ready && !user && !online && !route && location.pathname === '/' && !guestChosen()) {
+      history.replaceState(null, '', '/bienvenue');
+      go('bienvenue');
+    }
+  }, [ready, user, route, online]);
   // Un lien d'invitation (/r/CODE) saute l'accueil des jeux : on va droit au pseudo.
   const [screen, setScreen] = useState<{ game: GameId | null } | null>(() => (codeFromUrl() ? { game: null } : null));
   // Chaque changement de page rejoue la « respiration » (fil d'or, page qui monte, logo qui hoche).

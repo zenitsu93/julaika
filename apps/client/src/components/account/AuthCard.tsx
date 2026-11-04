@@ -3,6 +3,7 @@ import { PASSWORD_MIN, type UserPublic } from '@julaika/shared';
 import { AVATARS } from '../../lib/avatars';
 import { ApiError, api, signedIn } from '../../lib/account';
 import { go } from '../../lib/route';
+import { playAsGuest } from './Landing';
 import { shake } from '../../motion';
 import { TremaLoader } from '../Logo';
 import { ErrorLine, Field, GoogleButton } from './ui';
@@ -148,7 +149,7 @@ function Login({ onDone, onGuest, onFlip, initialError }: { onDone: () => void; 
           Crée-le
         </button>
         {' · '}
-        <button type="button" className="font-semibold text-accent" onClick={onGuest ?? (() => go(null))}>
+        <button type="button" className="font-semibold text-accent" onClick={onGuest ?? playAsGuest}>
           Jouer sans compte
         </button>
       </p>
