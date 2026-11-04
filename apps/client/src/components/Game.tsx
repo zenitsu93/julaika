@@ -26,6 +26,7 @@ import { AovBoard } from './verite/AovBoard';
 import { ReconnectBanner } from './Reconnect';
 import { TopBar } from './TopBar';
 import { EndDock, useQuit } from './QuitButton';
+import { KeepMemory } from './account/KeepMemory';
 import { PickerProvider, useGamePicker } from './GamePicker';
 import { WaveBoard } from './wave/WaveBoard';
 
@@ -65,6 +66,7 @@ export function Game({ onQuit }: { onQuit: () => void }) {
         {game === 'wavelength' ? <WaveBoard /> : game === 'telephone' ? <TelBoard /> : game === 'intrus' ? <IntrusBoard /> : game === 'petitbac' ? <BacBoard /> : game === 'connait' ? <ConnaitBoard /> : game === 'bombe' ? <BombBoard /> : game === 'photomaton' ? <PhotoBoard /> : game === 'sourire' ? <SourireBoard /> : game === 'brasdefer' ? <BrasBoard /> : game === 'flash' ? <FlashBoard /> : game === 'cadavre' ? <CadBoard /> : game === 'interdits' ? <InterditsBoard /> : game === 'motamot' ? <StoryBoard /> : game === 'agents' ? <AgentsBoard /> : game === 'fredonne' ? <FredBoard /> : game === 'alibi' ? <AlibiBoard /> : game === 'pitch' ? <PitchBoard /> : game === 'cerveau' ? <CerveauBoard /> : game === 'verite' ? <AovBoard /> : game === 'quiz' ? <QuizBoard /> : game === 'foot' || game === 'oreillers' || game === 'drap' ? <ArcadeBoard /> : <Board />}
       </div>
       <EndDock onAsk={quit.ask} onSwitch={picker.isHost ? picker.open : undefined} />
+      <KeepMemory />
       {quit.dialog}
       {picker.dialog}
     </div>

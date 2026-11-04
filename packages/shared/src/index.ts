@@ -28,3 +28,4 @@ export * from './foot';
 export * from './oreillers';
 export * from './drap';
 export * from './musique';
+export * from './account';

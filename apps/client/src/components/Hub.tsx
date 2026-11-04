@@ -11,6 +11,7 @@ import { ConnaitArt } from './connait/ConnaitArt';
 import { FlashArt } from './flash/FlashArt';
 import { AovArt } from './verite/AovArt';
 import { Wordmark } from './Logo';
+import { AccountButton } from './account/AccountButton';
 import { QuizArt } from './quiz/QuizArt';
 import { StoryArt } from './motamot/StoryArt';
 import './photo/photo.css';
@@ -68,9 +69,12 @@ export function Hub({ onPick, onCode }: { onPick: (id: GameId) => void; onCode: 
         <div className="flex items-center gap-2.5">
           <Wordmark className="h-11 w-auto" animated={intro} />
         </div>
-        <button type="button" className="btn-ghost" onClick={onCode}>
-          J'ai un code de salon
-        </button>
+        <div className="flex items-center gap-2">
+          <button type="button" className="btn-ghost" onClick={onCode}>
+            J'ai un code de salon
+          </button>
+          <AccountButton />
+        </div>
       </header>
 
       <section className="px-4 pt-8 text-center sm:pt-12">

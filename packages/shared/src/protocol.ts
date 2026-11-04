@@ -249,6 +249,8 @@ export type RtcSignal =
 export interface RoomState {
   code: string;
   game: RoomGame;
+  /** Partie en cours ou dernière partie (relie les images de l'album à l'historique), null avant la première. */
+  party: string | null;
   phase: Phase;
   settings: RoomSettings;
   players: PlayerPublic[];
