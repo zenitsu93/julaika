@@ -36,7 +36,7 @@ export function AgentsBoard() {
   const phase = useGame((s) => s.room!.phase);
   return (
     <section className="flex min-w-0 flex-col gap-3">
-      <div className="panel relative min-h-[26rem] overflow-hidden">
+      <div className="panel relative min-h-[26rem] overflow-clip">
         {phase === 'lobby' ? (
           <Teaser />
         ) : phase === 'gameEnd' ? (
@@ -167,7 +167,7 @@ function TeamsBar({ a }: { a: AgentsState }) {
       {(['or', 'cacao'] as const).map((t) => (
         <div key={t} data-slot className={`ag-team ag-team-${t} relative flex items-center gap-2 rounded-xl px-2.5 py-2 sm:px-3`}>
           <span className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em]">
+            <span className="flex items-center gap-1.5 text-xs font-semibold">
               Équipe {AGENTS_TEAM_NAME[t]}
               {a.myTeam === t && <span className="rounded-full bg-page/70 px-1.5 text-[10px] normal-case tracking-normal text-ink">toi</span>}
             </span>
@@ -273,7 +273,7 @@ function ClueZone({ a, phase, role }: { a: AgentsState; phase: string; role: 'cl
   return (
     <div className="flex min-h-14 flex-wrap items-center justify-center gap-x-4 gap-y-2">
       <span key={a.history.length} className="ag-dossier w-stamp flex items-center gap-3 rounded-xl px-4 py-2">
-        <span className="text-xs uppercase tracking-[0.16em] opacity-70">Indice</span>
+        <span className="text-xs font-medium opacity-70">Indice</span>
         <span className="text-2xl font-bold tracking-[-0.02em]">
           {a.clue.word.split('').map((ch, i) => (
             <span key={i} className="m-letter" style={{ animationDelay: `${150 + i * 35}ms` }}>
@@ -338,7 +338,7 @@ function ClueForm({ a }: { a: AgentsState }) {
 
   return (
     <form ref={form} onSubmit={submit} className="m-rise mx-auto flex w-full max-w-2xl flex-col items-center gap-2">
-      <p className="text-sm text-muted">
+      <p className="text-sm text-muted max-sm:text-xs">
         Tu vois la clé : relie le plus d'agents <span className={`ag-chip ag-face-${a.mode === 'duo' ? 'or' : a.turn}`}>{a.mode === 'duo' ? 'dorés' : AGENTS_TEAM_NAME[a.turn]}</span> en un seul mot ({mine} à trouver).
       </p>
       <div className="flex w-full flex-wrap items-center justify-center gap-2">
@@ -354,7 +354,7 @@ function ClueForm({ a }: { a: AgentsState }) {
           }}
           aria-invalid={Boolean(error)}
         />
-        <div ref={counter.container} role="group" aria-label="Nombre de cartes" className="relative flex rounded-md border border-edge p-0.5 max-sm:w-full">
+        <div ref={counter.container} role="group" aria-label="Nombre de cartes" className="relative flex rounded-md border border-edge p-0.5 max-sm:order-last max-sm:w-full">
           <span ref={counter.indicator} className="m-indicator rounded bg-primary" />
           {Array.from({ length: AGENTS_COUNT_MAX }, (_, i) => i + 1).map((n) => (
             <button
@@ -479,7 +479,7 @@ function Card({
           send({ point: mine ? -1 : index });
         }}
         aria-label={`${card.word}${revealed ? ` : ${revealed}` : ''}`}
-        className={`ag-card ${revealed ? `ag-flip ag-face-${revealed}` : shownTint ? `ag-tint-${shownTint}` : ''} relative flex aspect-[4/3] w-full flex-col items-center justify-center overflow-hidden rounded-lg border px-0.5 text-center outline-none focus-visible:ring-2 focus-visible:ring-info sm:aspect-[16/10] sm:rounded-xl`}
+        className={`ag-card ${revealed ? `ag-flip ag-face-${revealed}` : shownTint ? `ag-tint-${shownTint}` : ''} relative flex aspect-[4/3] w-full flex-col items-center justify-center overflow-hidden rounded-lg border px-0.5 text-center max-sm:aspect-auto max-sm:h-[clamp(2.375rem,7dvh,3.25rem)] outline-none focus-visible:ring-2 focus-visible:ring-info sm:aspect-[16/10] sm:rounded-xl`}
       >
         {revealed && <AgentGlyph kind={revealed} className="ag-glyph absolute inset-x-0 top-1 mx-auto h-[55%] opacity-80" />}
         {/* Téléphone : minuscules à 12 px plutôt que des capitales à 10 px coupées en deux (« CALEN-DRIER »). */}
@@ -596,7 +596,7 @@ function Finale() {
         <div className="mb-1 flex items-center justify-center gap-4">
           {(['or', 'cacao'] as const).map((t) => (
             <span key={t} className={`ag-face-${t} m-pop flex flex-col rounded-xl px-5 py-2`}>
-              <span className="text-xs uppercase tracking-[0.14em]">{AGENTS_TEAM_NAME[t]}</span>
+              <span className="text-xs font-medium">{AGENTS_TEAM_NAME[t]}</span>
               <span className="font-mono text-4xl font-bold">{wins(t)}</span>
             </span>
           ))}

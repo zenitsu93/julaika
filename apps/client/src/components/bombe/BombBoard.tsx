@@ -17,7 +17,7 @@ export function BombBoard() {
   const phase = useGame((s) => s.room!.phase);
   return (
     <section className="flex min-w-0 flex-col gap-3">
-      <div className="panel relative min-h-[32rem] overflow-hidden">
+      <div className="panel relative min-h-[32rem] overflow-clip">
         <Arena />
         <Presence>
           {phase === 'lobby' ? (

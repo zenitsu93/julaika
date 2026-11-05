@@ -10,6 +10,8 @@ import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
 import { Polaroid, SaveButton } from '../Polaroid';
 import './photo.css';
+import { Camera } from 'lucide-react';
+import { ICON } from '../../lib/icon';
 
 /** Inclinaison d'un tirage posé sur la table : stable pour un joueur, variée d'un joueur à l'autre. */
 const tiltOf = (id: string, round = 0) => {
@@ -25,7 +27,7 @@ export function PhotoBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       <PhotoBar />
-      <div className="panel relative min-h-[30rem] overflow-hidden bg-[radial-gradient(120%_80%_at_50%_0%,color-mix(in_oklab,var(--color-accent)_9%,transparent),transparent_70%)]">
+      <div className="panel relative min-h-[30rem] overflow-clip bg-[radial-gradient(120%_80%_at_50%_0%,color-mix(in_oklab,var(--color-accent)_9%,transparent),transparent_70%)]">
         {phase === 'pose' ? <Booth /> : phase === 'vote' || phase === 'reveal' ? <Table /> : <Teaser />}
         <Presence>
           {phase === 'lobby' ? (
@@ -89,7 +91,7 @@ function PhotoBar() {
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-      <ol ref={list} className="flex flex-wrap justify-center gap-1.5" aria-label="Joueurs">
+      <ol ref={list} className="chip-row flex flex-wrap justify-center gap-1.5" aria-label="Joueurs">
         {ordered.map((p) => {
           const finished = live && done.has(p.id);
           const playing = live && photo?.players.includes(p.id);
@@ -270,7 +272,7 @@ function Shoot({ photo }: { photo: PhotoState }) {
   return (
     <div className="flex min-h-[30rem] flex-col items-center gap-5 p-4 sm:p-6">
       <header className="max-w-2xl text-center">
-        <p className="m-rise text-xs font-medium uppercase tracking-[0.18em] text-muted">
+        <p className="m-rise text-xs font-medium text-muted">
           Manche {photo.round}/{photo.rounds} · Ta meilleure tête pour…
         </p>
         <h2 className="mt-2 text-2xl font-semibold leading-tight tracking-[-0.03em] text-balance sm:text-4xl">
@@ -357,11 +359,11 @@ function NoCamera({ joined, avatar, counting }: { joined: boolean; avatar: numbe
   return (
     <div className="absolute inset-0 grid place-items-center p-6 text-center text-[#f4ead2]">
       <div>
-        <span className="m-breathe inline-block text-5xl">{avatarOf(avatar)}</span>
+        <span className="inline-block text-5xl">{avatarOf(avatar)}</span>
         {/* Pendant le décompte, la phrase s'efface : le gros chiffre ne se pose plus dessus. */}
         <p className={`mt-2 text-sm transition-[opacity,filter] duration-300 ${counting ? 'opacity-0 blur-sm' : 'opacity-80'}`}>Sans caméra, ton polaroid restera dans le noir.</p>
         <button ref={btn} type="button" className="btn mt-3 bg-[#fbf8f1] text-[#2a1a12]" onClick={() => void (joined ? call.toggle('video') : call.join(true, false))}>
-          📷 Allumer ma caméra
+          <Camera {...ICON} /> Allumer ma caméra
         </button>
       </div>
     </div>
@@ -376,7 +378,7 @@ function Waiting({ photo }: { photo: PhotoState }) {
       <p className="text-muted">{waiting.length ? 'Les autres tirages se développent…' : 'Tout le monde a posé !'}</p>
       <ul className="mt-2 flex justify-center gap-2">
         {waiting.map((p) => (
-          <li key={p.id} className="m-pop m-breathe text-2xl" title={p.name}>
+          <li key={p.id} className="m-pop text-2xl" title={p.name}>
             {avatarOf(p.avatar)}
           </li>
         ))}
@@ -430,7 +432,7 @@ function Table() {
       <canvas ref={confettiRef} className="pointer-events-none absolute inset-0 z-10 size-full" aria-hidden />
       {!reveal && photo.opensAt && <VoteIntro key={photo.round} opensAt={photo.opensAt} prompt={photo.prompt} paused={photo.paused} />}
       <header className="text-center">
-        <p className="m-rise text-xs font-medium uppercase tracking-[0.18em] text-muted">
+        <p className="m-rise text-xs font-medium text-muted">
           Manche {photo.round}/{photo.rounds} · {reveal ? 'Les résultats' : playing && toRate.length ? `Note les photos (${rated}/${toRate.length})` : 'Les autres notent…'}
         </p>
         <h2 key={reveal ? 'r' : 'v'} className="m-pop mt-1 text-xl font-semibold tracking-[-0.03em] sm:text-2xl">
@@ -507,7 +509,7 @@ function VoteIntro({ opensAt, prompt, paused }: { opensAt: number; prompt: strin
       aria-live="polite"
     >
       <div className="m-card max-w-md text-center">
-        <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted">Place à la notation</p>
+        <p className="text-xs font-medium text-muted">Place à la notation</p>
         <p className="mt-2 font-[Caveat,'Segoe_Print',cursive] text-3xl font-bold leading-tight text-balance sm:text-4xl">« {prompt} »</p>
         <p className="mt-2 text-sm text-muted">Regardez bien les tirages : qui a le mieux joué la consigne ?</p>
         <div className="relative mx-auto mt-4 grid size-16 place-items-center">
@@ -558,7 +560,7 @@ function Validate({ rated, total, validated, disabled }: { rated: number; total:
               <span className="text-muted">· on attend</span>
               <span className="flex gap-1">
                 {waiting.map((p) => (
-                  <span key={p.id} className="m-breathe" title={p.name}>
+                  <span key={p.id} title={p.name}>
                     {avatarOf(p.avatar)}
                   </span>
                 ))}
@@ -575,7 +577,7 @@ function Validate({ rated, total, validated, disabled }: { rated: number; total:
           onClick={() => net.send({ t: 'photo', ready: true })}
           className={`pm-validate btn btn-primary relative overflow-hidden px-5 py-2.5 shadow-lg disabled:opacity-60 ${complete ? 'pm-validate-ready' : ''}`}
         >
-          <span className="relative z-10">{complete ? 'J’ai fini de noter ✓' : `Valider mes notes (${rated}/${total})`}</span>
+          <span className="relative z-10">{complete ? 'J’ai fini de noter' : `Valider mes notes (${rated}/${total})`}</span>
           <span className="pm-validate-fill absolute inset-y-0 left-0 bg-accent/35" style={{ width: `${(rated / total) * 100}%` }} aria-hidden />
         </button>
       )}
@@ -588,7 +590,7 @@ function Developing() {
   return (
     <div className="grid min-h-[30rem] place-items-center p-6 text-center">
       <div>
-        <span className="m-breathe inline-block text-5xl">📸</span>
+        <span className="inline-block text-5xl">📸</span>
         <p className="mt-2 text-muted">Les tirages se développent…</p>
       </div>
     </div>
@@ -689,7 +691,7 @@ function Finale() {
       )}
       {reel.length > 0 && (
         <>
-          <p className="mt-5 text-xs font-medium uppercase tracking-[0.18em] text-muted">Les meilleurs clichés</p>
+          <p className="mt-5 text-xs font-medium text-muted">Les meilleurs clichés</p>
           <div className="mt-3 flex flex-wrap justify-center gap-3">
             {reel.map((r, i) => (
               <div key={r.round} className="w-28">

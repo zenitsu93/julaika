@@ -15,6 +15,7 @@ import {
 import { avatarOf } from '../../lib/avatars';
 import { BoardCanvas, Pen, replay } from '../../lib/board';
 import { net } from '../../lib/net';
+import { useFitSheet } from '../../lib/fit';
 import { serverNow, useGame } from '../../lib/store';
 import { attachWipe, bump, confetti, Presence, reducedMotion, useCountUp, useFlip } from '../../motion';
 import { CallBar } from '../CallBar';
@@ -37,7 +38,7 @@ export function FlashBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       <FlashBar />
-      <div className="panel relative min-h-[30rem] overflow-hidden bg-[radial-gradient(120%_80%_at_50%_0%,color-mix(in_oklab,var(--color-accent)_8%,transparent),transparent_70%)]">
+      <div className="panel relative min-h-[30rem] overflow-clip bg-[radial-gradient(120%_80%_at_50%_0%,color-mix(in_oklab,var(--color-accent)_8%,transparent),transparent_70%)]">
         {phase === 'memorize' ? <Memorize /> : phase === 'draw' ? <DrawStage /> : phase === 'vote' || phase === 'reveal' ? <Gallery /> : <Teaser />}
         <Presence>
           {phase === 'lobby' ? (
@@ -123,7 +124,7 @@ function FlashBar() {
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-      <ol ref={list} className="flex flex-wrap justify-center gap-1.5" aria-label="Joueurs">
+      <ol ref={list} className="chip-row flex flex-wrap justify-center gap-1.5" aria-label="Joueurs">
         {ordered.map((p) => {
           const finished = live && done.has(p.id);
           const playing = (live || phase === 'memorize') && flash?.players.includes(p.id);
@@ -224,7 +225,7 @@ function Memorize() {
   return (
     <div className="flex min-h-[30rem] flex-col items-center justify-center gap-5 p-4 sm:p-6">
       <header className="text-center">
-        <p className="m-rise text-xs font-medium uppercase tracking-[0.18em] text-muted">
+        <p className="m-rise text-xs font-medium text-muted">
           Image {flash.round}/{flash.rounds} · {showing ? 'Regarde bien…' : 'Ouvre grand les yeux'}
         </p>
         <h2 className="m-pop mt-1 text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">{showing ? 'Mémorise !' : 'Prêt ?'}</h2>
@@ -279,6 +280,9 @@ function DrawStage() {
 /** La feuille : quinze secondes, trois couleurs, un chrono qui rougit sur la fin. */
 function Sheet({ flash, done }: { flash: FlashState; done: boolean }) {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
+  const tools = useRef<HTMLDivElement>(null);
+  useFitSheet(frame, canvas, tools);
   const wipe = useRef<HTMLCanvasElement>(null);
   const [sheet] = useState(() => new BoardCanvas());
   const [pen] = useState(() => {
@@ -317,11 +321,11 @@ function Sheet({ flash, done }: { flash: FlashState; done: boolean }) {
   const secs = Math.ceil(left / 1000);
 
   return (
-    <div className="flex flex-col items-center gap-3 p-3 sm:p-4">
-      <div className="flex w-full max-w-[max(20rem,calc((100dvh-24rem)*4/3))] items-end justify-between gap-3">
+    <div className="flex flex-col items-center gap-3 p-3 max-sm:gap-2 sm:p-4">
+      <div className="flex w-full max-w-[max(20rem,calc((100dvh-24rem)*4/3))] items-end justify-between gap-3 max-sm:max-w-none">
         <div>
-          <p className="m-rise text-xs uppercase tracking-[0.18em] text-muted">Image {flash.round}/{flash.rounds}</p>
-          <h2 className="m-pop text-xl font-semibold tracking-[-0.03em] sm:text-2xl">Redessine-la de mémoire</h2>
+          <p className="m-rise text-xs font-medium text-muted">Image {flash.round}/{flash.rounds}</p>
+          <h2 className="m-pop text-xl font-semibold tracking-[-0.03em] max-sm:text-lg sm:text-2xl">Redessine-la de mémoire</h2>
         </div>
         <span
           key={urgent ? secs : 'calm'}
@@ -332,7 +336,7 @@ function Sheet({ flash, done }: { flash: FlashState; done: boolean }) {
           <span className="text-base font-medium text-muted">s</span>
         </span>
       </div>
-      <div className={`fl-sheet relative w-full max-w-[max(20rem,calc((100dvh-24rem)*4/3))] overflow-hidden rounded-lg border border-edge ${urgent && !done ? 'fl-urgent' : ''}`}>
+      <div ref={frame} className={`fl-sheet relative w-full max-w-[max(20rem,calc((100dvh-24rem)*4/3))] max-sm:max-w-[max(13rem,calc((100dvh-24rem)*4/3))] overflow-hidden rounded-lg border border-edge ${urgent && !done ? 'fl-urgent' : ''}`}>
         <span className="absolute inset-x-0 top-0 z-[1] h-1.5 bg-black/5" aria-hidden>
           <span
             className={`block h-full origin-left transition-colors duration-300 ${urgent ? 'bg-bad' : 'bg-accent'}`}
@@ -380,7 +384,7 @@ function Sheet({ flash, done }: { flash: FlashState; done: boolean }) {
       </div>
       <Presence>
         {locked ? null : (
-          <div className="flex w-full flex-col items-center gap-2">
+          <div ref={tools} className="act-dock flex w-full flex-col items-center gap-2">
             <Toolbar pen={pen} colors={flash.colors} />
             <button
               className="btn-primary px-6 py-2.5 text-base"
@@ -390,7 +394,7 @@ function Sheet({ flash, done }: { flash: FlashState; done: boolean }) {
                 net.send({ t: 'flash', done: true });
               }}
             >
-              J'ai fini !
+              J'ai fini
             </button>
           </div>
         )}
@@ -535,7 +539,7 @@ function Gallery() {
     <div className="relative flex min-h-[30rem] flex-col items-center gap-4 p-4 sm:p-6">
       <canvas ref={sparks} className="pointer-events-none absolute inset-0 z-10 size-full" aria-hidden />
       <header className="text-center">
-        <p className="m-rise text-xs font-medium uppercase tracking-[0.18em] text-muted">
+        <p className="m-rise text-xs font-medium text-muted">
           Image {flash.round}/{flash.rounds} ·{' '}
           {reveal ? 'Les résultats' : playing && toRate.length ? `Note la ressemblance (${rated}/${toRate.length})` : 'Les autres notent…'}
         </p>
@@ -564,7 +568,7 @@ function Gallery() {
             </div>
           </div>
           <figcaption className="mt-2 text-center">
-            <span className="block text-xs font-medium uppercase tracking-[0.18em] text-accent">L’original</span>
+            <span className="block text-xs font-medium text-accent">L’original</span>
             <span className="font-script text-2xl leading-none">{FLASH_IMAGES[image]!.name}</span>
           </figcaption>
         </figure>
@@ -578,7 +582,7 @@ function Waiting() {
   return (
     <div className="grid min-h-[30rem] place-items-center p-6 text-center">
       <div>
-        <span className="m-breathe inline-block text-5xl">🖼️</span>
+        <span className="inline-block text-5xl">🖼️</span>
         <p className="mt-2 text-muted">On ramasse les croquis…</p>
       </div>
     </div>
@@ -630,7 +634,7 @@ function Finale({ reel }: { reel: Best[] }) {
       )}
       {reel.length > 0 && (
         <>
-          <p className="mt-5 text-xs font-medium uppercase tracking-[0.18em] text-muted">L’original et sa meilleure copie</p>
+          <p className="mt-5 text-xs font-medium text-muted">L’original et sa meilleure copie</p>
           <div className="mt-3 space-y-2">
             {reel.map((r, i) => (
               <div key={r.round} className="m-rise grid grid-cols-2 items-center gap-2" style={{ animationDelay: `${600 + i * 160}ms` }}>

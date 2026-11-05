@@ -9,6 +9,8 @@ import { animate, bump, confetti, Presence, reducedMotion, shake, Ticker, useCou
 import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
 import './fred.css';
+import { Dices, Headphones, Mic, MicOff } from 'lucide-react';
+import { ICON } from '../../lib/icon';
 
 /** Plateau de Fredonne ! : la platine (ou la caméra du chanteur), l'égaliseur, et la visio dessous. */
 export function FredBoard() {
@@ -18,7 +20,7 @@ export function FredBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       {f && <Turns f={f} />}
-      <div className="panel relative min-h-[28rem] overflow-hidden">
+      <div className="panel relative min-h-[28rem] overflow-clip">
         {phase === 'lobby' || !f ? <Teaser /> : phase === 'pick' ? <Pick key={f.turn} f={f} /> : phase === 'reveal' ? <Reveal key={f.turn} f={f} /> : <Hum key={f.turn} f={f} />}
         <Presence>
           {phase === 'lobby' ? (
@@ -161,7 +163,7 @@ function Pick({ f }: { f: FredState }) {
   }
 
   return (
-    <div className="flex min-h-[28rem] flex-col items-center justify-center gap-5 p-4 sm:p-6">
+    <div className="flex min-h-[28rem] flex-col items-center justify-center gap-5 p-4 max-sm:gap-3 max-sm:p-3 sm:p-6">
       <div className="text-center">
         <h2 className="text-2xl font-semibold tracking-[-0.03em]">Choisis ta chanson</h2>
         <p className="text-sm text-muted">
@@ -183,7 +185,7 @@ function Pick({ f }: { f: FredState }) {
           net.send({ t: 'fred', reroll: true });
         }}
       >
-        {f.rerolled ? 'Plus d’autres chansons ce tour-ci' : '🎲 Je n’en connais aucune'}
+        {f.rerolled ? 'Plus d’autres chansons ce tour-ci' : <><Dices {...ICON} /> Je n’en connais aucune</>}
       </button>
     </div>
   );
@@ -198,7 +200,7 @@ function Sleeve({ song, index }: { song: FredSong; index: number }) {
       ref={btn}
       type="button"
       style={{ animationDelay: `${index * 90}ms`, '--tilt': `${tilt}deg` } as CSSProperties}
-      className="f-sleeve group relative flex aspect-square flex-col justify-end overflow-visible rounded-xl text-left max-sm:aspect-[3.4/1] outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      className="f-sleeve group relative flex aspect-square flex-col justify-end overflow-visible rounded-xl text-left max-sm:aspect-[4.4/1] outline-none focus-visible:ring-2 focus-visible:ring-accent"
       onClick={() => {
         bump(btn.current, 1.05);
         net.send({ t: 'fred', pick: index });
@@ -282,8 +284,8 @@ function Stage({ f, endsAt, left, total }: { f: FredState; endsAt: number | null
           </span>
         )}
         {singer && !singer.mic && (
-          <span className="m-pop rounded-full bg-bad px-2.5 py-1" style={{ animationDelay: '200ms' }}>
-            🔇 micro fermé
+          <span className="m-pop inline-flex items-center gap-1.5 rounded-full bg-bad px-2.5 py-1" style={{ animationDelay: '200ms' }}>
+            <MicOff {...ICON} /> micro fermé
           </span>
         )}
       </div>
@@ -457,17 +459,17 @@ function SingerCard({ f }: { f: FredState }) {
   return (
     <>
       <div className="f-ticket relative overflow-hidden rounded-xl bg-primary p-4 text-on-primary">
-        <p className="text-[11px] uppercase tracking-[0.18em] opacity-70">Ta chanson</p>
+        <p className="text-[11px] font-medium opacity-70">Ta chanson</p>
         <p className="mt-1 text-xl font-semibold leading-snug tracking-[-0.02em]">{f.song?.title ?? '…'}</p>
         <p className="text-sm opacity-75">{f.song?.artist}</p>
         <p className="mt-3 text-xs opacity-70">Fredonne l’air, sans dire les paroles !</p>
       </div>
       {!view.joined || !view.mic ? (
         <button className="btn-primary m-pop f-mic-call py-3 text-base" onClick={() => (view.joined ? void call.toggle('audio') : void call.join(false, true))}>
-          🎙️ Ouvrir mon micro
+          <Mic {...ICON} /> Ouvrir mon micro
         </button>
       ) : (
-        <p className="m-rise rounded-lg border border-good/40 bg-good/10 px-3 py-2 text-sm">🎙️ Micro ouvert, réglé pour la musique. Les autres sont en sourdine.</p>
+        <p className="m-rise rounded-lg border border-good/40 bg-good/10 px-3 py-2 text-sm">Micro ouvert, réglé pour la musique. Les autres sont en sourdine.</p>
       )}
       <div className="panel p-3">
         <p className="mb-2 text-xs font-medium text-muted">Ont trouvé</p>
@@ -503,7 +505,7 @@ function ListenerCard({ f, found }: { f: FredState; found: boolean }) {
   return (
     <>
       <div ref={card} className={`f-ticket relative overflow-hidden rounded-xl p-4 ${found ? 'bg-good text-white' : 'bg-primary text-on-primary'}`}>
-        <p className="text-[11px] uppercase tracking-[0.18em] opacity-70">{found ? 'Trouvé !' : 'Le titre'}</p>
+        <p className="text-[11px] font-medium opacity-70">{found ? 'Trouvé !' : 'Le titre'}</p>
         {found && f.song ? (
           <p className="m-pop mt-1 text-xl font-semibold leading-snug tracking-[-0.02em]">{f.song.title}</p>
         ) : (
@@ -519,10 +521,10 @@ function ListenerCard({ f, found }: { f: FredState; found: boolean }) {
         )}
       </div>
       {view.joined ? (
-        <p className="rounded-lg border border-edge bg-surface px-3 py-2 text-sm text-muted">🔇 Ton micro est en sourdine : écoute bien, et tape le titre.</p>
+        <p className="rounded-lg border border-edge bg-surface px-3 py-2 text-sm text-muted">Ton micro est en sourdine : écoute bien, et tape le titre.</p>
       ) : (
         <button className="btn-primary py-2.5" onClick={() => void call.join(false, false)}>
-          🎧 Écouter le chanteur
+          <Headphones {...ICON} /> Écouter le chanteur
         </button>
       )}
       <p className="text-xs text-muted">Plus tu trouves vite, plus tu marques. Le chanteur gagne des points pour chaque personne qui trouve.</p>
@@ -573,7 +575,7 @@ function Reveal({ f }: { f: FredState }) {
       <canvas ref={burst} className="pointer-events-none absolute inset-0 size-full" aria-hidden />
       <div className="relative">
         <Vinyl spin="off" className="f-stop mx-auto size-32" />
-        <p className="mt-4 text-sm uppercase tracking-[0.2em] text-muted">C’était</p>
+        <p className="mt-4 text-sm font-medium text-muted">C’était</p>
         <p ref={title} className="mt-1 text-4xl font-bold tracking-[-0.04em] sm:text-5xl">
           « {r.song.title} »
         </p>

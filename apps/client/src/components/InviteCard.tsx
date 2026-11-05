@@ -37,7 +37,7 @@ export function InviteCard() {
     <div className="mb-5 rounded-xl border border-edge bg-page p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-muted">Code du salon</p>
+          <p className="text-xs font-medium text-muted">Code du salon</p>
           <p className="inv-code font-mono text-2xl font-bold tracking-[0.3em]" aria-label={`Code ${code}`}>
             {[...code].map((c, i) => (
               <span key={i} style={{ animationDelay: `${120 + i * 60}ms` }} aria-hidden>

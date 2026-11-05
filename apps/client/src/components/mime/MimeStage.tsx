@@ -10,6 +10,8 @@ import { GuessBox } from '../GuessBox';
 import { Polaroid } from '../Polaroid';
 import { SoundBoard } from '../SoundBoard';
 import './mime.css';
+import { Video } from 'lucide-react';
+import { ICON } from '../../lib/icon';
 
 /** Les pads des devineurs : de quoi encourager (ou chambrer) le mimeur, qui n'a pas le droit de parler. */
 const CHEERS: readonly SoundId[] = ['bravo', 'rires', 'criquets', 'boing', 'pouet', 'klaxon'];
@@ -56,7 +58,7 @@ export function MimeStage() {
       ) : (
         <div className="mime-spot m-fade grid size-full place-items-center p-6 text-center">
           <div>
-            <span className="m-breathe inline-block text-7xl">{avatarOf(mimer.avatar)}</span>
+            <span className="inline-block text-7xl">{avatarOf(mimer.avatar)}</span>
             <p className="mt-3 text-xl">
               {self ? (
                 <>À toi de mimer !</>
@@ -76,7 +78,7 @@ export function MimeStage() {
             </p>
             {self && miming && !view.cam && (
               <button className="btn-primary m-pop mt-4" onClick={() => (view.joined ? void call.toggle('video') : void call.join(true, false))}>
-                🎥 Allumer ma caméra
+                <Video {...ICON} /> Allumer ma caméra
               </button>
             )}
           </div>
@@ -164,7 +166,7 @@ function Twist({ self, mimer }: { self: boolean; mimer: string }) {
     <div className="pointer-events-none absolute inset-x-0 top-11 z-10 flex justify-center px-3" aria-live="polite">
       <div key={twist.n} className="mime-twist relative max-w-[78%] overflow-hidden rounded-2xl border-2 border-gold bg-butter px-3 py-1.5 text-center text-ink shadow-xl sm:max-w-none sm:px-4 sm:py-2">
         <span className="mime-twist-glint" aria-hidden />
-        <span className="block font-mono text-[10px] font-bold tracking-[0.25em] text-cacao-2 uppercase">
+        <span className="block font-mono text-[10px] font-bold text-cacao-2">
           Consigne surprise{!self && <span className="max-sm:hidden"> pour {mimer}</span>}
         </span>
         <span className="flex items-center justify-center gap-2 text-base font-semibold sm:text-xl">

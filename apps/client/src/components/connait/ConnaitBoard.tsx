@@ -8,6 +8,8 @@ import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
 import { scaleGap, ScaleDial } from './ConnaitScale';
 import './connait.css';
+import { RefreshCw } from 'lucide-react';
+import { ICON } from '../../lib/icon';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 /** Temps de suspense avant que les cartes se retournent (ms). */
@@ -21,7 +23,7 @@ export function ConnaitBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       <StarBar />
-      <div className="panel relative min-h-[26rem] overflow-hidden">
+      <div className="panel relative min-h-[26rem] overflow-clip">
         {phase === 'lobby' ? (
           <Teaser />
         ) : phase === 'gameEnd' ? (
@@ -81,7 +83,7 @@ function StarBar() {
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-      <ol ref={list} className="flex flex-wrap justify-center gap-1.5" aria-label="Joueurs">
+      <ol ref={list} className="chip-row flex flex-wrap justify-center gap-1.5" aria-label="Joueurs">
         {ordered.map((p) => {
           const star = p.id === k?.starId && phase !== 'lobby' && phase !== 'gameEnd';
           const done = answered.has(p.id);
@@ -181,7 +183,7 @@ function Stage() {
   const question = k.question;
 
   return (
-    <div ref={box} className="relative flex min-h-[26rem] flex-col items-center gap-5 px-4 pb-6 pt-6 sm:px-8">
+    <div ref={box} className="relative flex min-h-[26rem] flex-col items-center gap-5 px-4 pb-6 pt-6 max-sm:gap-3 max-sm:px-3 max-sm:pb-4 max-sm:pt-4 sm:px-8">
       <canvas ref={sparks} className="pointer-events-none absolute inset-0 z-[5] size-full" aria-hidden />
       {phase === 'answer' && <TimeBar endsAt={room.endsAt} turnKey={`${k.turn}-${k.question.topic}`} />}
       <Spotlight star={star} isStar={isStar} topic={question.topic} turn={k.turn} scale={scale} />
@@ -226,16 +228,16 @@ function TimeBar({ endsAt, turnKey }: { endsAt: number | null; turnKey: string }
 /** La vedette sous le projecteur, et le sujet de la question qui tombe mot à mot. */
 function Spotlight({ star, isStar, topic, turn, scale }: { star: PlayerPublic; isStar: boolean; topic: string; turn: number; scale: boolean }) {
   return (
-    <div key={turn} className="flex flex-col items-center gap-2 text-center">
-      <span className="m-pop relative grid size-20 place-items-center rounded-full p-[3px]">
+    <div key={turn} className="flex flex-col items-center gap-2 text-center max-sm:gap-1">
+      <span className="m-pop relative grid size-20 place-items-center rounded-full p-[3px] max-sm:size-14">
         <span className="k-spot absolute inset-0 rounded-full" aria-hidden />
-        <span className="relative grid size-full place-items-center rounded-full bg-surface text-4xl ring-1 ring-edge">{avatarOf(star.avatar)}</span>
+        <span className="relative grid size-full place-items-center rounded-full bg-surface text-4xl ring-1 ring-edge max-sm:text-3xl">{avatarOf(star.avatar)}</span>
       </span>
-      <p className="m-rise text-xs uppercase tracking-[0.18em] text-muted" style={{ animationDelay: '80ms' }}>
+      <p className="m-rise text-xs font-medium text-muted" style={{ animationDelay: '80ms' }}>
         {isStar ? 'À propos de toi' : `À propos de ${star.name}`}
         {scale && <span className="k-scale-tag ml-2 rounded-full bg-accent/20 px-2 py-0.5 normal-case tracking-normal text-ink">au curseur</span>}
       </p>
-      <h2 key={topic} className="max-w-xl text-2xl font-semibold leading-tight tracking-[-0.03em] sm:text-3xl">
+      <h2 key={topic} className="max-w-xl text-2xl font-semibold leading-tight tracking-[-0.03em] max-sm:text-xl sm:text-3xl">
         {topic.split(' ').map((w, i) => (
           <span key={i} className="w-word" style={{ animationDelay: `${120 + i * 60}ms` }}>
             {w}&nbsp;
@@ -297,7 +299,7 @@ function Option({
           bump(btn.current, 1.03);
           pick(index);
         }}
-        className={`k-option m-rise relative flex min-h-16 items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-[transform,border-color,background-color,opacity] duration-300 outline-none focus-visible:ring-2 focus-visible:ring-info disabled:cursor-default ${tone} ${
+        className={`k-option m-rise relative flex min-h-16 items-center gap-3 rounded-xl border px-3.5 py-3 text-left max-sm:min-h-13 max-sm:py-2.5 transition-[transform,border-color,background-color,opacity] duration-300 outline-none focus-visible:ring-2 focus-visible:ring-info disabled:cursor-default ${tone} ${
           reveal ? 'k-flip' : drum ? 'm-shimmer' : ''
         }`}
         style={{ animationDelay: reveal ? `${index * 90}ms` : `${200 + index * 60}ms` }}
@@ -384,7 +386,7 @@ function Footer({ k, isStar, total }: { k: ConnaitState; isStar: boolean; total:
             net.send({ t: 'connait', reroll: true });
           }}
         >
-          ↻ Autre question
+          <RefreshCw {...ICON} /> Autre question
         </button>
       )}
     </div>

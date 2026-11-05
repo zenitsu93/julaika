@@ -158,7 +158,7 @@ export function Dial({ spectrum, target, open, value, movable, onMove, onLock, b
   const label = spectrum ? `Aiguille entre ${spectrum.left} et ${spectrum.right}` : 'Aiguille';
 
   return (
-    <div className="relative mx-auto w-full max-w-[34rem] select-none">
+    <div className="relative mx-auto w-full max-w-[34rem] select-none max-sm:max-w-[min(34rem,calc((100dvh-23rem)*2))]">
       <svg
         ref={svg}
         viewBox={`0 0 ${W} ${CY + 14}`}

@@ -5,6 +5,7 @@ import { BoardCanvas, Pen } from '../../lib/board';
 import { useCall } from '../../lib/call';
 import { cerveauPages, flatten, inkLayers, type CerveauPage } from '../../lib/cerveau';
 import { net } from '../../lib/net';
+import { useFitSheet } from '../../lib/fit';
 import { serverNow, useGame } from '../../lib/store';
 import { attachWipe, bump, confetti, Presence, useCountUp, useSpeaking } from '../../motion';
 import { CallBar } from '../CallBar';
@@ -26,7 +27,7 @@ export function CerveauBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       <DuoBar />
-      <div className="panel relative min-h-[26rem] overflow-hidden">
+      <div className="panel relative min-h-[26rem] overflow-clip">
         {phase === 'album' ? <Album /> : phase === 'lobby' ? <Teaser /> : <Stage key={turn} />}
         <Presence>
           {phase === 'lobby' ? (
@@ -184,7 +185,7 @@ function Stage() {
   const partner = role.index >= 0 ? (cv.duo[1 - role.index] ?? null) : null;
 
   return (
-    <div className="relative grid gap-3 p-3 sm:p-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
+    <div className="relative grid gap-3 p-3 max-sm:gap-2 sm:p-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
       <div className="flex min-w-0 flex-col gap-3">
         {/* À la révélation, le modèle est déjà posé sur le dessin : sur mobile, on ne le répète pas. */}
         <div className={reveal ? 'max-lg:hidden' : ''}>
@@ -211,7 +212,7 @@ function Brief({ cv, index }: { cv: CerveauState; index: number }) {
   return (
     <div className="m-veil absolute inset-0 z-10 grid place-items-center bg-page/80 p-4 backdrop-blur-[3px]">
       <div className="cv-brief m-card w-full max-w-md rounded-2xl border border-edge bg-surface p-6 text-center shadow-xl">
-        <p className="m-rise text-xs uppercase tracking-[0.18em] text-muted">Dessin {cv.turn + 1} sur {cv.turns}</p>
+        <p className="m-rise text-xs font-medium text-muted">Dessin {cv.turn + 1} sur {cv.turns}</p>
         <h2 className="m-pop mt-1 flex items-center justify-center gap-2 text-3xl font-bold tracking-[-0.04em]">
           <span aria-hidden>{info.icon}</span>
           {info.name}
@@ -267,8 +268,9 @@ function ModelCard({ cv, role, partner, reveal }: { cv: CerveauState; role: Retu
   }
 
   return (
-    <figure className="m-0 max-lg:mx-auto max-lg:w-full max-lg:max-w-xs">
-      <div className="cv-model relative aspect-[4/3] overflow-hidden rounded-xl border border-edge bg-butter/40">
+    // Téléphone : le modèle en vignette, sa légende à côté, pour laisser la hauteur à la feuille.
+    <figure className="m-0 max-lg:mx-auto max-lg:w-full max-lg:max-w-xs max-sm:flex max-sm:max-w-none max-sm:items-center max-sm:gap-3">
+      <div className="cv-model relative aspect-[4/3] overflow-hidden rounded-xl border border-edge bg-butter/40 max-sm:w-[min(9.5rem,40%)] max-sm:shrink-0">
         <ModelArt model={cv.model} half={reveal ? null : role.half} />
         {!reveal && role.half && (
           <span className={`absolute top-2 rounded-full bg-surface/90 px-2 py-0.5 text-xs text-muted ${role.half === 'left' ? 'right-2' : 'left-2'}`}>
@@ -276,7 +278,8 @@ function ModelCard({ cv, role, partner, reveal }: { cv: CerveauState; role: Retu
           </span>
         )}
       </div>
-      <figcaption className="mt-1.5 flex items-center justify-between gap-2 text-sm">
+      <div className="min-w-0 max-sm:flex-1">
+      <figcaption className="mt-1.5 flex items-center justify-between gap-2 text-sm max-sm:mt-0 max-sm:flex-col max-sm:items-start max-sm:gap-0">
         <span className="text-muted">Modèle</span>
         <b className={cv.kind === 'guide' && !reveal && role.index === 0 ? 'cv-secret' : ''} title={cv.kind === 'guide' && !reveal ? 'Ne le dis pas !' : undefined}>
           {cv.model.name}
@@ -285,6 +288,7 @@ function ModelCard({ cv, role, partner, reveal }: { cv: CerveauState; role: Retu
       {cv.kind === 'guide' && role.index === 0 && !reveal && (
         <p className="m-rise mt-1 text-xs text-muted">Décris les formes, leur taille, leur place. Interdit de dire ce que c'est !</p>
       )}
+      </div>
     </figure>
   );
 }
@@ -320,6 +324,9 @@ function ModelArt({ model, half, overlay = false }: { model: CerveauModel; half:
 /** Le tableau commun : un calque par membre du binôme, et le modèle qui s'y pose à la révélation. */
 function Sheet({ cv, role, reveal, briefing }: { cv: CerveauState; role: ReturnType<typeof roleOf>; reveal: boolean; briefing: boolean }) {
   const c0 = useRef<HTMLCanvasElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
+  const tools = useRef<HTMLDivElement>(null);
+  useFitSheet(frame, c0, tools, { active: !reveal });
   const c1 = useRef<HTMLCanvasElement>(null);
   const ghostCanvas = useRef<HTMLCanvasElement>(null);
   const wipe = useRef<HTMLCanvasElement>(null);
@@ -362,8 +369,8 @@ function Sheet({ cv, role, reveal, briefing }: { cv: CerveauState; role: ReturnT
   };
 
   return (
-    <div className="flex min-w-0 flex-col items-center gap-3">
-      <div className={`cv-sheet relative w-full overflow-hidden rounded-xl border border-edge bg-white ${reveal ? 'is-reveal' : ''}`}>
+    <div className="flex min-w-0 flex-col items-center gap-3 max-sm:gap-2">
+      <div ref={frame} className={`cv-sheet relative w-full overflow-hidden max-sm:max-w-[max(13rem,calc((100dvh-27rem)*4/3))] rounded-xl border border-edge bg-white ${reveal ? 'is-reveal' : ''}`}>
         <canvas ref={c0} width={CANVAS_W} height={CANVAS_H} className="block aspect-[4/3] w-full" />
         <canvas ref={c1} width={CANVAS_W} height={CANVAS_H} className="pointer-events-none absolute inset-0 size-full" />
         {cv.kind === 'moitie' && !reveal && (
@@ -394,7 +401,11 @@ function Sheet({ cv, role, reveal, briefing }: { cv: CerveauState; role: ReturnT
         <canvas ref={wipe} className="pointer-events-none absolute inset-0 size-full" aria-hidden />
         {reveal && <Score cv={cv} />}
       </div>
-      {role.index >= 0 && !reveal && <DuoControls cv={cv} pen={pen} canDraw={canDraw} drawer={role.layer !== null} done={done} />}
+      {role.index >= 0 && !reveal && (
+        <div ref={tools} className="act-dock w-full">
+          <DuoControls cv={cv} pen={pen} canDraw={canDraw} drawer={role.layer !== null} done={done} />
+        </div>
+      )}
       {role.index < 0 && !reveal && <p className="text-sm text-muted">Tu regardes : le dessin se fait sous tes yeux.</p>}
     </div>
   );
@@ -423,7 +434,7 @@ function DuoControls({ cv, pen, canDraw, drawer, done }: { cv: CerveauState; pen
             net.send({ t: 'cerveau', done: !done });
           }}
         >
-          {done ? 'Attends, on retouche' : 'On a fini !'}
+          {done ? 'Attends, on retouche' : 'On a fini'}
         </button>
         <span className="text-sm text-muted" aria-live="polite">
           {partnerDone ? (
@@ -452,7 +463,7 @@ function Score({ cv }: { cv: CerveauState }) {
   const shown = useCountUp(score, { from: 0, delay: 900, duration: 1100 });
   return (
     <div className="cv-score pointer-events-none absolute right-3 bottom-3 rounded-2xl bg-primary px-4 py-2 text-center text-on-primary shadow-lg">
-      <span className="block text-[10px] uppercase tracking-[0.18em] opacity-75">Ressemblance</span>
+      <span className="block text-[10px] font-medium opacity-75">Ressemblance</span>
       <b className="block font-logo text-4xl leading-none tabular-nums">{shown} %</b>
     </div>
   );
@@ -481,7 +492,7 @@ function Verdict({ cv }: { cv: CerveauState }) {
   return (
     <div className="cv-verdict relative overflow-hidden rounded-xl border border-edge bg-surface p-4 text-center">
       <canvas ref={burst} className="pointer-events-none absolute inset-0 size-full" aria-hidden />
-      <p className="text-xs uppercase tracking-[0.18em] text-muted">{names}</p>
+      <p className="text-xs font-medium text-muted">{names}</p>
       <h3 className="cv-verdict-title mt-1 text-2xl font-bold tracking-[-0.03em]">{v.title}</h3>
       <p className="m-rise text-sm text-muted" style={{ animationDelay: '2s' }}>
         {v.line}
@@ -518,7 +529,7 @@ function Album() {
   return (
     <div className="flex flex-col items-center gap-5 p-4 sm:p-6">
       <div className="text-center">
-        <p className="m-rise text-xs uppercase tracking-[0.18em] text-muted">Fin de partie</p>
+        <p className="m-rise text-xs font-medium text-muted">Fin de partie</p>
         <h2 className="m-pop mt-1 text-3xl font-bold tracking-[-0.04em]">
           <span className="accroche mr-2 text-4xl text-accent">complicité</span>
           <span className="tabular-nums">{shown} %</span>

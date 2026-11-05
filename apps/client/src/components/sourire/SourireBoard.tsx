@@ -9,6 +9,8 @@ import { bump, confetti, Presence, Ticker, useCountUp } from '../../motion';
 import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
 import { SoundBoard } from '../SoundBoard';
+import { Dices, Video } from 'lucide-react';
+import { ICON } from '../../lib/icon';
 
 const WARP_INFO: Record<WarpId, { label: string; emoji: string }> = {
   bulle: { label: 'Gros nez', emoji: '🔍' },
@@ -26,7 +28,7 @@ export function SourireBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       {s && <Duels s={s} />}
-      <div className="panel relative min-h-[28rem] overflow-hidden">
+      <div className="panel relative min-h-[28rem] overflow-clip">
         {phase === 'lobby' || !s ? <Teaser /> : phase === 'faceoff' ? <Faceoff key={s.turn} s={s} /> : phase === 'verdict' ? <Verdict key={s.turn} s={s} /> : <Duel key={s.turn} s={s} />}
         <Presence>
           {phase === 'lobby' ? (
@@ -119,13 +121,13 @@ function Face({ id, big, pip, label, tone }: { id: string; big?: boolean; pip?: 
     <figure
       className={`s-face relative m-0 overflow-hidden rounded-xl border bg-page transition-[box-shadow,border-color] duration-500 ${
         tone === 'attack' ? 'border-accent/70' : 'border-edge'
-      } ${big ? 'aspect-[4/3]' : 'aspect-[4/3] sm:aspect-[3/4]'}`}
+      } ${big ? 'aspect-[4/3] max-sm:aspect-auto max-sm:h-[clamp(10rem,32dvh,17rem)]' : 'aspect-[4/3] sm:aspect-[3/4]'}`}
     >
       {/* Le son passe déjà par la visio : la vidéo ici reste muette. */}
       <video ref={video} autoPlay playsInline muted className={`size-full object-cover ${self ? '-scale-x-100' : ''} ${cam ? '' : 'invisible'}`} />
       {!cam && (
         <span className="absolute inset-0 grid place-items-center">
-          <span className="m-breathe text-6xl sm:text-7xl">{avatarOf(player?.avatar ?? 0)}</span>
+          <span className="text-6xl sm:text-7xl">{avatarOf(player?.avatar ?? 0)}</span>
         </span>
       )}
       <figcaption className="absolute inset-x-2 bottom-2 flex items-center justify-between gap-2">
@@ -223,7 +225,9 @@ function Duel({ s }: { s: SourireState }) {
             </span>
           )}
         </div>
-        <SmiledButton defender={defender} />
+        <div className="act-dock">
+          <SmiledButton defender={defender} />
+        </div>
       </div>
       <aside className="flex flex-col gap-3">
         {attacker ? <Weapons s={s} /> : defender ? <Stoic /> : <Spectator />}
@@ -286,7 +290,7 @@ function SmiledButton({ defender }: { defender: boolean }) {
         net.send({ t: 'sourire', smiled: true });
       }}
     >
-      {defender ? '🙈 J’avoue, j’ai souri' : '😁 Il a souri !'}
+      {defender ? 'J’avoue, j’ai souri' : 'Il a souri'}
       <span className="kbd border-current/30 text-current/70 max-sm:hidden">Espace</span>
     </button>
   );
@@ -308,7 +312,7 @@ function Weapons({ s }: { s: SourireState }) {
   return (
     <>
       <div ref={card} className="s-dare relative overflow-hidden rounded-xl bg-primary p-4 text-on-primary">
-        <p className="text-[11px] uppercase tracking-[0.18em] opacity-70">Ta mission</p>
+        <p className="text-[11px] font-medium opacity-70">Ta mission</p>
         <p key={s.dare} className="s-dare-text mt-1 text-lg font-semibold leading-snug tracking-[-0.02em]">
           {s.dare ?? '…'}
         </p>
@@ -319,7 +323,7 @@ function Weapons({ s }: { s: SourireState }) {
             net.send({ t: 'sourire', dare: true });
           }}
         >
-          🎲 Une autre
+          <Dices {...ICON} /> Une autre
         </button>
       </div>
 
@@ -347,7 +351,7 @@ function Weapons({ s }: { s: SourireState }) {
           </div>
         ) : (
           <button className="btn-ghost w-full text-xs" onClick={() => (view.joined ? call.toggle('video') : call.join(true, true))}>
-            🎥 Allume ta caméra pour te déformer
+            <Video {...ICON} /> Allume ta caméra pour te déformer
           </button>
         )}
       </div>

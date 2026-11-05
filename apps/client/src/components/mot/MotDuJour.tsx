@@ -6,6 +6,7 @@ import { bump, confetti, reducedMotion, shake, Ticker } from '../../motion';
 import { PencilReaction } from '../Reaction';
 import { MotBoard } from './MotBoard';
 import { TILE } from './tiles';
+import { MusicDock } from '../MusicPlayer';
 
 /** Temps d'une case qui se retourne et décalage entre deux cases. */
 const FLIP = 500;
@@ -159,27 +160,30 @@ export function MotDuJour({ onBack }: { onBack: () => void }) {
   return (
     <main className="min-h-full pb-10">
       <canvas ref={sky} className="pointer-events-none fixed inset-0 z-30 size-full" aria-hidden />
-      <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
+      <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 [@media(max-height:600px)]:py-2">
         <button type="button" onClick={onBack} className="btn -ml-3 text-muted hover:text-ink">
           <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M15 18l-6-6 6-6" />
           </svg>
           Tous les jeux
         </button>
-        {!editing && name && (
-          <button type="button" className="btn-ghost m-pop" onClick={() => setEditing(true)} title="Changer de pseudo">
-            <span className="text-lg leading-none">{avatarOf(avatar)}</span>
-            {name}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {!editing && name && (
+            <button type="button" className="btn-ghost m-pop" onClick={() => setEditing(true)} title="Changer de pseudo">
+              <span className="text-lg leading-none">{avatarOf(avatar)}</span>
+              {name}
+            </button>
+          )}
+          <MusicDock />
+        </div>
       </header>
 
       <div className="mx-auto grid max-w-6xl gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <section className="flex flex-col items-center">
-          <div className="m-rise mb-5 text-center">
-            <p className="font-mono text-xs uppercase tracking-widest text-muted">{state ? `n° ${state.number}` : '…'}</p>
-            <h1 className="text-4xl font-semibold leading-none tracking-[-0.045em] sm:text-5xl">
-              <span className="accroche text-4xl text-muted sm:text-5xl">devine le</span>
+          <div className="m-rise mb-5 text-center max-sm:mb-3">
+            <p className="font-mono text-xs text-muted">{state ? `n° ${state.number}` : '…'}</p>
+            <h1 className="text-4xl font-semibold leading-none tracking-[-0.045em] max-sm:text-[1.75rem] sm:text-5xl">
+              <span className="accroche text-4xl text-muted max-sm:text-[1.75rem] sm:text-5xl">devine le</span>
               Mot du jour
             </h1>
           </div>
@@ -233,7 +237,7 @@ export function MotDuJour({ onBack }: { onBack: () => void }) {
             {reaction && <PencilReaction kind={reaction} onDone={() => setReaction(null)} />}
           </div>
 
-          <div className="relative mt-4 h-10 w-full max-w-sm" aria-live="polite">
+          <div className="relative mt-4 h-10 w-full max-w-sm max-sm:mt-2 max-sm:h-8" aria-live="polite">
             {toast && (
               <p key={toast.id} className="m-pop mx-auto w-fit rounded-md bg-primary px-3 py-2 text-sm font-medium text-on-primary shadow-lg">
                 {toast.text}
@@ -267,7 +271,7 @@ function Tile({ className, style, children }: { className: string; style?: CSSPr
     <div
       role="gridcell"
       style={style}
-      className={`grid size-14 place-items-center rounded-lg border-2 text-3xl font-bold uppercase select-none sm:size-16 ${className}`}
+      className={`grid size-14 place-items-center rounded-lg border-2 text-3xl font-bold uppercase select-none max-sm:size-[clamp(2rem,calc((100dvh-24rem)/6),3.5rem)] max-sm:text-[clamp(1.25rem,calc((100dvh-24rem)/11),1.875rem)] sm:size-16 ${className}`}
     >
       {children}
     </div>
@@ -279,7 +283,7 @@ function Keyboard({ keys, disabled, onKey }: { keys: Map<string, LetterMark>; di
     bump(el, 1.08);
     onKey(k);
   };
-  const base = 'btn h-13 min-w-0 flex-1 rounded-md px-0 text-base font-semibold sm:h-14';
+  const base = 'btn h-13 min-w-0 flex-1 rounded-md px-0 text-base font-semibold sm:h-14 [@media(max-height:600px)]:h-11';
   return (
     <div className="w-full max-w-lg space-y-1.5 select-none" aria-label="Clavier">
       {ROWS.map((letters, r) => (
@@ -380,9 +384,9 @@ function EndCard({ state, onNext }: { state: MotState; onNext: () => void }) {
         </p>
       )}
       <button ref={shareBtn} type="button" className="btn-primary mt-4 w-full py-2.5" onClick={share}>
-        {copied ? 'Copié !' : 'Partager mon résultat'}
+        {copied ? 'Copié' : 'Partager mon résultat'}
       </button>
-      <p className="mt-4 text-xs uppercase tracking-widest text-muted">Prochain mot dans</p>
+      <p className="mt-4 text-xs font-medium text-muted">Prochain mot dans</p>
       <Ticker value={left} className="mt-1 font-mono text-2xl font-semibold" />
     </div>
   );

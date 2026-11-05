@@ -19,6 +19,8 @@ import { bump, confetti, Presence, reducedMotion, shake, Ticker, useCountUp } fr
 import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
 import './alibi.css';
+import { Feather, Lock, Scale } from 'lucide-react';
+import { ICON } from '../../lib/icon';
 
 const OBJECTION: Record<AlibiObjection, { label: string; key: string; emoji: string }> = {
   contradiction: { label: 'Contradiction !', key: 'C', emoji: '⚡' },
@@ -36,7 +38,7 @@ export function AlibiBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       {a && <Cast a={a} />}
-      <div ref={panel} className="panel relative min-h-[28rem] overflow-hidden">
+      <div ref={panel} className="panel relative min-h-[28rem] overflow-clip">
         {phase === 'lobby' || !a ? (
           <Teaser />
         ) : phase === 'plot' ? (
@@ -161,7 +163,7 @@ function Cast({ a }: { a: AlibiState }) {
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm">
       <span key={a.case} className="m-rise flex flex-wrap items-center justify-center gap-2">
-        <Chip tone="judge">⚖️ {name(judge)}</Chip>
+        <Chip tone="judge"><Scale {...ICON} /> {name(judge)}</Chip>
         <span className="font-mono text-xs text-muted">juge</span>
         <Chip tone="suspect">
           {avatarOf(s1?.avatar ?? 0)} {name(s1)} & {avatarOf(s2?.avatar ?? 0)} {name(s2)}
@@ -181,7 +183,7 @@ function Cast({ a }: { a: AlibiState }) {
 }
 
 function Chip({ tone, children }: { tone: 'judge' | 'suspect'; children: ReactNode }) {
-  return <span className={`rounded-full border px-2.5 py-1 font-medium ${tone === 'judge' ? 'border-edge bg-surface' : 'border-accent/60 bg-accent/15'}`}>{children}</span>;
+  return <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-medium ${tone === 'judge' ? 'border-edge bg-surface' : 'border-accent/60 bg-accent/15'}`}>{children}</span>;
 }
 
 /** Photo d'identité judiciaire : la caméra (ou l'avatar) devant la toise. */
@@ -202,7 +204,7 @@ function Mug({ id, label, hot = false, small = false }: { id: string; label: str
       <video ref={video} autoPlay playsInline muted className={`relative size-full object-cover ${self ? '-scale-x-100' : ''} ${cam ? '' : 'invisible'}`} />
       {!cam && (
         <span className="absolute inset-0 grid place-items-center">
-          <span className={`m-breathe ${small ? 'text-4xl' : 'text-6xl sm:text-7xl'}`}>{avatarOf(player?.avatar ?? 0)}</span>
+          <span className={`${small ? 'text-4xl' : 'text-6xl sm:text-7xl'}`}>{avatarOf(player?.avatar ?? 0)}</span>
         </span>
       )}
       <figcaption className="absolute inset-x-2 bottom-2 flex">
@@ -255,21 +257,21 @@ function Plot({ a }: { a: AlibiState }) {
   }, [left]);
 
   return (
-    <div className="grid gap-4 p-3 sm:p-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
-      <div className="flex min-w-0 flex-col gap-4">
-        <article className="al-folder relative rounded-2xl p-5 pt-7 sm:p-7 sm:pt-9">
+    <div className="grid gap-4 p-3 max-sm:gap-3 sm:p-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
+      <div className="flex min-w-0 flex-col gap-4 max-sm:gap-3">
+        <article className="al-folder relative rounded-2xl p-5 pt-7 max-sm:p-4 max-sm:pt-6 sm:p-7 sm:pt-9">
           <span className="al-tab absolute -top-3 left-6 rounded-t-lg px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-[0.2em]">
             Dossier n° {String(a.case + 1).padStart(3, '0')}
           </span>
           <span className="al-stamp-in absolute right-4 top-3 rotate-[-8deg] rounded-md border-[3px] border-bad px-2 py-0.5 font-mono text-xs font-black uppercase tracking-widest text-bad">
             Accusés
           </span>
-          <p className="text-[11px] uppercase tracking-[0.18em] opacity-70">Les faits</p>
-          <p className="mt-2 min-h-[4.5em] text-xl font-semibold leading-snug tracking-[-0.02em] sm:text-2xl" aria-label={a.accusation}>
+          <p className="text-[11px] font-medium opacity-70">Les faits</p>
+          <p className="mt-2 min-h-[4.5em] text-xl font-semibold leading-snug tracking-[-0.02em] max-sm:mt-1 max-sm:text-lg sm:text-2xl" aria-label={a.accusation}>
             <span aria-hidden>{typed}</span>
             <span className="al-caret" aria-hidden />
           </p>
-          <p className="mt-3 text-sm opacity-80">Où étiez-vous, et qu'avez-vous fait ? Mettez-vous d'accord avant l'audience.</p>
+          <p className="mt-3 text-sm opacity-80 max-sm:mt-2 max-sm:text-xs">Où étiez-vous, et qu'avez-vous fait ? Mettez-vous d'accord avant l'audience.</p>
         </article>
         <div className="flex items-center gap-3">
           <span ref={fuse} className="al-fuse relative h-2.5 flex-1 overflow-hidden rounded-full bg-edge" aria-hidden>
@@ -279,7 +281,8 @@ function Plot({ a }: { a: AlibiState }) {
             <Ticker value={left} />
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        {/* Téléphone : les complices se lisent déjà en haut ; leur carnet passe avant leurs têtes. */}
+        <div className={`grid grid-cols-2 gap-3 ${suspect ? 'max-sm:hidden' : ''}`}>
           {a.suspects.map((id, i) => (
             <div key={id} className={i ? 'al-in-right' : 'al-in-left'}>
               <Mug id={id} label="complice" small />
@@ -331,9 +334,9 @@ function Notebook({ a }: { a: AlibiState }) {
   };
 
   return (
-    <div className="al-notebook flex min-h-64 flex-1 flex-col rounded-xl p-3 pl-8">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Carnet des complices · secret</p>
-      <ol ref={list} className="mt-1 max-h-72 flex-1 overflow-y-auto pr-1 leading-[1.55rem]">
+    <div className="al-notebook flex min-h-64 flex-1 flex-col rounded-xl p-3 pl-8 max-sm:min-h-40">
+      <p className="text-[11px] font-semibold text-muted">Carnet des complices · secret</p>
+      <ol ref={list} className="mt-1 max-h-72 flex-1 max-sm:max-h-[22dvh] overflow-y-auto pr-1 leading-[1.55rem]">
         {notes.length === 0 && <li className="al-hand text-xl text-muted">On était où, déjà ?</li>}
         {notes.map((n, i) => (
           <li key={i} className={`al-note al-hand text-xl leading-[1.55rem] ${n.by === selfId ? '' : 'text-accent'}`} style={{ '--tilt': `${((i * 37) % 5) - 2}deg` } as CSSProperties}>
@@ -423,7 +426,7 @@ function Trial({ a, panel }: { a: AlibiState; panel: RefObject<HTMLDivElement | 
             <div key={n} className="al-exhibit relative w-full max-w-md">
               <span className="al-string" aria-hidden />
               <div className="al-tag rounded-xl p-4 text-center">
-                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] opacity-70">
+                <p className="font-mono text-[11px] font-bold opacity-70">
                   Pièce à conviction n° {n + 1}/{a.total}
                 </p>
                 <p className="mt-1.5 text-xl font-semibold leading-snug tracking-[-0.02em] sm:text-2xl">{cur.item}</p>
@@ -578,10 +581,10 @@ function Vote({ a }: { a: AlibiState }) {
           a.myVote === null ? (
             <div className="mt-5 grid grid-cols-2 gap-3">
               <button className="al-buzz btn-primary py-4 text-lg" onClick={(e) => (bump(e.currentTarget), net.send({ t: 'alibi', vote: true }))}>
-                🕊️ Acquittés
+                <Feather {...ICON} /> Acquittés
               </button>
               <button className="al-buzz btn bg-bad py-4 text-lg font-semibold text-white" onClick={(e) => (bump(e.currentTarget), net.send({ t: 'alibi', vote: false }))}>
-                🔒 Coupables
+                <Lock {...ICON} /> Coupables
               </button>
             </div>
           ) : (
@@ -671,7 +674,7 @@ function Verdict({ a }: { a: AlibiState }) {
       <aside className="relative flex flex-col gap-3 text-left">
         {a.notes && a.notes.length > 0 && (
           <div className="al-notebook al-reveal rounded-xl p-3 pl-8">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Le carnet secret</p>
+            <p className="text-[11px] font-semibold text-muted">Le carnet secret</p>
             <ol className="mt-1 space-y-0.5">
               {a.notes.slice(-6).map((n, i) => (
                 <li key={i} className="al-hand text-lg leading-tight">

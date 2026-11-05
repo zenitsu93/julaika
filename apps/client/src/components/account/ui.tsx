@@ -4,6 +4,7 @@ import { useAccount } from '../../lib/account';
 import { go, type Page } from '../../lib/route';
 import { Wordmark } from '../Logo';
 import './account.css';
+import { MusicDock } from '../MusicPlayer';
 
 const PATHS = {
   dl: 'M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14',
@@ -51,9 +52,9 @@ export function AccountNav({ page }: { page: Page }) {
   ];
   return (
     <header className="sticky top-0 z-20 border-b border-edge bg-page/85 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6">
+      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 max-sm:gap-1.5 sm:px-6">
         <button type="button" onClick={() => go(null)} className="rounded-md" aria-label="Retour aux jeux">
-          <Wordmark className="h-8 w-auto" />
+          <Wordmark className="h-8 w-auto max-[380px]:h-7" />
         </button>
         <nav className="ml-auto flex items-center gap-0.5 overflow-x-auto text-sm font-medium" aria-label="Mon compte">
           {tabs.map(([p, label]) => (
@@ -62,17 +63,18 @@ export function AccountNav({ page }: { page: Page }) {
               type="button"
               onClick={() => go(p)}
               aria-current={p === page ? 'page' : undefined}
-              className={`rounded-lg px-2.5 py-1.5 transition ${p === page ? 'bg-surface text-ink shadow-[inset_0_0_0_1px_var(--color-edge)]' : 'text-muted hover:text-ink'} ${p === 'reglages' ? 'max-sm:hidden' : ''}`}
+              className={`rounded-lg px-2.5 py-1.5 transition max-[380px]:px-2 ${p === page ? 'bg-surface text-ink shadow-[inset_0_0_0_1px_var(--color-edge)]' : 'text-muted hover:text-ink'} ${p === 'reglages' || p === null ? 'max-sm:hidden' : ''}`}
             >
               {label}
             </button>
           ))}
           {user && (
-            <button type="button" onClick={() => go('reglages')} className="ml-1.5 rounded-full" aria-label="Réglages du compte">
+            <button type="button" onClick={() => go('reglages')} className="ml-1.5 shrink-0 rounded-full" aria-label="Réglages du compte">
               <Avatar avatar={user.avatar} />
             </button>
           )}
         </nav>
+        <MusicDock />
       </div>
     </header>
   );

@@ -11,6 +11,8 @@ import { Lobby } from '../Lobby';
 import { SoundBoard } from '../SoundBoard';
 import { BrasGlyph } from './BrasGlyph';
 import './bras.css';
+import { Mic } from 'lucide-react';
+import { ICON } from '../../lib/icon';
 
 /** Plateau du Bras de fer : la jauge en haut, les cibles à tapoter dessous, la visio en bas. */
 export function BrasBoard() {
@@ -25,7 +27,7 @@ export function BrasBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       {b && <Duels b={b} />}
-      <div className="panel relative min-h-[28rem] overflow-hidden">
+      <div className="panel relative min-h-[28rem] overflow-clip">
         {phase === 'lobby' || !b ? <Teaser /> : phase === 'faceoff' ? <Faceoff key={b.turn} b={b} /> : phase === 'verdict' ? <Verdict key={b.turn} b={b} /> : <Arena key={b.turn} b={b} />}
         <Presence>
           {phase === 'lobby' ? (
@@ -227,7 +229,7 @@ function Gauge({ b, left }: { b: BrasState; left: number }) {
           </span>
         ))}
       </div>
-      <div className="mt-1 flex justify-between font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
+      <div className="mt-1 flex justify-between font-mono text-[11px] text-muted">
         <span>Ton camp</span>
         <span>Camp adverse</span>
       </div>
@@ -273,7 +275,7 @@ function TapZone({ b }: { b: BrasState }) {
   };
 
   return (
-    <div ref={zone} className="bf-zone relative h-64 overflow-hidden rounded-xl border border-edge bg-surface sm:h-72" aria-label="Cibles à tapoter">
+    <div ref={zone} className="bf-zone relative h-64 overflow-hidden rounded-xl border border-edge bg-surface max-sm:h-[clamp(10rem,34dvh,18rem)] sm:h-72" aria-label="Cibles à tapoter">
       {b.targets
         .filter((t) => !gone.has(t.id))
         .map((t) => (
@@ -328,8 +330,8 @@ function MicPanel() {
   }, [view.loud]);
 
   return (
-    <aside ref={box} className="panel m-rise flex flex-col gap-3 p-4" style={{ animationDelay: '120ms' }}>
-      <p className="text-sm font-semibold">🎙️ Crie pour doubler ta force</p>
+    <aside ref={box} className="panel m-rise flex flex-col gap-3 p-4 max-sm:gap-2 max-sm:p-3" style={{ animationDelay: '120ms' }}>
+      <p className="flex items-center gap-2 text-sm font-semibold"><Mic {...ICON} /> Crie pour doubler ta force</p>
       {view.on ? (
         <>
           <div className="bf-meter relative h-5 overflow-hidden rounded-full bg-ink/10" data-loud={view.loud || undefined}>
@@ -351,7 +353,7 @@ function MicPanel() {
         </>
       ) : (
         <>
-          <p className="text-sm text-muted">Commente, encourage-toi, rugis : tant que le vumètre dépasse le trait, chaque coup pousse deux fois plus.</p>
+          <p className="text-sm text-muted max-sm:text-xs [@media(max-height:620px)]:hidden">Commente, encourage-toi, rugis : tant que le vumètre dépasse le trait, chaque coup pousse deux fois plus.</p>
           <MicButton />
         </>
       )}
@@ -363,7 +365,7 @@ function MicPanel() {
 function MicButton() {
   return (
     <button className="bf-mic-cta btn-primary mx-auto" onClick={(e) => (bump(e.currentTarget), void shout.start())}>
-      🎙️ Activer le micro
+      <Mic {...ICON} /> Activer le micro
     </button>
   );
 }
@@ -384,8 +386,8 @@ function Spectator({ b }: { b: BrasState }) {
   const total = (b.hits[b.leftId] ?? 0) + (b.hits[b.rightId] ?? 0);
   return (
     <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_17rem]">
-      <div className="panel m-rise grid place-items-center gap-2 p-5 text-center">
-        <BrasGlyph className="w-44 text-ink/60" />
+      <div className="panel m-rise grid place-items-center gap-2 p-5 text-center max-sm:p-3">
+        <BrasGlyph className="w-44 text-ink/60 max-sm:w-24" />
         <p className="text-lg font-semibold tracking-[-0.02em]">
           <Ticker value={total} /> coups échangés
         </p>

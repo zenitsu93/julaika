@@ -3,12 +3,15 @@ import { CANVAS_H, CANVAS_W, TEL_PROMPTS, TEL_TEXT_MAX, type DrawPacket, type Te
 import { avatarOf } from '../../lib/avatars';
 import { BoardCanvas, Pen, replay } from '../../lib/board';
 import { net } from '../../lib/net';
+import { useFitSheet } from '../../lib/fit';
 import { canSpeak, useNarrator, type Line } from '../../lib/speech';
 import { serverNow, useGame } from '../../lib/store';
 import { attachWipe, bump, confetti, Presence, reducedMotion, shake, useFlip } from '../../motion';
 import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
 import { Toolbar } from '../Toolbar';
+import { Dices } from 'lucide-react';
+import { ICON } from '../../lib/icon';
 
 const KIND_ICON: Record<TelKind, string> = { write: '✍️', draw: '✏️', describe: '🔍' };
 
@@ -18,7 +21,7 @@ export function TelBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       <TelBar />
-      <div className="panel relative min-h-[26rem] overflow-hidden">
+      <div className="panel relative min-h-[26rem] overflow-clip">
         {phase === 'album' ? <Album /> : phase === 'lobby' ? <Teaser /> : <Stage />}
         <Presence>
           {phase === 'lobby' ? (
@@ -72,7 +75,7 @@ function TelBar() {
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-      <ol ref={list} className="flex flex-wrap justify-center gap-1.5" aria-label="Joueurs">
+      <ol ref={list} className="chip-row flex flex-wrap justify-center gap-1.5" aria-label="Joueurs">
         {ordered.map((p) => {
           const finished = done.has(p.id);
           const playing = writing && tel.players.includes(p.id);
@@ -237,7 +240,7 @@ function WriteStep({ kind, prompt, done }: { kind: TelKind; prompt: TelEntry | n
               field.current?.focus();
             }}
           >
-            🎲 Inspire-moi
+            <Dices {...ICON} /> Inspire-moi
           </button>
         )}
       </form>
@@ -248,7 +251,7 @@ function WriteStep({ kind, prompt, done }: { kind: TelKind; prompt: TelEntry | n
 function Heading({ eyebrow, title, line }: { eyebrow: string; title: ReactNode; line?: string }) {
   return (
     <div className="text-center">
-      <p className="m-rise text-xs uppercase tracking-[0.18em] text-muted">{eyebrow}</p>
+      <p className="m-rise text-xs font-medium text-muted">{eyebrow}</p>
       <h2 className="m-pop mt-1 text-2xl font-semibold tracking-[-0.03em] sm:text-3xl" style={{ animationDelay: '60ms' }}>
         {title}
       </h2>
@@ -264,6 +267,9 @@ function Heading({ eyebrow, title, line }: { eyebrow: string; title: ReactNode; 
 /** Le dessin : ton propre tableau, que personne ne voit avant l'album. */
 function DrawStep({ prompt, done }: { prompt: TelEntry | null; done: boolean }) {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
+  const tools = useRef<HTMLDivElement>(null);
+  useFitSheet(frame, canvas, tools);
   const wipe = useRef<HTMLCanvasElement>(null);
   const [sheet] = useState(() => new BoardCanvas());
   const [pen] = useState(() => new Pen((buf) => net.sendBinary(buf), sheet));
@@ -293,9 +299,9 @@ function DrawStep({ prompt, done }: { prompt: TelEntry | null; done: boolean }) 
   const text = prompt?.kind === 'text' ? prompt.text : '…';
 
   return (
-    <div className="flex flex-col items-center gap-3 p-3 sm:p-4">
+    <div className="flex flex-col items-center gap-3 p-3 max-sm:gap-2 sm:p-4">
       <div className="text-center">
-        <p className="m-rise text-xs uppercase tracking-[0.18em] text-muted">{prompt ? `${prompt.name} a écrit` : 'À dessiner'}</p>
+        <p className="m-rise text-xs font-medium text-muted">{prompt ? `${prompt.name} a écrit` : 'À dessiner'}</p>
         <p className="mt-0.5 text-xl font-semibold tracking-[-0.02em] sm:text-2xl" aria-live="polite">
           {text.split(' ').map((w, i) => (
             <span key={i} className="w-word" style={{ animationDelay: `${i * 60}ms` }}>
@@ -304,7 +310,7 @@ function DrawStep({ prompt, done }: { prompt: TelEntry | null; done: boolean }) 
           ))}
         </p>
       </div>
-      <div className="tel-sheet relative w-full max-w-[max(20rem,calc((100dvh-24rem)*4/3))] overflow-hidden rounded-lg border border-edge">
+      <div ref={frame} className="tel-sheet relative w-full max-w-[max(20rem,calc((100dvh-24rem)*4/3))] overflow-hidden rounded-lg border border-edge">
         <canvas
           ref={canvas}
           width={CANVAS_W}
@@ -344,7 +350,7 @@ function DrawStep({ prompt, done }: { prompt: TelEntry | null; done: boolean }) 
       </div>
       <Presence>
         {done ? null : (
-          <div className="flex w-full flex-col items-center gap-2">
+          <div ref={tools} className="act-dock flex w-full flex-col items-center gap-2">
             <Toolbar pen={pen} />
             <button
               className="btn-primary px-6 py-2.5 text-base"
@@ -354,7 +360,7 @@ function DrawStep({ prompt, done }: { prompt: TelEntry | null; done: boolean }) 
                 net.send({ t: 'tel', done: true });
               }}
             >
-              J'ai fini !
+              J'ai fini
             </button>
           </div>
         )}
@@ -385,7 +391,7 @@ function Waiting({ what }: { what: string }) {
       </p>
       <ul className="mt-3 flex flex-wrap justify-center gap-2">
         {waiting.map((p) => (
-          <li key={p.id} className="m-pop m-breathe text-2xl" title={p.name}>
+          <li key={p.id} className="m-pop text-2xl" title={p.name}>
             {avatarOf(p.avatar)}
           </li>
         ))}
@@ -485,7 +491,7 @@ function Album() {
             {avatarOf(chain.avatar)}
           </span>
           <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.18em] text-muted">
+            <p className="text-xs font-medium text-muted">
               Album {page.chain + 1}/{chains.length}
             </p>
             <h2 className="truncate font-semibold">La chaîne de {chain.name}</h2>

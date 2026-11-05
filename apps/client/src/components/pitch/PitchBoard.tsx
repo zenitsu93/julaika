@@ -22,6 +22,8 @@ import { Lobby } from '../Lobby';
 import { SoundBoard } from '../SoundBoard';
 import { Slide } from './Slide';
 import './pitch.css';
+import { Dices, Handshake } from 'lucide-react';
+import { ICON } from '../../lib/icon';
 
 /** Transitions façon logiciel de présentation, tirées à chaque diapo (le nom s'affiche, c'est la blague). */
 const TRANSITIONS = [
@@ -43,7 +45,7 @@ export function PitchBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       {p && <Turns p={p} />}
-      <div className="panel relative min-h-[28rem] overflow-hidden">
+      <div className="panel relative min-h-[28rem] overflow-clip">
         {phase === 'lobby' || !p ? (
           <Teaser />
         ) : phase === 'brief' ? (
@@ -135,7 +137,7 @@ function Turns({ p }: { p: PitchState }) {
 function ProductCard({ product, compact = false }: { product: PitchProduct; compact?: boolean }) {
   return (
     <div className={`pt-card ${compact ? 'pt-card-sm' : ''}`}>
-      <p className="text-[11px] uppercase tracking-[0.2em] opacity-70">Le produit</p>
+      <p className="text-[11px] font-medium opacity-70">Le produit</p>
       <p className="pt-brand" aria-label={product.brand}>
         {[...product.brand].map((c, i) => (
           <span key={i} className="m-letter inline-block" style={{ animationDelay: `${i * 55}ms` }} aria-hidden>
@@ -190,7 +192,7 @@ function Brief({ p }: { p: PitchState }) {
                 net.send({ t: 'pitch', reroll: true });
               }}
             >
-              🎲 Un autre produit
+              <Dices {...ICON} /> Un autre produit
             </button>
           )}
         </div>
@@ -220,7 +222,7 @@ function Face({ id, className = '' }: { id: string; className?: string }) {
       <video ref={video} autoPlay playsInline muted className={`size-full object-cover ${self ? '-scale-x-100' : ''} ${cam ? '' : 'invisible'}`} />
       {!cam && (
         <span className="absolute inset-0 grid place-items-center">
-          <span className="m-breathe text-5xl">{avatarOf(player?.avatar ?? 0)}</span>
+          <span className="text-5xl">{avatarOf(player?.avatar ?? 0)}</span>
         </span>
       )}
       <figcaption className="absolute inset-x-1.5 bottom-1.5 truncate rounded-full bg-black/55 px-2 py-0.5 text-[11px] text-white backdrop-blur-md">
@@ -380,7 +382,7 @@ function Conclude({ endsAt }: { endsAt: number | null }) {
         net.send({ t: 'pitch', done: true });
       }}
     >
-      🤝 Je conclus, à vous de jouer
+      <Handshake {...ICON} /> Je conclus, à vous de jouer
       {!ready && <span className="font-mono text-xs opacity-70">({PITCH_MIN_TALK - talked} s)</span>}
     </button>
   );

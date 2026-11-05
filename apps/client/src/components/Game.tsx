@@ -62,7 +62,7 @@ export function Game({ onQuit }: { onQuit: () => void }) {
       <ReconnectBanner />
       <TopBar onQuit={quit.ask} onSwitch={picker.isHost ? picker.open : undefined} />
       <Annonces />
-      <div ref={board} className="grid flex-1">
+      <div ref={board} className="grid flex-1 grid-cols-[minmax(0,1fr)]">
         {game === 'wavelength' ? <WaveBoard /> : game === 'telephone' ? <TelBoard /> : game === 'intrus' ? <IntrusBoard /> : game === 'petitbac' ? <BacBoard /> : game === 'connait' ? <ConnaitBoard /> : game === 'bombe' ? <BombBoard /> : game === 'photomaton' ? <PhotoBoard /> : game === 'sourire' ? <SourireBoard /> : game === 'brasdefer' ? <BrasBoard /> : game === 'flash' ? <FlashBoard /> : game === 'cadavre' ? <CadBoard /> : game === 'interdits' ? <InterditsBoard /> : game === 'motamot' ? <StoryBoard /> : game === 'agents' ? <AgentsBoard /> : game === 'fredonne' ? <FredBoard /> : game === 'alibi' ? <AlibiBoard /> : game === 'pitch' ? <PitchBoard /> : game === 'cerveau' ? <CerveauBoard /> : game === 'verite' ? <AovBoard /> : game === 'quiz' ? <QuizBoard /> : game === 'foot' || game === 'oreillers' || game === 'drap' ? <ArcadeBoard /> : <Board />}
       </div>
       <EndDock onAsk={quit.ask} onSwitch={picker.isHost ? picker.open : undefined} />

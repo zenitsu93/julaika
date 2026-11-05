@@ -9,6 +9,8 @@ import { confetti, Presence, reducedMotion, useCountUp } from '../motion';
 import { Lobby } from './Lobby';
 import { TremaLoader } from './Logo';
 import { Planche, TurnShots } from './mime/Planche';
+import { RotateCcw } from 'lucide-react';
+import { ICON } from '../lib/icon';
 
 function Panel({ children, flow = false }: { children: React.ReactNode; flow?: boolean }) {
   // `flow` : sur téléphone, le panneau prend sa hauteur naturelle au lieu d'être coincé dans le cadre 4:3.
@@ -40,7 +42,7 @@ function TrapCard({ trap, drawer }: { trap: Trap; drawer: boolean }) {
     <div className="t-flip mx-auto mt-5 flex max-w-sm items-center gap-3 rounded-xl border-2 border-accent bg-surface px-4 py-3 text-left shadow-md">
       <span className="text-3xl">{info.icon}</span>
       <span className="min-w-0">
-        <span className="block font-mono text-[10px] font-bold tracking-[0.25em] text-accent uppercase">Manche piégée</span>
+        <span className="block font-mono text-[10px] font-bold text-accent">Manche piégée</span>
         <span className="flex items-center gap-2 font-semibold">
           {info.name}
           {trap.kind === 'mono' && <span className="size-3 rounded-full ring-1 ring-edge" style={{ background: PALETTE[trap.color] }} />}
@@ -97,10 +99,10 @@ function Replay() {
       </span>
       {done && (
         <button
-          className="m-pop absolute right-1.5 bottom-2.5 rounded-full bg-black/70 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-black/85"
+          className="m-pop absolute right-1.5 bottom-2.5 inline-flex items-center gap-1 rounded-full bg-black/70 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-black/85"
           onClick={() => setRun((n) => n + 1)}
         >
-          ↻ Revoir
+          <RotateCcw {...ICON} /> Revoir
         </button>
       )}
     </figure>
@@ -199,7 +201,7 @@ export function Overlay() {
           <Panel key="choosing">
             {choosing ? (
               <>
-                <h2 className="mb-1 text-xl font-semibold">{room.turnKind === 'mime' ? 'Choisis un mot à mimer 🎭' : 'Choisis un mot'}</h2>
+                <h2 className="mb-1 text-xl font-semibold">{room.turnKind === 'mime' ? 'Choisis un mot à mimer' : 'Choisis un mot'}</h2>
                 <p className="mb-4 text-sm text-muted">Touches 1 à {choices.length}</p>
                 <div className="flex flex-wrap justify-center gap-3">
                   {choices.map((w, i) => (
@@ -221,7 +223,7 @@ export function Overlay() {
               </>
             ) : (
               <p className="text-lg">
-                <span className="m-breathe text-3xl">{drawer && avatarOf(drawer.avatar)}</span>
+                <span className="text-3xl">{drawer && avatarOf(drawer.avatar)}</span>
                 <br />
                 <b>{drawer?.name}</b> choisit un mot{room.turnKind === 'mime' ? ' à mimer' : ''}{' '}
                 <TremaLoader />

@@ -16,6 +16,7 @@ import {
 import { avatarOf } from '../../lib/avatars';
 import { BoardCanvas, Pen, replay } from '../../lib/board';
 import { net } from '../../lib/net';
+import { useFitSheet } from '../../lib/fit';
 import { play } from '../../lib/sounds';
 import { useGame } from '../../lib/store';
 import { attachWipe, bump, confetti, Presence, reducedMotion, shake, Ticker, useFlip } from '../../motion';
@@ -24,6 +25,8 @@ import { Lobby } from '../Lobby';
 import { Toolbar } from '../Toolbar';
 import { CadArt } from './CadArt';
 import './cadavre.css';
+import { Dices } from 'lucide-react';
+import { ICON } from '../../lib/icon';
 
 const PART_LABEL = ['La tête', 'Le corps', 'Les jambes'] as const;
 const PART_ICON = ['🙂', '👕', '🦵'] as const;
@@ -34,7 +37,7 @@ export function CadBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       <CadBar />
-      <div className="panel relative min-h-[30rem] overflow-hidden bg-[radial-gradient(120%_80%_at_50%_0%,color-mix(in_oklab,var(--color-accent)_8%,transparent),transparent_70%)]">
+      <div className="panel relative min-h-[30rem] overflow-clip bg-[radial-gradient(120%_80%_at_50%_0%,color-mix(in_oklab,var(--color-accent)_8%,transparent),transparent_70%)]">
         {phase === 'reveal' ? <Reveal /> : phase === 'draw' ? <Stage /> : <Teaser />}
         <Presence>
           {phase === 'lobby' ? (
@@ -79,7 +82,7 @@ function CadBar() {
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-      <ol ref={list} className="flex flex-wrap justify-center gap-1.5" aria-label="Joueurs">
+      <ol ref={list} className="chip-row flex flex-wrap justify-center gap-1.5" aria-label="Joueurs">
         {ordered.map((p) => {
           const finished = drawing && done.has(p.id);
           const playing = drawing && cad.players.includes(p.id);
@@ -183,6 +186,9 @@ function joinPoints(strokes: DrawPacket[]): number[] {
 /** Ta feuille : la bande du morceau d'au-dessus, puis ton dessin, que personne ne voit avant la fin. */
 function DrawPart({ part, above, done }: { part: CadPart; above: { name: string; strokes: DrawPacket[] } | null; done: boolean }) {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
+  const tools = useRef<HTMLDivElement>(null);
+  useFitSheet(frame, canvas, tools);
   const wipe = useRef<HTMLCanvasElement>(null);
   const [sheet] = useState(() => new BoardCanvas());
   const [pen] = useState(() => new Pen((buf) => net.sendBinary(buf), sheet));
@@ -227,12 +233,12 @@ function DrawPart({ part, above, done }: { part: CadPart; above: { name: string;
         : 'Raccorde-toi aux points dorés, et laisse dépasser sous les pointillés.';
 
   return (
-    <div className="flex flex-col items-center gap-3 p-3 sm:p-4">
+    <div className="flex flex-col items-center gap-3 p-3 max-sm:gap-2 sm:p-4">
       <div className="text-center">
-        <p className="m-rise text-xs uppercase tracking-[0.18em] text-muted">
+        <p className="m-rise text-xs font-medium text-muted">
           Morceau {part + 1}/3 · {above ? `sous le morceau de ${above.name}` : 'en secret'}
         </p>
-        <h2 className="m-pop mt-0.5 text-2xl tracking-[-0.03em] sm:text-3xl" style={{ animationDelay: '60ms' }}>
+        <h2 className="m-pop mt-0.5 text-2xl tracking-[-0.03em] max-sm:text-xl sm:text-3xl" style={{ animationDelay: '60ms' }}>
           {PART_LABEL[part].split(' ').map((w, i) => (
             <span key={i} className="w-word" style={{ animationDelay: `${80 + i * 70}ms` }}>
               {w}&nbsp;
@@ -242,12 +248,12 @@ function DrawPart({ part, above, done }: { part: CadPart; above: { name: string;
             {PART_ICON[part]}
           </span>
         </h2>
-        <p className="m-rise mt-1 text-sm text-muted" style={{ animationDelay: '120ms' }}>
+        <p className="m-rise mt-1 text-sm text-muted max-sm:mt-0.5 max-sm:text-xs" style={{ animationDelay: '120ms' }}>
           {line}
         </p>
       </div>
 
-      <div className="relative w-full max-w-[max(20rem,calc((100dvh-27rem)*4/3))]">
+      <div ref={frame} className="relative w-full max-w-[max(20rem,calc((100dvh-27rem)*4/3))] max-sm:max-w-[max(13rem,calc((100dvh-29rem)*4/3))]">
         {above && <Peek name={above.name} strokes={above.strokes} part={part} />}
         <div className="relative">
         <div className={`relative overflow-hidden border border-edge bg-white ${above ? 'rounded-b-lg border-t-0' : 'rounded-lg'}`}>
@@ -301,11 +307,11 @@ function DrawPart({ part, above, done }: { part: CadPart; above: { name: string;
 
       <Presence>
         {done ? null : (
-          <div className="flex w-full flex-col items-center gap-2">
+          <div ref={tools} className="act-dock flex w-full flex-col items-center gap-2">
             <Toolbar pen={pen} />
             <div className="flex flex-wrap items-center justify-center gap-2">
               <button type="button" className="btn text-muted hover:text-ink" onClick={rollIdea}>
-                🎲 Une idée ?
+                <Dices {...ICON} /> Une idée
               </button>
               {idea && (
                 <span ref={ideaEl} key={idea} className="m-pop rounded-full bg-butter px-3 py-1 text-sm font-medium text-cacao">
@@ -320,7 +326,7 @@ function DrawPart({ part, above, done }: { part: CadPart; above: { name: string;
                   net.send({ t: 'cadavre', done: true });
                 }}
               >
-                J'ai fini !
+                J'ai fini
               </button>
             </div>
           </div>
@@ -462,7 +468,7 @@ function Reveal() {
       <canvas ref={sparks} className="pointer-events-none absolute inset-0 z-[5] size-full" aria-hidden />
       <header className="flex items-center justify-between gap-3 border-b border-edge px-4 py-3">
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.18em] text-muted">
+          <p className="text-xs font-medium text-muted">
             Créature {index + 1}/{creatures.length}
           </p>
           <h2 key={String(ready)} className="m-rise truncate text-lg">
@@ -666,7 +672,7 @@ function Bestiary({ creatures, titles, isHost, hostName }: { creatures: Creature
     <div className="relative flex min-h-[30rem] flex-col">
       <canvas ref={sparks} className="pointer-events-none absolute inset-0 z-[5] size-full" aria-hidden />
       <header className="border-b border-edge px-4 py-3 text-center">
-        <p className="m-rise text-xs uppercase tracking-[0.18em] text-muted">Fin de partie</p>
+        <p className="m-rise text-xs font-medium text-muted">Fin de partie</p>
         <h2 className="m-pop text-2xl tracking-[-0.03em]">Le bestiaire</h2>
       </header>
       <ul className="flex flex-1 flex-wrap content-start justify-center gap-x-5 gap-y-6 p-5">

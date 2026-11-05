@@ -86,7 +86,7 @@ export function HistoryPage({ onReplay }: { onReplay: (game: GameId) => void }) 
         ) : (
           days.map((d) => (
             <div key={d.key}>
-              <h2 className="mt-7 mb-2.5 text-[11.5px] font-bold tracking-[0.08em] text-muted uppercase">{d.label}</h2>
+              <h2 className="mt-7 mb-2.5 text-[11.5px] font-bold text-muted">{d.label}</h2>
               <div className="grid gap-2">
                 {d.items.map((p) => (
                   <Row key={p.id} party={p} open={open === p.id} delay={Math.min(row++, 12) * 50} onToggle={() => setOpen((o) => (o === p.id ? null : p.id))} onReplay={onReplay} />

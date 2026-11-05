@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
 import { parseYoutubeLink, type MusicTrack } from '@julaika/shared';
 import { attachHost, heard, music, nameOf, unlock, useMusic, warm } from '../lib/music';
 import { inRoom, useGame } from '../lib/store';
@@ -10,11 +10,35 @@ import { avatarOf } from '../lib/avatars';
  * Monté une seule fois au-dessus des pages : la musique ne se coupe pas quand on change d'écran
  * ou qu'on entre dans un salon.
  */
+/**
+ * Téléphone et tablette, hors salon : la capsule flottante se posait sur les boutons du bas
+ * (clavier du mot du jour, « Créer mon compte »…). Une page qui monte un `MusicDock` dans son
+ * en-tête, ou qui appelle `useMusicTucked` (formulaires sans en-tête), la range hors du coin.
+ */
+let tucked = 0;
+const tuckListeners = new Set<() => void>();
+const tuck = (d: number) => {
+  tucked += d;
+  for (const l of tuckListeners) l();
+};
+const useTucked = () =>
+  useSyncExternalStore(
+    (l) => (tuckListeners.add(l), () => void tuckListeners.delete(l)),
+    () => tucked > 0,
+  );
+export function useMusicTucked() {
+  useEffect(() => {
+    tuck(1);
+    return () => tuck(-1);
+  }, []);
+}
+
 export function MusicPlayer() {
   const open = useMusic((s) => s.open);
   const playing = useMusic((s) => s.playing);
   const sheet = useMusic((s) => s.open && s.view !== 'now');
   const salon = useGame(inRoom);
+  const docked = useTucked() && !salon;
   const hostRef = useRef<HTMLDivElement>(null);
   const away = useScrollAway(!open && !salon);
   useAutoFold(open);
@@ -26,7 +50,7 @@ export function MusicPlayer() {
 
   return (
     <aside
-      className={`mp ${open ? 'mp-open' : 'mp-mini'} ${sheet ? 'mp-sheet' : ''} ${playing ? 'mp-playing' : ''} ${salon ? 'mp-salon' : ''} ${away ? 'mp-away' : ''}`}
+      className={`mp ${open ? 'mp-open' : 'mp-mini'} ${sheet ? 'mp-sheet' : ''} ${playing ? 'mp-playing' : ''} ${salon ? 'mp-salon' : ''} ${docked ? 'mp-docked' : ''} ${away ? 'mp-away' : ''}`}
       aria-label="Lecteur de musique"
       onPointerEnter={warm}
       onFocus={warm}
@@ -98,6 +122,7 @@ export function MusicDock() {
   const listening = useMusic((s) => s.listening);
   const blocked = useMusic((s) => s.blocked);
   const open = useMusic((s) => s.open);
+  useMusicTucked();
   return (
     <button
       type="button"

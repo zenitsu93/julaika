@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { parseMeetUrl } from '@julaika/shared';
 import { net } from '../lib/net';
 import { useGame } from '../lib/store';
+import { Video } from 'lucide-react';
+import { ICON } from '../lib/icon';
 
 /**
  * Visio via Google Meet. Meet refuse d'être affiché dans une iframe : on partage donc un lien
@@ -32,11 +34,11 @@ export function MeetButton() {
     <div className="relative flex items-center gap-1">
       {meetUrl ? (
         <a className="btn-primary px-2.5 py-1.5" href={meetUrl} target="_blank" rel="noopener noreferrer" title={meetUrl}>
-          🎥 <span className="hidden sm:inline">Ouvrir Google Meet</span>
+          <Video {...ICON} /> <span className="hidden sm:inline">Ouvrir Google Meet</span>
         </a>
       ) : (
         <button className="btn-ghost px-2.5 py-1.5" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-          🎥 <span className="hidden sm:inline">Google Meet</span>
+          <Video {...ICON} /> <span className="hidden sm:inline">Google Meet</span>
         </button>
       )}
       {isHost && meetUrl && (

@@ -5,11 +5,13 @@ import { go } from '../../lib/route';
 import { shake } from '../../motion';
 import { TremaLoader } from '../Logo';
 import { ErrorLine, Field, Icon } from './ui';
+import { useMusicTucked } from '../MusicPlayer';
 
 const RESEND = 60;
 
 /** Mot de passe oublié : e-mail → code à 6 chiffres → nouveau mot de passe → connecté. */
 export function ResetPage() {
+  useMusicTucked();
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState(() => new URLSearchParams(location.search).get('email') ?? '');
   const [token, setToken] = useState('');

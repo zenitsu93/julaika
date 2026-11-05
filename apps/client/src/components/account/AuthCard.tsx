@@ -7,6 +7,7 @@ import { playAsGuest } from './Landing';
 import { shake } from '../../motion';
 import { TremaLoader } from '../Logo';
 import { ErrorLine, Field, GoogleButton } from './ui';
+import { useMusicTucked } from '../MusicPlayer';
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -223,6 +224,7 @@ function Signup({ onDone, onFlip }: { onDone: () => void; onFlip: () => void }) 
 /** Page /connexion et /inscription : la carte au centre, sur un papier pointillé. */
 export function AuthPage({ start }: { start: 'connexion' | 'inscription' }) {
   const next = new URLSearchParams(location.search).get('suite');
+  useMusicTucked();
   return (
     <main className="auth-dots grid min-h-full place-items-center px-4 py-8">
       <AuthCard start={start} onDone={() => (next === 'jeux' ? go(null) : go('album'))} />

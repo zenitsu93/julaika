@@ -593,7 +593,6 @@
 .hub-aurora i {
   position: absolute;
   border-radius: 50%;
-  animation: hub-drift 14s ease-in-out infinite alternate;
 }
 .hub-aurora i:first-child {
   width: min(420px, 70vw);
@@ -609,11 +608,6 @@
   top: 40px;
   background: var(--color-butter);
   animation-delay: -6s;
-}
-@keyframes hub-drift {
-  to {
-    transform: translate(60px, 30px) scale(1.15);
-  }
 }
 @media (prefers-color-scheme: dark) {
   .hub-aurora {
@@ -2101,14 +2095,6 @@
   position: relative;
   overflow: hidden;
 }
-.inv-share::after {
-  content: '';
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 30%;
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.28), transparent);
-  animation: inv-shine 2.8s 0.8s ease-in-out infinite;
-}
 
 @media (prefers-reduced-motion: reduce) {
   .rc-pill,
@@ -2116,12 +2102,10 @@
   .rc-wifi path,
   .rc-thread,
   .p-away,
-  .inv-code > span,
-  .inv-share::after {
+  .inv-code > span {
     animation: none;
   }
-  .rc-thread,
-  .inv-share::after {
+  .rc-thread {
     display: none;
   }
 }

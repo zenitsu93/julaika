@@ -27,7 +27,7 @@ export function QuizBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       <ScoreBar />
-      <div className="panel relative min-h-[28rem] overflow-hidden">
+      <div className="panel relative min-h-[28rem] overflow-clip">
         {phase === 'lobby' ? (
           <Teaser />
         ) : phase === 'prep' ? (
@@ -117,7 +117,7 @@ function Machine() {
     <div className="m-fade flex min-h-[28rem] flex-col items-center justify-center gap-4 px-4 py-8 text-center">
       <Orbit small />
       <div className="flex flex-col items-center">
-        <p className="m-rise text-xs uppercase tracking-[0.2em] text-muted">{ready ? 'C’est prêt' : 'L’IA écrit tes questions'}</p>
+        <p className="m-rise text-xs font-medium text-muted">{ready ? 'C’est prêt' : 'L’IA écrit tes questions'}</p>
         <h2 className="mt-1 flex flex-wrap justify-center gap-x-3 leading-none">
           {themes.map((t, i) => (
             <span key={t} className="m-pop flex items-center gap-x-3 font-script text-5xl text-accent sm:text-6xl" style={{ animationDelay: `${120 + i * 120}ms` }}>
@@ -149,7 +149,7 @@ function ScoreBar() {
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-      <ol ref={list} className="flex flex-wrap justify-center gap-1.5" aria-label="Classement">
+      <ol ref={list} className="chip-row flex flex-wrap justify-center gap-1.5" aria-label="Classement">
         {ordered.map((p, i) => {
           const streak = q?.streaks[p.id] ?? 0;
           const done = answered.has(p.id);
@@ -272,7 +272,7 @@ function Stage() {
   const key = `${q.index}`;
 
   return (
-    <div ref={box} className="relative flex min-h-[28rem] flex-col items-center gap-5 px-4 pb-6 pt-6 sm:px-8">
+    <div ref={box} className="relative flex min-h-[28rem] flex-col items-center gap-5 px-4 pb-6 pt-6 max-sm:gap-3 max-sm:px-3 max-sm:pb-4 max-sm:pt-4 sm:px-8">
       <canvas ref={sparks} className="pointer-events-none absolute inset-0 z-[5] size-full" aria-hidden />
       {phase === 'answer' && <TopLine openAt={q.openAt} endsAt={room.endsAt} turnKey={key} />}
 
@@ -286,7 +286,7 @@ function Stage() {
         <Countdown phase={phase} openAt={q.openAt} endsAt={room.endsAt} turnKey={key} />
       </div>
 
-      <h2 key={`q${key}`} className="max-w-2xl text-center text-2xl font-semibold leading-tight tracking-[-0.03em] text-balance sm:text-3xl">
+      <h2 key={`q${key}`} className="max-w-2xl text-center text-2xl font-semibold leading-tight tracking-[-0.03em] text-balance max-sm:text-xl sm:text-3xl">
         {q.question.text.split(' ').map((w, i) => (
           <span key={i} className="w-word" style={{ animationDelay: `${80 + i * 45}ms` }}>
             {w}&nbsp;
@@ -295,7 +295,7 @@ function Stage() {
       </h2>
 
       {open ? (
-        <div className="grid w-full max-w-2xl gap-2.5 sm:grid-cols-2" role="radiogroup" aria-label="Réponses">
+        <div className="grid w-full max-w-2xl gap-2.5 max-sm:gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Réponses">
           {q.question.options.map((option, i) => (
             <Option key={`${key}-${i}`} index={i} text={option} q={q} reveal={reveal} selfId={selfId} />
           ))}
@@ -428,7 +428,7 @@ function Option({ index, text, q, reveal, selfId }: { index: number; text: strin
           bump(btn.current, 1.03);
           pick(index);
         }}
-        className={`q-option q-fan ${index % 2 ? 'q-fan-r' : ''} relative flex min-h-16 items-center gap-3 overflow-hidden rounded-xl border px-3.5 py-3 text-left transition-[transform,border-color,background-color,opacity] duration-300 outline-none focus-visible:ring-2 focus-visible:ring-info disabled:cursor-default ${tone}`}
+        className={`q-option q-fan ${index % 2 ? 'q-fan-r' : ''} relative flex min-h-16 items-center gap-3 overflow-hidden rounded-xl border px-3.5 py-3 text-left max-sm:min-h-12 max-sm:py-2 transition-[transform,border-color,background-color,opacity] duration-300 outline-none focus-visible:ring-2 focus-visible:ring-info disabled:cursor-default ${tone}`}
         style={{ animationDelay: reveal ? '0ms' : `${index * 70}ms` }}
       >
         {/* Part des joueurs qui ont choisi cette réponse, en fond de carte. */}

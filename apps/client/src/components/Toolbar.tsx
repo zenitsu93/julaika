@@ -1,14 +1,16 @@
-import { useEffect, useRef, useState, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import { BRUSH_SIZES, PALETTE, type Trap } from '@julaika/shared';
 import type { Pen, Tool } from '../lib/board';
 import { net } from '../lib/net';
 import { TRAP_INFO } from '../lib/traps';
 import { animate, reducedMotion, useIndicator, wipeBoard } from '../motion';
+import { Eraser, PaintBucket, Pencil, Trash2, Undo2 } from 'lucide-react';
+import { ICON } from '../lib/icon';
 
-const TOOLS: { id: Tool; label: string; icon: string; key: string }[] = [
-  { id: 'pen', label: 'Pinceau (B)', icon: '✏️', key: 'b' },
-  { id: 'eraser', label: 'Gomme (E)', icon: '🧽', key: 'e' },
-  { id: 'fill', label: 'Remplissage (F)', icon: '🪣', key: 'f' },
+const TOOLS: { id: Tool; label: string; icon: ReactNode; key: string }[] = [
+  { id: 'pen', label: 'Pinceau (B)', icon: <Pencil {...ICON} size={18} />, key: 'b' },
+  { id: 'eraser', label: 'Gomme (E)', icon: <Eraser {...ICON} size={18} />, key: 'e' },
+  { id: 'fill', label: 'Remplissage (F)', icon: <PaintBucket {...ICON} size={18} />, key: 'f' },
 ];
 
 /** Dock flottant (pattern « Dock » de 21st.dev), qui monte quand vient ton tour. Raccourcis : B, E, F, Ctrl+Z. */
@@ -130,7 +132,7 @@ export function Toolbar({ pen, trap = null, colors, tools: allowed }: { pen: Pen
             </button>
           ))}
           <button ref={undoBtn} title="Annuler (Ctrl+Z)" aria-label="Annuler" onClick={undo} className={tile}>
-            ↩️
+            <Undo2 {...ICON} size={18} />
           </button>
           <button
             title="Tout effacer"
@@ -143,7 +145,7 @@ export function Toolbar({ pen, trap = null, colors, tools: allowed }: { pen: Pen
             }}
             className={tile}
           >
-            🗑️
+            <Trash2 {...ICON} size={18} />
           </button>
         </div>
       </div>

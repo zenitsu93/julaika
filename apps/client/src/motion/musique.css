@@ -1058,6 +1058,12 @@ button.mp-ib.mp-sound {
   color: var(--color-butter);
   transition: transform 0.25s var(--ease-spring);
 }
+/* `lg:hidden` ne suffit pas : cette règle hors couche passe devant les utilitaires. */
+@media (min-width: 1024px) {
+  .mp-dockbtn {
+    display: none;
+  }
+}
 .mp-dockbtn:active {
   transform: scale(0.9);
 }
@@ -1075,22 +1081,22 @@ button.mp-ib.mp-sound {
 }
 @media (max-width: 1023.98px) {
   /* Fermée, la capsule disparaît du coin (le cadre YouTube, lui, reste chargé). */
-  .mp-salon.mp-mini {
+  :is(.mp-salon, .mp-docked).mp-mini {
     width: 0;
     height: 0;
     background: none;
     box-shadow: none;
     pointer-events: none;
   }
-  .mp-salon.mp-mini::before,
-  .mp-salon.mp-mini .mp-pill {
+  :is(.mp-salon, .mp-docked).mp-mini::before,
+  :is(.mp-salon, .mp-docked).mp-mini .mp-pill {
     display: none;
   }
-  .mp-salon.mp-mini .mp-notice {
+  :is(.mp-salon, .mp-docked).mp-mini .mp-notice {
     pointer-events: auto;
   }
   /* Ouverte depuis la barre du haut : elle se déplie à nouveau depuis le coin. */
-  .mp-salon.mp-open {
+  :is(.mp-salon, .mp-docked).mp-open {
     animation: mp-unfold 0.5s var(--ease-spring) both;
   }
 }
