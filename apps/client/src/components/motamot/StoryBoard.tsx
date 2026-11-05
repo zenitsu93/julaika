@@ -16,7 +16,7 @@ export function StoryBoard() {
   const story = useGame((s) => s.room!.motamot);
   return (
     <section className="flex min-w-0 flex-col gap-3">
-      <div className="panel relative min-h-[32rem] overflow-hidden">
+      <div className="panel relative min-h-[32rem] overflow-clip">
         {story && phase === 'album' ? <Reading key={story.story} s={story} /> : story ? <Writing s={story} /> : <Teaser />}
         <Presence>
           {phase === 'lobby' ? (
@@ -101,8 +101,8 @@ function Writing({ s }: { s: StoryState }) {
   const ghost = mine ? draft : typing;
 
   return (
-    <div className="flex flex-col gap-4 px-3 pb-5 pt-4 sm:px-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+    <div className="flex flex-col gap-4 px-3 pb-5 pt-4 max-sm:gap-3 max-sm:pb-3 max-sm:pt-3 sm:px-6">
+      <header className="flex flex-wrap items-center justify-between gap-3 max-sm:gap-2">
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-[0.18em] text-muted">
             Histoire {s.story}/{s.stories}
@@ -122,7 +122,7 @@ function Writing({ s }: { s: StoryState }) {
       <RuleZone s={s} mine={mine} />
 
       <div className="relative">
-        <div ref={page} className="st-page max-h-[min(44dvh,22rem)] min-h-[10.4rem] overflow-y-auto rounded-2xl px-4 text-xl font-medium sm:px-6 sm:text-2xl" aria-live="polite">
+        <div ref={page} className="st-page max-h-[min(44dvh,22rem)] min-h-[10.4rem] max-sm:max-h-[min(30dvh,22rem)] max-sm:min-h-[6.5rem] overflow-y-auto rounded-2xl px-4 text-xl font-medium sm:px-6 sm:text-2xl" aria-live="polite">
           {s.words.map((w, i) => (
             <Word key={i} w={w} />
           ))}
@@ -156,7 +156,9 @@ function Writing({ s }: { s: StoryState }) {
             </p>
           )}
           {/* Toujours là pendant l'histoire : au téléphone le clavier reste ouvert d'un tour à l'autre. */}
-          <WordInput s={s} mine={mine} selfId={selfId} draft={draft} setDraft={setDraft} />
+          <div className="act-dock">
+            <WordInput s={s} mine={mine} selfId={selfId} draft={draft} setDraft={setDraft} />
+          </div>
         </>
       ) : s.turn ? (
         <p className="text-center text-sm text-muted">

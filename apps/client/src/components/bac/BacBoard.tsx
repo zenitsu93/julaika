@@ -15,7 +15,7 @@ export function BacBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       <BacBar />
-      <div className="panel relative min-h-[26rem] overflow-hidden">
+      <div className="panel relative min-h-[26rem] overflow-clip">
         <Stage />
         <Presence>
           {phase === 'lobby' ? (
@@ -65,7 +65,7 @@ function BacBar() {
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-      <ol ref={list} className="flex flex-wrap justify-center gap-1.5" aria-label="Joueurs">
+      <ol ref={list} className="chip-row flex flex-wrap justify-center gap-1.5" aria-label="Joueurs">
         {ordered.map((p) => {
           const playing = bac?.players.includes(p.id) ?? false;
           const voted = phase === 'vote' && bac?.done.includes(p.id);
@@ -307,7 +307,7 @@ function Fill({ bac }: { bac: BacState }) {
   };
 
   return (
-    <div className="relative flex flex-col gap-5 p-4 sm:p-6">
+    <div className="relative flex flex-col gap-5 p-4 max-sm:gap-3 max-sm:p-3 sm:p-6">
       <div className="flex items-center gap-4">
         <LetterReel letter={bac.letter} />
         <div className="min-w-0 flex-1">
@@ -346,7 +346,7 @@ function Fill({ bac }: { bac: BacState }) {
         </button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 max-sm:gap-2 sm:grid-cols-2">
         {bac.categories.map((cat, i) => (
           <Field
             key={cat}
@@ -401,7 +401,7 @@ function Field({
   return (
     <label
       ref={box}
-      className={`m-rise group flex flex-col gap-1 rounded-xl border bg-surface px-3.5 py-2.5 transition-colors duration-200 focus-within:ring-4 ${
+      className={`m-rise group flex flex-col gap-1 rounded-xl border bg-surface px-3.5 py-2.5 max-sm:gap-0 max-sm:px-3 max-sm:py-1.5 transition-colors duration-200 focus-within:ring-4 ${
         wrong ? 'border-bad/60 focus-within:ring-bad/10' : ok ? 'border-good/50 focus-within:ring-good/10' : 'border-edge focus-within:border-ink focus-within:ring-ink/10'
       }`}
       style={{ animationDelay: `${120 + index * 50}ms` }}
@@ -420,7 +420,7 @@ function Field({
       </span>
       <input
         ref={ref}
-        className="min-h-9 bg-transparent text-lg font-medium outline-none placeholder:text-muted/60"
+        className="min-h-9 bg-transparent text-lg font-medium outline-none placeholder:text-muted/60 max-sm:min-h-8"
         maxLength={BAC_ANSWER_MAX}
         placeholder={hidden ? '…' : `${letter}…`}
         autoComplete="off"

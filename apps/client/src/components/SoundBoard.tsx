@@ -59,7 +59,7 @@ export function SoundBoard({ compact = false, only, onSend }: { compact?: boolea
   };
 
   return (
-    <div data-sb-grid tabIndex={-1} role="group" aria-label="Boîte à sons" onKeyDown={onKeyDown} className={`grid outline-none ${only ? 'grid-flow-col auto-cols-fr' : 'grid-cols-4'} ${compact ? 'gap-1.5' : 'gap-2 sm:grid-cols-6'}`}>
+    <div data-sb-grid tabIndex={-1} role="group" aria-label="Boîte à sons" onKeyDown={onKeyDown} className={`grid outline-none ${only ? 'grid-flow-col auto-cols-fr' : 'grid-cols-4 sb-strip'} ${compact ? 'gap-1.5' : 'gap-2 sm:grid-cols-6'}`}>
       {list.map((id, i) => {
         const { label, emoji } = SOUND_INFO[id];
         return (

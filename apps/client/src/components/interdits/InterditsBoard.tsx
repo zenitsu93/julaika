@@ -20,7 +20,7 @@ export function InterditsBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       {s && <Turns s={s} />}
-      <div className="panel relative min-h-[28rem] overflow-hidden">
+      <div className="panel relative min-h-[28rem] overflow-clip">
         {phase === 'lobby' || !s ? <Teaser /> : phase === 'faceoff' ? <Intro key={s.turn} s={s} /> : phase === 'verdict' ? <Recap key={s.turn} s={s} /> : <Explain key={s.turn} s={s} />}
         <Presence>
           {phase === 'lobby' ? (
@@ -151,7 +151,7 @@ function Face({ id, big = false, children }: { id: string; big?: boolean; childr
   }, [stream, cam]);
 
   return (
-    <figure className={`ti-face relative m-0 overflow-hidden rounded-xl bg-[#1d130e] text-white ${big ? 'aspect-[4/3] sm:aspect-video' : 'aspect-[4/3]'}`}>
+    <figure className={`ti-face relative m-0 overflow-hidden rounded-xl bg-[#1d130e] text-white ${big ? 'aspect-[4/3] max-sm:aspect-auto max-sm:h-[clamp(9rem,26dvh,15rem)] sm:aspect-video' : 'aspect-[4/3]'}`}>
       <video ref={video} autoPlay playsInline muted className={`size-full object-cover ${self ? '-scale-x-100' : ''} ${cam ? '' : 'invisible'}`} />
       {!cam && (
         <span className="absolute inset-0 grid place-items-center">
@@ -282,7 +282,7 @@ function Flash({ play: p }: { play: InterditsPlay }) {
 
 /** Les cartes déjà jouées, empilées sous la scène comme des tickets. */
 function Pile({ played }: { played: InterditsPlay[] }) {
-  if (!played.length) return <p className="text-center text-sm text-muted">Les cartes jouées s’empilent ici.</p>;
+  if (!played.length) return <p className="text-center text-sm text-muted max-sm:hidden">Les cartes jouées s’empilent ici.</p>;
   return (
     <ul className="flex flex-wrap justify-center gap-1.5" aria-label="Cartes jouées">
       {played.map((p, i) => (
@@ -304,12 +304,12 @@ function CardFace({ card, demo = false }: { card: InterditsCard; demo?: boolean 
   return (
     <div className={`ti-card relative overflow-hidden rounded-2xl bg-cacao p-4 text-butter shadow-lg ${demo ? 'w-64' : ''}`}>
       <p className="text-[11px] uppercase tracking-[0.18em] text-butter/60">Fais deviner</p>
-      <p className="ti-word mt-0.5 text-3xl font-bold tracking-[-0.03em] text-gold">{card.word}</p>
-      <div className="my-3 h-px bg-butter/15" />
+      <p className="ti-word mt-0.5 text-3xl font-bold max-sm:text-2xl tracking-[-0.03em] text-gold">{card.word}</p>
+      <div className="my-3 h-px bg-butter/15 max-sm:my-2" />
       <p className="text-[11px] uppercase tracking-[0.18em] text-butter/60">Sans dire</p>
-      <ul className="mt-1.5 space-y-1">
+      <ul className="mt-1.5 space-y-1 max-sm:grid max-sm:grid-cols-2 max-sm:gap-x-3 max-sm:gap-y-1 max-sm:space-y-0">
         {card.ban.map((w, i) => (
-          <li key={w} className="ti-ban flex items-center gap-2 text-lg font-medium" style={{ animationDelay: `${120 + i * 70}ms` }}>
+          <li key={w} className="ti-ban flex min-w-0 items-center gap-2 text-lg font-medium max-sm:text-base" style={{ animationDelay: `${120 + i * 70}ms` }}>
             <span className="grid size-5 shrink-0 place-items-center rounded-full bg-bad text-[11px] font-black text-white" aria-hidden>
               ✕
             </span>
@@ -347,12 +347,12 @@ function Holder({ s, role }: { s: InterditsState; role: 'explain' | 'guard' }) {
 
       {role === 'explain' ? (
         <>
-          {!view.joined || !view.mic ? (
-            <button className="btn-primary m-pop w-full" onClick={() => (view.joined ? void call.toggle('audio') : void call.join(true, true))}>
-              🎙️ Ouvre ton micro pour faire deviner
-            </button>
-          ) : null}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="act-dock grid grid-cols-2 gap-2">
+            {!view.joined || !view.mic ? (
+              <button className="btn-primary m-pop col-span-2 w-full" onClick={() => (view.joined ? void call.toggle('audio') : void call.join(true, true))}>
+                🎙️ Ouvre ton micro pour faire deviner
+              </button>
+            ) : null}
             <button
               className="ti-found btn col-span-2 bg-good py-3 text-base font-semibold text-white"
               onClick={(e) => {
@@ -409,7 +409,7 @@ function Holder({ s, role }: { s: InterditsState; role: 'explain' | 'guard' }) {
       ) : (
         <>
           <button
-            className="ti-buzz btn w-full bg-bad py-5 text-2xl font-black uppercase tracking-[-0.02em] text-white"
+            className="ti-buzz act-dock btn w-full bg-bad py-5 max-sm:py-4 text-2xl font-black uppercase tracking-[-0.02em] text-white"
             onClick={(e) => {
               bump(e.currentTarget, 1.06);
               send({ buzz: s.cardNo });

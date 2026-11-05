@@ -25,7 +25,7 @@ export function AovBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       <PlayerBar />
-      <div className="panel relative min-h-[28rem] overflow-hidden">
+      <div className="panel relative min-h-[28rem] overflow-clip">
         {phase === 'lobby' ? (
           <Teaser />
         ) : phase === 'gameEnd' ? (
@@ -126,7 +126,7 @@ function PlayerBar() {
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-      <ol ref={list} className="flex flex-wrap justify-center gap-1.5" aria-label="Joueurs">
+      <ol ref={list} className="chip-row flex flex-wrap justify-center gap-1.5" aria-label="Joueurs">
         {ordered.map((p) => {
           const on = p.id === chosen && phase !== 'lobby' && phase !== 'gameEnd';
           const vote = a?.votes[p.id];

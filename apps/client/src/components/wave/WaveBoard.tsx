@@ -42,7 +42,7 @@ export function WaveBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       <TeamBar />
-      <div className="panel relative overflow-hidden">
+      <div className="panel relative overflow-clip">
         <Stage />
         <Presence>
           {phase === 'lobby' ? (
@@ -88,7 +88,7 @@ function TeamBar() {
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-      <ol ref={list} className="flex flex-wrap justify-center gap-1.5" aria-label="Équipe">
+      <ol ref={list} className="chip-row flex flex-wrap justify-center gap-1.5" aria-label="Équipe">
         {ordered.map((p) => {
           const psychic = p.id === wave?.psychicId;
           return (
@@ -177,7 +177,7 @@ function Stage() {
   }, [phase, wave?.turn]);
 
   return (
-    <div ref={box} className={`relative flex min-h-[24rem] flex-col items-center gap-4 px-4 pb-5 pt-6 sm:px-8 ${boom ? 'w-quake' : ''}`} style={boom ? { animationDelay: `${BOOM_AT}ms` } : undefined}>
+    <div ref={box} className={`relative flex min-h-[24rem] flex-col items-center gap-4 px-4 pb-5 pt-6 max-sm:gap-3 max-sm:px-3 max-sm:pb-3 max-sm:pt-4 sm:px-8 ${boom ? 'w-quake' : ''}`} style={boom ? { animationDelay: `${BOOM_AT}ms` } : undefined}>
       <canvas ref={sparks} className="pointer-events-none absolute inset-0 z-[5] size-full" aria-hidden />
       <Clue wave={wave} phase={phase} psychic={psychic} psychicName={psychicName} />
       <Dial
@@ -193,7 +193,9 @@ function Stage() {
       {revealed ? (
         <Verdict points={wave.points!} gap={waveGap(wave.target!, wave.dial)} target={wave.target!} dial={wave.dial} boom={boom} />
       ) : (
-        <Actions wave={wave} phase={phase} psychic={psychic} psychicName={psychicName} onLock={lock} />
+        <div className="act-dock flex w-full flex-col items-center">
+          <Actions wave={wave} phase={phase} psychic={psychic} psychicName={psychicName} onLock={lock} />
+        </div>
       )}
     </div>
   );

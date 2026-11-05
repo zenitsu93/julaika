@@ -8,6 +8,8 @@ import { MusicDock } from './MusicPlayer';
 import { QuitButton } from './QuitButton';
 import { ShuffleGlyph, SwitchButton } from './GamePicker';
 import { SoundButton } from './SoundBoard';
+import { COMPACT_QUERY, VisioButton } from './CallBar';
+import { call, useCall } from '../lib/call';
 
 function useCountdown(endsAt: number | null): number {
   const [now, setNow] = useState(serverNow);
@@ -67,33 +69,16 @@ export function TopBar({ onQuit, onSwitch }: { onQuit: () => void; onSwitch?: ()
   const urgent = (room.phase === 'drawing' || room.phase === 'guess' || room.phase === 'draw' || room.phase === 'write' || room.phase === 'describe' || room.phase === 'clue' || room.phase === 'vote' || room.phase === 'steal' || room.phase === 'fill' || room.phase === 'answer' || room.phase === 'duel' || room.phase === 'pick' || room.phase === 'dare') && left <= 10;
   const timer = useRef<HTMLSpanElement>(null);
   // Téléphone (debout ou couché) : une seule ligne d'icônes, le reste dans « ⋯ ».
-  const compact = useMedia('(max-width: 639.98px), (max-height: 500px) and (pointer: coarse)');
+  const compact = useMedia(COMPACT_QUERY);
 
   // Sous 10 s, la pastille bat doucement à chaque seconde.
   useEffect(() => {
     if (urgent && left > 0) animate(timer.current, [{ transform: 'scale(1)' }, { transform: 'scale(1.06)' }, { transform: 'scale(1)' }], { duration: 280, easing: 'ease-out', fill: 'none' });
   }, [urgent, left]);
 
-  const copy = async () => {
-    if ((await shareInvite(room.code)) !== 'copied') return;
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
-  return (
-    <header className={`panel flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2 sm:gap-x-3 ${compact ? 'tb-compact' : ''}`}>
-      <span
-        ref={timer}
-        className={`rounded-md px-2 py-1 font-mono text-sm font-bold tabular-nums transition-colors duration-300 ${urgent ? 'bg-bad text-white' : 'bg-primary text-on-primary'}`}
-        aria-label="Temps restant"
-      >
-        <Ticker value={room.endsAt ? clock(left) : '--:--'} />
-      </span>
-      <span className="hidden items-center gap-1.5 sm:flex">
-        <Wordmark className="h-7 w-auto" />
-      </span>
-      <span className="text-sm text-muted max-sm:text-xs">
-        {room.phase === 'lobby'
+  // Où en est la partie : « Manche 1/3 » (au téléphone, juste « 1/3 »).
+  const label =
+    room.phase === 'lobby'
           ? 'Salon'
           : room.connait
             ? `Question ${room.connait.turn}/${room.connait.turns}`
@@ -133,7 +118,29 @@ export function TopBar({ onQuit, onSwitch }: { onQuit: () => void; onSwitch?: ()
             ? room.phase === 'album'
               ? 'Album'
               : `Étape ${room.tel.step + 1}/${room.tel.steps}`
-            : `Manche ${Math.min(room.round, room.settings.rounds)}/${room.settings.rounds}`}
+            : `Manche ${Math.min(room.round, room.settings.rounds)}/${room.settings.rounds}`;
+
+  const copy = async () => {
+    if ((await shareInvite(room.code)) !== 'copied') return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <header className={`panel flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2 sm:gap-x-3 ${compact ? 'tb-compact' : ''}`}>
+      <span
+        ref={timer}
+        className={`rounded-md px-2 py-1 font-mono text-sm font-bold tabular-nums transition-colors duration-300 ${urgent ? 'bg-bad text-white' : 'bg-primary text-on-primary'}`}
+        aria-label="Temps restant"
+      >
+        <Ticker value={room.endsAt ? clock(left) : '--:--'} />
+      </span>
+      <span className="hidden items-center gap-1.5 sm:flex">
+        <Wordmark className="h-7 w-auto" />
+      </span>
+      {/* Téléphone : l'étiquette se tronque plutôt que de renvoyer les icônes à la ligne. */}
+      <span className={`text-sm text-muted max-sm:text-xs ${compact ? 'min-w-0 flex-1 basis-0 truncate font-mono' : ''}`} title={label}>
+        {compact ? (label.match(/\d+\/\d+$/)?.[0] ?? label) : label}
       </span>
       <div className="order-last min-w-0 basis-full truncate text-center font-mono text-lg font-bold tracking-[0.2em] empty:hidden sm:order-none sm:flex-1 sm:basis-auto sm:text-xl sm:tracking-[0.3em]" aria-live="polite">
         {room.hint ? (
@@ -146,6 +153,7 @@ export function TopBar({ onQuit, onSwitch }: { onQuit: () => void; onSwitch?: ()
       </div>
       <div className="ml-auto flex items-center gap-1.5 sm:ml-0 sm:gap-2">
         {(!compact || room.meetUrl) && <MeetButton />}
+        {compact && <VisioButton />}
         <MusicDock />
         <SoundButton />
         {compact ? (
@@ -188,6 +196,7 @@ export function TopBar({ onQuit, onSwitch }: { onQuit: () => void; onSwitch?: ()
 /** Téléphone : inviter, changer de jeu… rangés derrière « ⋯ » pour garder la barre sur une ligne. */
 function MoreMenu({ code, copied, onCopy, onSwitch }: { code: string; copied: boolean; onCopy: () => void; onSwitch?: () => void }) {
   const [open, setOpen] = useState(false);
+  const joined = useCall().joined;
   const root = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -223,6 +232,20 @@ function MoreMenu({ code, copied, onCopy, onSwitch }: { code: string; copied: bo
             <span key={String(copied)} className="m-rise flex-1">{copied ? 'Lien copié' : 'Inviter'}</span>
             <span className="font-mono text-xs text-muted">#{code}</span>
           </button>
+          {!joined && (
+            <button
+              type="button"
+              role="menuitem"
+              className={item}
+              onClick={() => {
+                setOpen(false);
+                call.join(false, true);
+              }}
+            >
+              <span className="w-4 shrink-0 text-center" aria-hidden>🎙️</span>
+              Visio, micro seulement
+            </button>
+          )}
           {onSwitch && (
             <button
               type="button"

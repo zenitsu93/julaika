@@ -43,7 +43,7 @@ export function PitchBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       {p && <Turns p={p} />}
-      <div className="panel relative min-h-[28rem] overflow-hidden">
+      <div className="panel relative min-h-[28rem] overflow-clip">
         {phase === 'lobby' || !p ? (
           <Teaser />
         ) : phase === 'brief' ? (

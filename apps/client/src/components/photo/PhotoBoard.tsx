@@ -25,7 +25,7 @@ export function PhotoBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       <PhotoBar />
-      <div className="panel relative min-h-[30rem] overflow-hidden bg-[radial-gradient(120%_80%_at_50%_0%,color-mix(in_oklab,var(--color-accent)_9%,transparent),transparent_70%)]">
+      <div className="panel relative min-h-[30rem] overflow-clip bg-[radial-gradient(120%_80%_at_50%_0%,color-mix(in_oklab,var(--color-accent)_9%,transparent),transparent_70%)]">
         {phase === 'pose' ? <Booth /> : phase === 'vote' || phase === 'reveal' ? <Table /> : <Teaser />}
         <Presence>
           {phase === 'lobby' ? (
@@ -89,7 +89,7 @@ function PhotoBar() {
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-      <ol ref={list} className="flex flex-wrap justify-center gap-1.5" aria-label="Joueurs">
+      <ol ref={list} className="chip-row flex flex-wrap justify-center gap-1.5" aria-label="Joueurs">
         {ordered.map((p) => {
           const finished = live && done.has(p.id);
           const playing = live && photo?.players.includes(p.id);

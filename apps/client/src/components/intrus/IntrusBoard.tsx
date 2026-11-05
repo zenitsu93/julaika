@@ -16,7 +16,7 @@ export function IntrusBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       <PlayerStrip />
-      <div className="panel relative min-h-[28rem] overflow-hidden">
+      <div className="panel relative min-h-[28rem] overflow-clip">
         {intrus ? <Stage intrus={intrus} /> : <Teaser />}
         <Overlay />
       </div>
@@ -78,10 +78,10 @@ function Stage({ intrus }: { intrus: IntrusState }) {
   }, [intrus.hesitationBy]);
 
   return (
-    <div ref={box} className="relative flex min-h-[28rem] flex-col gap-5 px-4 pb-5 pt-5 sm:px-6">
+    <div ref={box} className="relative flex min-h-[28rem] flex-col gap-5 px-4 pb-5 pt-5 max-sm:gap-3 max-sm:px-3 max-sm:pb-3 max-sm:pt-3 sm:px-6">
       <canvas ref={sparks} className="pointer-events-none absolute inset-0 z-[5] size-full" aria-hidden />
       {intrus.hesitationBy && <Slam key={`${intrus.manche}-${intrus.clues.length}`} by={byId.get(intrus.hesitationBy) ?? null} />}
-      <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col items-center gap-4 max-sm:gap-2 sm:flex-row sm:items-start sm:justify-between">
         <WordCard key={intrus.manche} word={intrus.word} />
         <Headline intrus={intrus} phase={phase} names={byId} selfId={selfId} />
       </div>
@@ -103,7 +103,7 @@ function Stage({ intrus }: { intrus: IntrusState }) {
           />
         ))}
       </ol>
-      <div className="mt-auto">
+      <div className="act-dock mt-auto">
         <Actions intrus={intrus} phase={phase} selfId={selfId} names={byId} />
       </div>
     </div>
@@ -119,7 +119,7 @@ function WordCard({ word }: { word: string | null }) {
   }, []);
   if (!word)
     return (
-      <div className="i-deal grid h-28 w-48 shrink-0 place-items-center rounded-2xl border border-dashed border-edge text-center text-sm text-muted">
+      <div className="i-deal grid h-28 w-48 shrink-0 max-sm:h-20 max-sm:w-40 place-items-center rounded-2xl border border-dashed border-edge text-center text-sm text-muted">
         Tu regardes cette manche.
         <br />
         Tu joueras à la suivante.
@@ -131,7 +131,7 @@ function WordCard({ word }: { word: string | null }) {
       onClick={() => setHidden((h) => !h)}
       data-hidden={hidden}
       aria-label={hidden ? 'Montrer mon mot' : `Ton mot : ${word}. Cliquer pour le cacher`}
-      className="i-card i-deal group h-28 w-48 shrink-0 rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-info focus-visible:ring-offset-2"
+      className="i-card i-deal group h-28 w-48 shrink-0 max-sm:h-20 max-sm:w-40 rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-info focus-visible:ring-offset-2"
     >
       <span className="i-card-inner relative block size-full">
         <span className="i-face absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-2xl border border-edge bg-surface shadow-[0_14px_32px_-18px_rgb(0_0_0/0.45)]">

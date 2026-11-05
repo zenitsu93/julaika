@@ -5,6 +5,7 @@ import { BoardCanvas, Pen } from '../../lib/board';
 import { useCall } from '../../lib/call';
 import { cerveauPages, flatten, inkLayers, type CerveauPage } from '../../lib/cerveau';
 import { net } from '../../lib/net';
+import { useFitSheet } from '../../lib/fit';
 import { serverNow, useGame } from '../../lib/store';
 import { attachWipe, bump, confetti, Presence, useCountUp, useSpeaking } from '../../motion';
 import { CallBar } from '../CallBar';
@@ -26,7 +27,7 @@ export function CerveauBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       <DuoBar />
-      <div className="panel relative min-h-[26rem] overflow-hidden">
+      <div className="panel relative min-h-[26rem] overflow-clip">
         {phase === 'album' ? <Album /> : phase === 'lobby' ? <Teaser /> : <Stage key={turn} />}
         <Presence>
           {phase === 'lobby' ? (
@@ -184,7 +185,7 @@ function Stage() {
   const partner = role.index >= 0 ? (cv.duo[1 - role.index] ?? null) : null;
 
   return (
-    <div className="relative grid gap-3 p-3 sm:p-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
+    <div className="relative grid gap-3 p-3 max-sm:gap-2 sm:p-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
       <div className="flex min-w-0 flex-col gap-3">
         {/* À la révélation, le modèle est déjà posé sur le dessin : sur mobile, on ne le répète pas. */}
         <div className={reveal ? 'max-lg:hidden' : ''}>
@@ -267,8 +268,9 @@ function ModelCard({ cv, role, partner, reveal }: { cv: CerveauState; role: Retu
   }
 
   return (
-    <figure className="m-0 max-lg:mx-auto max-lg:w-full max-lg:max-w-xs">
-      <div className="cv-model relative aspect-[4/3] overflow-hidden rounded-xl border border-edge bg-butter/40">
+    // Téléphone : le modèle en vignette, sa légende à côté, pour laisser la hauteur à la feuille.
+    <figure className="m-0 max-lg:mx-auto max-lg:w-full max-lg:max-w-xs max-sm:flex max-sm:max-w-none max-sm:items-center max-sm:gap-3">
+      <div className="cv-model relative aspect-[4/3] overflow-hidden rounded-xl border border-edge bg-butter/40 max-sm:w-[min(9.5rem,40%)] max-sm:shrink-0">
         <ModelArt model={cv.model} half={reveal ? null : role.half} />
         {!reveal && role.half && (
           <span className={`absolute top-2 rounded-full bg-surface/90 px-2 py-0.5 text-xs text-muted ${role.half === 'left' ? 'right-2' : 'left-2'}`}>
@@ -276,7 +278,8 @@ function ModelCard({ cv, role, partner, reveal }: { cv: CerveauState; role: Retu
           </span>
         )}
       </div>
-      <figcaption className="mt-1.5 flex items-center justify-between gap-2 text-sm">
+      <div className="min-w-0 max-sm:flex-1">
+      <figcaption className="mt-1.5 flex items-center justify-between gap-2 text-sm max-sm:mt-0 max-sm:flex-col max-sm:items-start max-sm:gap-0">
         <span className="text-muted">Modèle</span>
         <b className={cv.kind === 'guide' && !reveal && role.index === 0 ? 'cv-secret' : ''} title={cv.kind === 'guide' && !reveal ? 'Ne le dis pas !' : undefined}>
           {cv.model.name}
@@ -285,6 +288,7 @@ function ModelCard({ cv, role, partner, reveal }: { cv: CerveauState; role: Retu
       {cv.kind === 'guide' && role.index === 0 && !reveal && (
         <p className="m-rise mt-1 text-xs text-muted">Décris les formes, leur taille, leur place. Interdit de dire ce que c'est !</p>
       )}
+      </div>
     </figure>
   );
 }
@@ -320,6 +324,9 @@ function ModelArt({ model, half, overlay = false }: { model: CerveauModel; half:
 /** Le tableau commun : un calque par membre du binôme, et le modèle qui s'y pose à la révélation. */
 function Sheet({ cv, role, reveal, briefing }: { cv: CerveauState; role: ReturnType<typeof roleOf>; reveal: boolean; briefing: boolean }) {
   const c0 = useRef<HTMLCanvasElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
+  const tools = useRef<HTMLDivElement>(null);
+  useFitSheet(frame, c0, tools, { active: !reveal });
   const c1 = useRef<HTMLCanvasElement>(null);
   const ghostCanvas = useRef<HTMLCanvasElement>(null);
   const wipe = useRef<HTMLCanvasElement>(null);
@@ -362,8 +369,8 @@ function Sheet({ cv, role, reveal, briefing }: { cv: CerveauState; role: ReturnT
   };
 
   return (
-    <div className="flex min-w-0 flex-col items-center gap-3">
-      <div className={`cv-sheet relative w-full overflow-hidden rounded-xl border border-edge bg-white ${reveal ? 'is-reveal' : ''}`}>
+    <div className="flex min-w-0 flex-col items-center gap-3 max-sm:gap-2">
+      <div ref={frame} className={`cv-sheet relative w-full overflow-hidden max-sm:max-w-[max(13rem,calc((100dvh-27rem)*4/3))] rounded-xl border border-edge bg-white ${reveal ? 'is-reveal' : ''}`}>
         <canvas ref={c0} width={CANVAS_W} height={CANVAS_H} className="block aspect-[4/3] w-full" />
         <canvas ref={c1} width={CANVAS_W} height={CANVAS_H} className="pointer-events-none absolute inset-0 size-full" />
         {cv.kind === 'moitie' && !reveal && (
@@ -394,7 +401,11 @@ function Sheet({ cv, role, reveal, briefing }: { cv: CerveauState; role: ReturnT
         <canvas ref={wipe} className="pointer-events-none absolute inset-0 size-full" aria-hidden />
         {reveal && <Score cv={cv} />}
       </div>
-      {role.index >= 0 && !reveal && <DuoControls cv={cv} pen={pen} canDraw={canDraw} drawer={role.layer !== null} done={done} />}
+      {role.index >= 0 && !reveal && (
+        <div ref={tools} className="act-dock w-full">
+          <DuoControls cv={cv} pen={pen} canDraw={canDraw} drawer={role.layer !== null} done={done} />
+        </div>
+      )}
       {role.index < 0 && !reveal && <p className="text-sm text-muted">Tu regardes : le dessin se fait sous tes yeux.</p>}
     </div>
   );

@@ -67,7 +67,7 @@ export function PlayerStrip() {
   useFlip(list, [ranked.map((p) => p.id).join()]);
 
   return (
-    <ol ref={list} className="relative flex flex-wrap justify-center gap-1.5" aria-label="Classement">
+    <ol ref={list} className="chip-row relative flex flex-wrap justify-center gap-1.5" aria-label="Classement">
       {ranked.map((p, i) => (
         <Pill key={p.id} player={p} rank={i + 1} drawing={p.id === drawerId} mime={mime} self={p.id === selfId} />
       ))}

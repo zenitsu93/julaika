@@ -36,7 +36,7 @@ export function AlibiBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       {a && <Cast a={a} />}
-      <div ref={panel} className="panel relative min-h-[28rem] overflow-hidden">
+      <div ref={panel} className="panel relative min-h-[28rem] overflow-clip">
         {phase === 'lobby' || !a ? (
           <Teaser />
         ) : phase === 'plot' ? (
@@ -255,9 +255,9 @@ function Plot({ a }: { a: AlibiState }) {
   }, [left]);
 
   return (
-    <div className="grid gap-4 p-3 sm:p-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
-      <div className="flex min-w-0 flex-col gap-4">
-        <article className="al-folder relative rounded-2xl p-5 pt-7 sm:p-7 sm:pt-9">
+    <div className="grid gap-4 p-3 max-sm:gap-3 sm:p-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
+      <div className="flex min-w-0 flex-col gap-4 max-sm:gap-3">
+        <article className="al-folder relative rounded-2xl p-5 pt-7 max-sm:p-4 max-sm:pt-6 sm:p-7 sm:pt-9">
           <span className="al-tab absolute -top-3 left-6 rounded-t-lg px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-[0.2em]">
             Dossier n° {String(a.case + 1).padStart(3, '0')}
           </span>
@@ -265,11 +265,11 @@ function Plot({ a }: { a: AlibiState }) {
             Accusés
           </span>
           <p className="text-[11px] uppercase tracking-[0.18em] opacity-70">Les faits</p>
-          <p className="mt-2 min-h-[4.5em] text-xl font-semibold leading-snug tracking-[-0.02em] sm:text-2xl" aria-label={a.accusation}>
+          <p className="mt-2 min-h-[4.5em] text-xl font-semibold leading-snug tracking-[-0.02em] max-sm:mt-1 max-sm:text-lg sm:text-2xl" aria-label={a.accusation}>
             <span aria-hidden>{typed}</span>
             <span className="al-caret" aria-hidden />
           </p>
-          <p className="mt-3 text-sm opacity-80">Où étiez-vous, et qu'avez-vous fait ? Mettez-vous d'accord avant l'audience.</p>
+          <p className="mt-3 text-sm opacity-80 max-sm:mt-2 max-sm:text-xs">Où étiez-vous, et qu'avez-vous fait ? Mettez-vous d'accord avant l'audience.</p>
         </article>
         <div className="flex items-center gap-3">
           <span ref={fuse} className="al-fuse relative h-2.5 flex-1 overflow-hidden rounded-full bg-edge" aria-hidden>
@@ -279,7 +279,8 @@ function Plot({ a }: { a: AlibiState }) {
             <Ticker value={left} />
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        {/* Téléphone : les complices se lisent déjà en haut ; leur carnet passe avant leurs têtes. */}
+        <div className={`grid grid-cols-2 gap-3 ${suspect ? 'max-sm:hidden' : ''}`}>
           {a.suspects.map((id, i) => (
             <div key={id} className={i ? 'al-in-right' : 'al-in-left'}>
               <Mug id={id} label="complice" small />
@@ -331,9 +332,9 @@ function Notebook({ a }: { a: AlibiState }) {
   };
 
   return (
-    <div className="al-notebook flex min-h-64 flex-1 flex-col rounded-xl p-3 pl-8">
+    <div className="al-notebook flex min-h-64 flex-1 flex-col rounded-xl p-3 pl-8 max-sm:min-h-40">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Carnet des complices · secret</p>
-      <ol ref={list} className="mt-1 max-h-72 flex-1 overflow-y-auto pr-1 leading-[1.55rem]">
+      <ol ref={list} className="mt-1 max-h-72 flex-1 max-sm:max-h-[22dvh] overflow-y-auto pr-1 leading-[1.55rem]">
         {notes.length === 0 && <li className="al-hand text-xl text-muted">On était où, déjà ?</li>}
         {notes.map((n, i) => (
           <li key={i} className={`al-note al-hand text-xl leading-[1.55rem] ${n.by === selfId ? '' : 'text-accent'}`} style={{ '--tilt': `${((i * 37) % 5) - 2}deg` } as CSSProperties}>

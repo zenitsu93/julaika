@@ -3,7 +3,10 @@ import { MAX_CALL, type PlayerPublic } from '@julaika/shared';
 import { avatarOf } from '../lib/avatars';
 import { call, useCall } from '../lib/call';
 import { useGame } from '../lib/store';
-import { bump, useSpeaking } from '../motion';
+import { bump, useMedia, useSpeaking } from '../motion';
+
+/** Téléphone (debout ou couché) : même seuil que la barre du haut compacte. */
+export const COMPACT_QUERY = '(max-width: 639.98px), (max-height: 500px) and (pointer: coarse)';
 
 /** Trois barres qui ondulent quand la personne parle. */
 function Level({ on }: { on: boolean }) {
@@ -26,7 +29,7 @@ function Tile({ player, stream, self, drawing, psychic, mime }: { player: Player
   return (
     // Pellicule : la tuile de qui parle s'élargit, les autres se serrent.
     <figure
-      className={`m-pop relative m-0 h-20 min-w-24 shrink-0 overflow-hidden rounded-[9px] border bg-page transition-[flex-grow,border-color] duration-500 ease-[cubic-bezier(.2,.8,.2,1)] sm:h-24 sm:min-w-32 ${
+      className={`m-pop relative m-0 h-16 min-w-20 shrink-0 overflow-hidden rounded-[9px] border bg-page transition-[flex-grow,border-color] duration-500 ease-[cubic-bezier(.2,.8,.2,1)] sm:h-24 sm:min-w-32 ${
         player.guessed ? 'border-good' : 'border-edge'
       } ${speaking ? 'm-speaking grow-[1.7] outline-2 outline-good' : 'grow'} basis-0`}
     >
@@ -66,8 +69,11 @@ export function CallBar() {
   const selfId = useGame((s) => s.selfId);
   const inCall = players.filter((p) => p.inCall);
   const full = inCall.length >= MAX_CALL && !view.joined;
+  const compact = useMedia(COMPACT_QUERY);
 
   if (!view.joined) {
+    // Téléphone : la visio se rejoint depuis la barre du haut, le jeu garde toute la hauteur.
+    if (compact) return view.error ? <p className="m-rise text-center text-sm text-bad">{view.error}</p> : null;
     return (
       // Téléphone : une seule ligne, le micro seul devient une icône.
       <div className="panel flex flex-wrap items-center justify-center gap-2 p-2 text-sm max-sm:flex-nowrap">
@@ -117,7 +123,8 @@ export function CallBar() {
         ))}
       </div>
       {/* Dock vertical, comme la barre d'outils du dessinateur. */}
-      <div className="flex shrink-0 flex-col gap-0.5 rounded-2xl bg-primary p-1 text-on-primary shadow-lg">
+      {/* Téléphone : le dock se couche, la pellicule ne fait plus que la hauteur d'une vignette. */}
+      <div className="flex shrink-0 flex-col gap-0.5 rounded-2xl bg-primary p-1 text-on-primary shadow-lg max-sm:flex-row max-sm:self-center">
         <button
           className={`${dockBtn} ${view.cam ? 'hover:bg-on-primary/15' : 'bg-bad text-white'}`}
           title={view.cam ? 'Couper la caméra' : 'Activer la caméra'}
@@ -147,5 +154,32 @@ export function CallBar() {
       </div>
       {view.error && <p className="text-xs text-bad">{view.error}</p>}
     </div>
+  );
+}
+
+/** Téléphone : la visio tient dans une icône de la barre du haut (le nombre de gens déjà dedans en pastille). */
+export function VisioButton() {
+  const view = useCall();
+  const inCall = useGame((s) => s.room!.players.filter((p) => p.inCall).length);
+  if (view.joined) return null;
+  const full = inCall >= MAX_CALL;
+  return (
+    <button
+      className="btn-primary relative px-2.5 py-1.5"
+      disabled={full}
+      onClick={(e) => {
+        bump(e.currentTarget);
+        call.join(true, true);
+      }}
+      aria-label={inCall ? `Rejoindre la visio (${inCall} dedans)` : 'Rejoindre la visio'}
+      title="Rejoindre la visio"
+    >
+      🎥
+      {inCall > 0 && (
+        <span key={inCall} className="m-pop absolute -right-1 -top-1 grid size-4.5 place-items-center rounded-full bg-good font-mono text-[10px] font-bold text-white" aria-hidden>
+          {inCall}
+        </span>
+      )}
+    </button>
   );
 }

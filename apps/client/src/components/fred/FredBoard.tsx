@@ -18,7 +18,7 @@ export function FredBoard() {
   return (
     <section className="flex min-w-0 flex-col gap-3">
       {f && <Turns f={f} />}
-      <div className="panel relative min-h-[28rem] overflow-hidden">
+      <div className="panel relative min-h-[28rem] overflow-clip">
         {phase === 'lobby' || !f ? <Teaser /> : phase === 'pick' ? <Pick key={f.turn} f={f} /> : phase === 'reveal' ? <Reveal key={f.turn} f={f} /> : <Hum key={f.turn} f={f} />}
         <Presence>
           {phase === 'lobby' ? (
@@ -161,7 +161,7 @@ function Pick({ f }: { f: FredState }) {
   }
 
   return (
-    <div className="flex min-h-[28rem] flex-col items-center justify-center gap-5 p-4 sm:p-6">
+    <div className="flex min-h-[28rem] flex-col items-center justify-center gap-5 p-4 max-sm:gap-3 max-sm:p-3 sm:p-6">
       <div className="text-center">
         <h2 className="text-2xl font-semibold tracking-[-0.03em]">Choisis ta chanson</h2>
         <p className="text-sm text-muted">
@@ -198,7 +198,7 @@ function Sleeve({ song, index }: { song: FredSong; index: number }) {
       ref={btn}
       type="button"
       style={{ animationDelay: `${index * 90}ms`, '--tilt': `${tilt}deg` } as CSSProperties}
-      className="f-sleeve group relative flex aspect-square flex-col justify-end overflow-visible rounded-xl text-left max-sm:aspect-[3.4/1] outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      className="f-sleeve group relative flex aspect-square flex-col justify-end overflow-visible rounded-xl text-left max-sm:aspect-[4.4/1] outline-none focus-visible:ring-2 focus-visible:ring-accent"
       onClick={() => {
         bump(btn.current, 1.05);
         net.send({ t: 'fred', pick: index });
