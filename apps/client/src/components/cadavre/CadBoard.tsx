@@ -25,6 +25,8 @@ import { Lobby } from '../Lobby';
 import { Toolbar } from '../Toolbar';
 import { CadArt } from './CadArt';
 import './cadavre.css';
+import { Dices } from 'lucide-react';
+import { ICON } from '../../lib/icon';
 
 const PART_LABEL = ['La tête', 'Le corps', 'Les jambes'] as const;
 const PART_ICON = ['🙂', '👕', '🦵'] as const;
@@ -233,7 +235,7 @@ function DrawPart({ part, above, done }: { part: CadPart; above: { name: string;
   return (
     <div className="flex flex-col items-center gap-3 p-3 max-sm:gap-2 sm:p-4">
       <div className="text-center">
-        <p className="m-rise text-xs uppercase tracking-[0.18em] text-muted">
+        <p className="m-rise text-xs font-medium text-muted">
           Morceau {part + 1}/3 · {above ? `sous le morceau de ${above.name}` : 'en secret'}
         </p>
         <h2 className="m-pop mt-0.5 text-2xl tracking-[-0.03em] max-sm:text-xl sm:text-3xl" style={{ animationDelay: '60ms' }}>
@@ -309,7 +311,7 @@ function DrawPart({ part, above, done }: { part: CadPart; above: { name: string;
             <Toolbar pen={pen} />
             <div className="flex flex-wrap items-center justify-center gap-2">
               <button type="button" className="btn text-muted hover:text-ink" onClick={rollIdea}>
-                🎲 Une idée ?
+                <Dices {...ICON} /> Une idée
               </button>
               {idea && (
                 <span ref={ideaEl} key={idea} className="m-pop rounded-full bg-butter px-3 py-1 text-sm font-medium text-cacao">
@@ -324,7 +326,7 @@ function DrawPart({ part, above, done }: { part: CadPart; above: { name: string;
                   net.send({ t: 'cadavre', done: true });
                 }}
               >
-                J'ai fini !
+                J'ai fini
               </button>
             </div>
           </div>
@@ -466,7 +468,7 @@ function Reveal() {
       <canvas ref={sparks} className="pointer-events-none absolute inset-0 z-[5] size-full" aria-hidden />
       <header className="flex items-center justify-between gap-3 border-b border-edge px-4 py-3">
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.18em] text-muted">
+          <p className="text-xs font-medium text-muted">
             Créature {index + 1}/{creatures.length}
           </p>
           <h2 key={String(ready)} className="m-rise truncate text-lg">
@@ -670,7 +672,7 @@ function Bestiary({ creatures, titles, isHost, hostName }: { creatures: Creature
     <div className="relative flex min-h-[30rem] flex-col">
       <canvas ref={sparks} className="pointer-events-none absolute inset-0 z-[5] size-full" aria-hidden />
       <header className="border-b border-edge px-4 py-3 text-center">
-        <p className="m-rise text-xs uppercase tracking-[0.18em] text-muted">Fin de partie</p>
+        <p className="m-rise text-xs font-medium text-muted">Fin de partie</p>
         <h2 className="m-pop text-2xl tracking-[-0.03em]">Le bestiaire</h2>
       </header>
       <ul className="flex flex-1 flex-wrap content-start justify-center gap-x-5 gap-y-6 p-5">

@@ -8,6 +8,8 @@ import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
 import { scaleGap, ScaleDial } from './ConnaitScale';
 import './connait.css';
+import { RefreshCw } from 'lucide-react';
+import { ICON } from '../../lib/icon';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 /** Temps de suspense avant que les cartes se retournent (ms). */
@@ -231,7 +233,7 @@ function Spotlight({ star, isStar, topic, turn, scale }: { star: PlayerPublic; i
         <span className="k-spot absolute inset-0 rounded-full" aria-hidden />
         <span className="relative grid size-full place-items-center rounded-full bg-surface text-4xl ring-1 ring-edge max-sm:text-3xl">{avatarOf(star.avatar)}</span>
       </span>
-      <p className="m-rise text-xs uppercase tracking-[0.18em] text-muted" style={{ animationDelay: '80ms' }}>
+      <p className="m-rise text-xs font-medium text-muted" style={{ animationDelay: '80ms' }}>
         {isStar ? 'À propos de toi' : `À propos de ${star.name}`}
         {scale && <span className="k-scale-tag ml-2 rounded-full bg-accent/20 px-2 py-0.5 normal-case tracking-normal text-ink">au curseur</span>}
       </p>
@@ -384,7 +386,7 @@ function Footer({ k, isStar, total }: { k: ConnaitState; isStar: boolean; total:
             net.send({ t: 'connait', reroll: true });
           }}
         >
-          ↻ Autre question
+          <RefreshCw {...ICON} /> Autre question
         </button>
       )}
     </div>

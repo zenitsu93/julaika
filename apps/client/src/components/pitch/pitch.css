@@ -233,7 +233,7 @@
 .pt-fly {
   right: 2%;
   top: -6%;
-  animation: pt-fly 1.6s 0.4s var(--ease-out) backwards, m-float 2s 2s ease-in-out infinite;
+  animation: pt-fly 1.6s 0.4s var(--ease-out) backwards;
 }
 @keyframes pt-fly {
   from {
@@ -433,7 +433,7 @@
   right: 12%;
   top: 6%;
   font-size: 12cqw;
-  animation: m-pop 0.6s 1.6s var(--ease-spring) backwards, m-float 3s 2.2s ease-in-out infinite;
+  animation: m-pop 0.6s 1.6s var(--ease-spring) backwards;
 }
 .pt-pin {
   position: absolute;
@@ -832,16 +832,6 @@
     transform: rotateX(70deg) translateY(30px);
     opacity: 0;
   }
-}
-/* Le reflet doré qui balaie la fiche. */
-.pt-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 35%, rgb(255 236 180 / 0.22) 50%, transparent 65%);
-  transform: translateX(-100%);
-  animation: pt-sheen 3.4s 0.9s ease-in-out infinite;
-  pointer-events: none;
 }
 @keyframes pt-sheen {
   0% {

@@ -23,9 +23,9 @@ const FIELDS: { key: keyof typeof SETTINGS_LIMITS; label: string; step?: number;
 ];
 
 const MODES: { value: GameMode; label: string; hint: string }[] = [
-  { value: 'dessin', label: '✏️ Dessin', hint: 'On dessine le mot, les autres devinent.' },
-  { value: 'mime', label: '🎭 Mime', hint: 'On mime le mot devant la caméra (ou en vrai), sans parler.' },
-  { value: 'mixte', label: '🎲 Mixte', hint: 'Chaque tour, dessin ou mime au hasard.' },
+  { value: 'dessin', label: 'Dessin', hint: 'On dessine le mot, les autres devinent.' },
+  { value: 'mime', label: 'Mime', hint: 'On mime le mot devant la caméra (ou en vrai), sans parler.' },
+  { value: 'mixte', label: 'Mixte', hint: 'Chaque tour, dessin ou mime au hasard.' },
 ];
 
 const LEVELS: { value: Difficulty; label: string }[] = [
@@ -449,7 +449,7 @@ export function Lobby() {
       <div className="mt-3 text-sm">
         <span className="mb-1 flex items-center gap-1.5 text-muted">
           Manches piégées
-          <span className="rounded-full bg-accent/20 px-1.5 text-[10px] font-semibold tracking-wide text-ink uppercase">Nouveau</span>
+          <span className="rounded-full bg-accent/20 px-1.5 text-[10px] font-semibold text-ink">Nouveau</span>
         </span>
         <div ref={trapMode.container} role="group" aria-label="Manches piégées" className="relative grid grid-cols-3 gap-1 rounded-md border border-edge p-1">
           <span ref={trapMode.indicator} className={`m-indicator rounded ${room.settings.traps === 'jamais' ? 'bg-primary' : 'bg-accent'}`} />

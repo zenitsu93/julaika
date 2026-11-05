@@ -9,6 +9,8 @@ import { CallBar } from '../CallBar';
 import { Overlay } from '../Overlay';
 import { PlayerStrip } from '../PlayerStrip';
 import './intrus.css';
+import { Hand } from 'lucide-react';
+import { ICON } from '../../lib/icon';
 
 /** Plateau de L'Intrus : ton mot secret, les sièges dans l'ordre de parole, puis le vote. */
 export function IntrusBoard() {
@@ -135,7 +137,7 @@ function WordCard({ word }: { word: string | null }) {
     >
       <span className="i-card-inner relative block size-full">
         <span className="i-face absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-2xl border border-edge bg-surface shadow-[0_14px_32px_-18px_rgb(0_0_0/0.45)]">
-          <span className="text-[11px] uppercase tracking-[0.2em] text-muted">Ton mot</span>
+          <span className="text-[11px] font-medium text-muted">Ton mot</span>
           <span className="max-w-full truncate px-3 text-2xl font-semibold tracking-[-0.03em]">{word}</span>
           <span className="text-[11px] text-muted opacity-0 transition group-hover:opacity-100">cliquer pour cacher</span>
         </span>
@@ -173,7 +175,7 @@ function Headline({ intrus, phase, names, selfId }: { intrus: IntrusState; phase
           : '';
   return (
     <div className="min-w-0 flex-1 text-center sm:text-right" aria-live="polite">
-      <p className="text-xs uppercase tracking-[0.18em] text-muted">
+      <p className="text-xs font-medium text-muted">
         Manche {intrus.manche} / {intrus.manches}
       </p>
       <h2 key={title} className="m-rise text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">
@@ -486,7 +488,7 @@ function Hesitate({ intrus, names, selfId }: { intrus: IntrusState; names: Map<s
         }`}
       >
         {!ready && from !== null && <span key={from} className="i-charge absolute inset-y-0 left-0 bg-bad/15" style={{ animationDuration: `${Math.max(0, from - serverNow())}ms` }} aria-hidden />}
-        <span className="relative">✋ Hésitation !</span>
+        <span className="relative inline-flex items-center gap-2"><Hand {...ICON} /> Hésitation</span>
       </button>
       <p className="text-xs text-muted">
         {speaker?.name ?? 'L’orateur'} cherche trop longtemps ? Buzze une fois par manche<span className="max-sm:hidden"> (touche H)</span>.

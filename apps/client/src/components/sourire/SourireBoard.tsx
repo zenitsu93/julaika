@@ -9,6 +9,8 @@ import { bump, confetti, Presence, Ticker, useCountUp } from '../../motion';
 import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
 import { SoundBoard } from '../SoundBoard';
+import { Dices, Video } from 'lucide-react';
+import { ICON } from '../../lib/icon';
 
 const WARP_INFO: Record<WarpId, { label: string; emoji: string }> = {
   bulle: { label: 'Gros nez', emoji: '🔍' },
@@ -125,7 +127,7 @@ function Face({ id, big, pip, label, tone }: { id: string; big?: boolean; pip?: 
       <video ref={video} autoPlay playsInline muted className={`size-full object-cover ${self ? '-scale-x-100' : ''} ${cam ? '' : 'invisible'}`} />
       {!cam && (
         <span className="absolute inset-0 grid place-items-center">
-          <span className="m-breathe text-6xl sm:text-7xl">{avatarOf(player?.avatar ?? 0)}</span>
+          <span className="text-6xl sm:text-7xl">{avatarOf(player?.avatar ?? 0)}</span>
         </span>
       )}
       <figcaption className="absolute inset-x-2 bottom-2 flex items-center justify-between gap-2">
@@ -288,7 +290,7 @@ function SmiledButton({ defender }: { defender: boolean }) {
         net.send({ t: 'sourire', smiled: true });
       }}
     >
-      {defender ? '🙈 J’avoue, j’ai souri' : '😁 Il a souri !'}
+      {defender ? 'J’avoue, j’ai souri' : 'Il a souri'}
       <span className="kbd border-current/30 text-current/70 max-sm:hidden">Espace</span>
     </button>
   );
@@ -310,7 +312,7 @@ function Weapons({ s }: { s: SourireState }) {
   return (
     <>
       <div ref={card} className="s-dare relative overflow-hidden rounded-xl bg-primary p-4 text-on-primary">
-        <p className="text-[11px] uppercase tracking-[0.18em] opacity-70">Ta mission</p>
+        <p className="text-[11px] font-medium opacity-70">Ta mission</p>
         <p key={s.dare} className="s-dare-text mt-1 text-lg font-semibold leading-snug tracking-[-0.02em]">
           {s.dare ?? '…'}
         </p>
@@ -321,7 +323,7 @@ function Weapons({ s }: { s: SourireState }) {
             net.send({ t: 'sourire', dare: true });
           }}
         >
-          🎲 Une autre
+          <Dices {...ICON} /> Une autre
         </button>
       </div>
 
@@ -349,7 +351,7 @@ function Weapons({ s }: { s: SourireState }) {
           </div>
         ) : (
           <button className="btn-ghost w-full text-xs" onClick={() => (view.joined ? call.toggle('video') : call.join(true, true))}>
-            🎥 Allume ta caméra pour te déformer
+            <Video {...ICON} /> Allume ta caméra pour te déformer
           </button>
         )}
       </div>

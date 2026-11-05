@@ -10,6 +10,8 @@ import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
 import { Bottle } from './AovArt';
 import './aov.css';
+import { RotateCw, Shuffle, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { ICON } from '../../lib/icon';
 
 const send = (msg: { spin: true } | { choose: AovKind } | { pass: true } | { vote: boolean }) => net.send({ t: 'aov', ...msg });
 
@@ -303,7 +305,7 @@ function Wheel({ a, players }: { a: AovState; players: PlayerPublic[] }) {
       <p className="min-h-7 text-center text-lg font-semibold" role="status">
         {landed && chosen ? (
           <span key="landed" className="w-stamp inline-block">
-            {chosen.id === selfId ? 'C’est toi ! 😏' : `C’est au tour de ${chosen.name} !`}
+            {chosen.id === selfId ? 'C’est à toi' : `C’est au tour de ${chosen.name}`}
           </span>
         ) : a.spinAt ? (
           <span className="text-muted">
@@ -311,7 +313,7 @@ function Wheel({ a, players }: { a: AovState; players: PlayerPublic[] }) {
           </span>
         ) : canSpin ? (
           <button type="button" className="btn-primary m-pop px-5 py-2" onClick={(e) => (bump(e.currentTarget), send({ spin: true }))}>
-            🍾 Faire tourner la bouteille
+            <RotateCw {...ICON} /> Faire tourner la bouteille
           </button>
         ) : (
           <span className="text-muted">{spinner?.name ?? 'Quelqu’un'} va faire tourner la bouteille…</span>
@@ -425,7 +427,7 @@ function Dare({ a }: { a: AovState }) {
     <>
       <canvas ref={sparks} className="pointer-events-none absolute inset-0 z-[5] size-full" aria-hidden />
       {!verdict && <TimeBar endsAt={room.endsAt} k={`dare-${a.turn}-${card.text}`} />}
-      <p className="m-rise text-xs uppercase tracking-[0.18em] text-muted">{mine ? 'À toi de jouer' : `${player?.name ?? '…'} doit relever…`}</p>
+      <p className="m-rise text-xs font-medium text-muted">{mine ? 'À toi de jouer' : `${player?.name ?? '…'} doit relever…`}</p>
       <div ref={box} className="relative w-full max-w-md">
         <div key={card.text} className={`aov-card ${KIND[card.kind].tone} aov-heat-${card.heat} relative flex min-h-56 flex-col gap-3 rounded-2xl p-5 sm:p-7`}>
           <span className="flex items-center justify-between text-sm font-semibold">
@@ -454,7 +456,7 @@ function Dare({ a }: { a: AovState }) {
             }`}
             role="status"
           >
-            {verdict === 'done' ? 'Validé !' : 'Dégonflé 🐔'}
+            {verdict === 'done' ? 'Validé' : 'Dégonflé 🐔'}
           </span>
         )}
       </div>
@@ -484,16 +486,16 @@ function Dare({ a }: { a: AovState }) {
               send({ pass: true });
             }}
           >
-            🃏 Je passe <span className="font-mono text-xs">({jokers} joker{jokers > 1 ? 's' : ''})</span>
+            <Shuffle {...ICON} /> Je passe <span className="font-mono text-xs">({jokers} joker{jokers > 1 ? 's' : ''})</span>
           </button>
         </div>
       ) : (
         <div className="m-rise flex flex-wrap justify-center gap-2" style={{ animationDelay: '500ms' }} role="group" aria-label="Ton verdict">
           <VoteButton on={myVote === true} onClick={() => send({ vote: true })} tone="good">
-            👏 Validé
+            <ThumbsUp {...ICON} /> Validé
           </VoteButton>
           <VoteButton on={myVote === false} onClick={() => send({ vote: false })} tone="bad">
-            🐔 Dégonflé
+            <ThumbsDown {...ICON} /> Dégonflé
           </VoteButton>
         </div>
       )}
@@ -515,7 +517,7 @@ function VoteButton({ on, onClick, tone, children }: { on: boolean; onClick: () 
         bump(e.currentTarget, 1.06);
         onClick();
       }}
-      className={`rounded-full border px-5 py-2 font-semibold transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-info ${
+      className={`inline-flex items-center gap-2 rounded-full border px-5 py-2 font-semibold transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-info ${
         on ? (tone === 'good' ? 'border-good bg-good text-white' : 'border-bad bg-bad text-white') : 'border-edge bg-surface hover:border-ink/40'
       }`}
     >

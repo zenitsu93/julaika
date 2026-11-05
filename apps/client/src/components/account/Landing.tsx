@@ -3,6 +3,7 @@ import { GAMES } from '../../lib/games';
 import { go } from '../../lib/route';
 import { Wordmark } from '../Logo';
 import { GoogleButton, Icon } from './ui';
+import { MusicDock } from '../MusicPlayer';
 
 const VERBS = ['dessiné', 'mimé', 'photographié', 'inventé', 'fredonné'];
 export const GUEST_KEY = 'julaika:invite';
@@ -71,9 +72,12 @@ export function Landing() {
     <main className="relative min-h-full overflow-x-clip pb-14">
       <header className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <Wordmark className="h-10 w-auto" />
-        <button type="button" className="btn-ghost" onClick={() => go('connexion')}>
-          Se connecter
-        </button>
+        <div className="flex items-center gap-2">
+          <button type="button" className="btn-ghost" onClick={() => go('connexion')}>
+            Se connecter
+          </button>
+          <MusicDock />
+        </div>
       </header>
 
       <section className="mx-auto grid max-w-3xl justify-items-center gap-5 px-4 pt-8 text-center sm:pt-14">

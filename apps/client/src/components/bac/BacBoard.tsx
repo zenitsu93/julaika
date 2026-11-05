@@ -311,7 +311,7 @@ function Fill({ bac }: { bac: BacState }) {
       <div className="flex items-center gap-4">
         <LetterReel letter={bac.letter} />
         <div className="min-w-0 flex-1">
-          <p className="m-rise truncate text-xs uppercase tracking-[0.12em] text-muted sm:tracking-[0.18em]">{rolling ? 'Tirage au sort' : 'Tout commence par'}</p>
+          <p className="m-rise truncate text-xs font-medium text-muted">{rolling ? 'Tirage au sort' : 'Tout commence par'}</p>
           <h2 key={String(rolling)} className="m-pop mt-0.5 text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">
             {rolling ? (
               <>
@@ -342,7 +342,7 @@ function Fill({ bac }: { bac: BacState }) {
           }`}
           title={full ? 'Arrêter la manche : les autres ont 5 secondes' : 'Remplis toutes les cases pour crier Stop'}
         >
-          Stop !
+          Stop
         </button>
       </div>
 
@@ -406,7 +406,7 @@ function Field({
       }`}
       style={{ animationDelay: `${120 + index * 50}ms` }}
     >
-      <span className="flex items-center justify-between text-xs font-medium uppercase tracking-[0.14em] text-muted">
+      <span className="flex items-center justify-between text-xs font-medium text-muted">
         {label}
         {ok ? (
           <svg key="ok" viewBox="0 0 16 16" className="bac-ok size-4" aria-label="Valide">
@@ -479,14 +479,14 @@ function Vote({ bac }: { bac: BacState }) {
       <header className="m-rise flex items-center gap-3 border-b border-edge px-4 py-3">
         <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent text-2xl font-bold text-[#18181b]">{bac.letter}</span>
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.18em] text-muted">Vote</p>
+          <p className="text-xs font-medium text-muted">Vote</p>
           <h2 className="font-semibold">Une réponse ne passe pas ? Refuse-la.</h2>
         </div>
       </header>
       <div className="grid flex-1 content-start gap-3 overflow-y-auto p-4 sm:grid-cols-2">
         {bac.categories.map((cat, c) => (
           <article key={cat} className="m-rise rounded-xl border border-edge bg-surface" style={{ animationDelay: `${80 + c * 60}ms` }}>
-            <h3 className="border-b border-edge px-3.5 py-2 text-xs font-medium uppercase tracking-[0.14em] text-muted">{cat}</h3>
+            <h3 className="border-b border-edge px-3.5 py-2 text-xs font-medium text-muted">{cat}</h3>
             <ul className="divide-y divide-edge">
               {voters.map((p) => (
                 <AnswerRow key={p.id} bac={bac} player={p} c={c} self={p.id === selfId} canVote={canVote && !done} verdict={verdict(bac, ids, p.id, c)} />
@@ -502,7 +502,7 @@ function Vote({ bac }: { bac: BacState }) {
               On attend
               <span className="flex -space-x-1">
                 {waiting.map((p) => (
-                  <span key={p.id} className="m-pop m-breathe text-lg" title={p.name}>
+                  <span key={p.id} className="m-pop text-lg" title={p.name}>
                     {avatarOf(p.avatar)}
                   </span>
                 ))}
@@ -619,7 +619,7 @@ function Reveal({ bac }: { bac: BacState }) {
       <header className="m-rise flex items-center gap-3 border-b border-edge px-4 py-3">
         <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent text-2xl font-bold text-[#18181b]">{bac.letter}</span>
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.18em] text-muted">Décompte</p>
+          <p className="text-xs font-medium text-muted">Décompte</p>
           <h2 className="font-semibold">10 points par mot unique, 5 s’il est partagé</h2>
         </div>
       </header>

@@ -11,6 +11,8 @@ import { Lobby } from '../Lobby';
 import { SoundBoard } from '../SoundBoard';
 import { BrasGlyph } from './BrasGlyph';
 import './bras.css';
+import { Mic } from 'lucide-react';
+import { ICON } from '../../lib/icon';
 
 /** Plateau du Bras de fer : la jauge en haut, les cibles à tapoter dessous, la visio en bas. */
 export function BrasBoard() {
@@ -227,7 +229,7 @@ function Gauge({ b, left }: { b: BrasState; left: number }) {
           </span>
         ))}
       </div>
-      <div className="mt-1 flex justify-between font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
+      <div className="mt-1 flex justify-between font-mono text-[11px] text-muted">
         <span>Ton camp</span>
         <span>Camp adverse</span>
       </div>
@@ -329,7 +331,7 @@ function MicPanel() {
 
   return (
     <aside ref={box} className="panel m-rise flex flex-col gap-3 p-4 max-sm:gap-2 max-sm:p-3" style={{ animationDelay: '120ms' }}>
-      <p className="text-sm font-semibold">🎙️ Crie pour doubler ta force</p>
+      <p className="flex items-center gap-2 text-sm font-semibold"><Mic {...ICON} /> Crie pour doubler ta force</p>
       {view.on ? (
         <>
           <div className="bf-meter relative h-5 overflow-hidden rounded-full bg-ink/10" data-loud={view.loud || undefined}>
@@ -363,7 +365,7 @@ function MicPanel() {
 function MicButton() {
   return (
     <button className="bf-mic-cta btn-primary mx-auto" onClick={(e) => (bump(e.currentTarget), void shout.start())}>
-      🎙️ Activer le micro
+      <Mic {...ICON} /> Activer le micro
     </button>
   );
 }

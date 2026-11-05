@@ -167,7 +167,7 @@ function TeamsBar({ a }: { a: AgentsState }) {
       {(['or', 'cacao'] as const).map((t) => (
         <div key={t} data-slot className={`ag-team ag-team-${t} relative flex items-center gap-2 rounded-xl px-2.5 py-2 sm:px-3`}>
           <span className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em]">
+            <span className="flex items-center gap-1.5 text-xs font-semibold">
               Équipe {AGENTS_TEAM_NAME[t]}
               {a.myTeam === t && <span className="rounded-full bg-page/70 px-1.5 text-[10px] normal-case tracking-normal text-ink">toi</span>}
             </span>
@@ -273,7 +273,7 @@ function ClueZone({ a, phase, role }: { a: AgentsState; phase: string; role: 'cl
   return (
     <div className="flex min-h-14 flex-wrap items-center justify-center gap-x-4 gap-y-2">
       <span key={a.history.length} className="ag-dossier w-stamp flex items-center gap-3 rounded-xl px-4 py-2">
-        <span className="text-xs uppercase tracking-[0.16em] opacity-70">Indice</span>
+        <span className="text-xs font-medium opacity-70">Indice</span>
         <span className="text-2xl font-bold tracking-[-0.02em]">
           {a.clue.word.split('').map((ch, i) => (
             <span key={i} className="m-letter" style={{ animationDelay: `${150 + i * 35}ms` }}>
@@ -596,7 +596,7 @@ function Finale() {
         <div className="mb-1 flex items-center justify-center gap-4">
           {(['or', 'cacao'] as const).map((t) => (
             <span key={t} className={`ag-face-${t} m-pop flex flex-col rounded-xl px-5 py-2`}>
-              <span className="text-xs uppercase tracking-[0.14em]">{AGENTS_TEAM_NAME[t]}</span>
+              <span className="text-xs font-medium">{AGENTS_TEAM_NAME[t]}</span>
               <span className="font-mono text-4xl font-bold">{wins(t)}</span>
             </span>
           ))}

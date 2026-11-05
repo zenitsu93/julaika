@@ -18,6 +18,7 @@ import './photo/photo.css';
 import './interdits/interdits.css';
 import './fred/fred.css';
 import './pitch/pitch.css';
+import { MusicDock } from './MusicPlayer';
 
 // L'entrée animée ne se joue qu'une fois par visite, comme sur l'écran du pseudo.
 let introPlayed = false;
@@ -71,9 +72,12 @@ export function Hub({ onPick, onCode }: { onPick: (id: GameId) => void; onCode: 
         </div>
         <div className="flex items-center gap-2">
           <button type="button" className="btn-ghost" onClick={onCode}>
-            J'ai un code de salon
+            <span>
+              J'ai un code<span className="max-sm:hidden"> de salon</span>
+            </span>
           </button>
           <AccountButton />
+          <MusicDock />
         </div>
       </header>
 

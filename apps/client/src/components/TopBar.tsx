@@ -10,6 +10,8 @@ import { ShuffleGlyph, SwitchButton } from './GamePicker';
 import { SoundButton } from './SoundBoard';
 import { COMPACT_QUERY, VisioButton } from './CallBar';
 import { call, useCall } from '../lib/call';
+import { Mic } from 'lucide-react';
+import { ICON } from '../lib/icon';
 
 function useCountdown(endsAt: number | null): number {
   const [now, setNow] = useState(serverNow);
@@ -242,7 +244,7 @@ function MoreMenu({ code, copied, onCopy, onSwitch }: { code: string; copied: bo
                 call.join(false, true);
               }}
             >
-              <span className="w-4 shrink-0 text-center" aria-hidden>🎙️</span>
+              <Mic {...ICON} />
               Visio, micro seulement
             </button>
           )}

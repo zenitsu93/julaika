@@ -6,6 +6,7 @@ import { net, savedSeat } from '../lib/net';
 import { useGame } from '../lib/store';
 import { bump, shake, useIndicator } from '../motion';
 import { LogoMark, TremaLoader } from './Logo';
+import { MusicDock } from './MusicPlayer';
 
 export const codeFromUrl = () => location.pathname.match(/^\/r\/([A-Z0-9]{4,8})/i)?.[1]?.toUpperCase() ?? '';
 
@@ -64,12 +65,15 @@ export function Home({ game, onBack }: { game: GameId | null; onBack: () => void
   return (
     <main className="safe-x grid min-h-full place-items-center p-4">
       <div className="w-full max-w-md">
-        <button type="button" onClick={onBack} className="btn -ml-3 mb-4 text-muted hover:text-ink">
-          <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-          Tous les jeux
-        </button>
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <button type="button" onClick={onBack} className="btn -ml-3 text-muted hover:text-ink">
+            <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+            Tous les jeux
+          </button>
+          <MusicDock />
+        </div>
         <div className="mb-6 flex items-center gap-3">
           <LogoMark className="h-12 w-auto" animated={intro} />
           <div>

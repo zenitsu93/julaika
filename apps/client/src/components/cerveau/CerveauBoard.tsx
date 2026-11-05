@@ -212,7 +212,7 @@ function Brief({ cv, index }: { cv: CerveauState; index: number }) {
   return (
     <div className="m-veil absolute inset-0 z-10 grid place-items-center bg-page/80 p-4 backdrop-blur-[3px]">
       <div className="cv-brief m-card w-full max-w-md rounded-2xl border border-edge bg-surface p-6 text-center shadow-xl">
-        <p className="m-rise text-xs uppercase tracking-[0.18em] text-muted">Dessin {cv.turn + 1} sur {cv.turns}</p>
+        <p className="m-rise text-xs font-medium text-muted">Dessin {cv.turn + 1} sur {cv.turns}</p>
         <h2 className="m-pop mt-1 flex items-center justify-center gap-2 text-3xl font-bold tracking-[-0.04em]">
           <span aria-hidden>{info.icon}</span>
           {info.name}
@@ -434,7 +434,7 @@ function DuoControls({ cv, pen, canDraw, drawer, done }: { cv: CerveauState; pen
             net.send({ t: 'cerveau', done: !done });
           }}
         >
-          {done ? 'Attends, on retouche' : 'On a fini !'}
+          {done ? 'Attends, on retouche' : 'On a fini'}
         </button>
         <span className="text-sm text-muted" aria-live="polite">
           {partnerDone ? (
@@ -463,7 +463,7 @@ function Score({ cv }: { cv: CerveauState }) {
   const shown = useCountUp(score, { from: 0, delay: 900, duration: 1100 });
   return (
     <div className="cv-score pointer-events-none absolute right-3 bottom-3 rounded-2xl bg-primary px-4 py-2 text-center text-on-primary shadow-lg">
-      <span className="block text-[10px] uppercase tracking-[0.18em] opacity-75">Ressemblance</span>
+      <span className="block text-[10px] font-medium opacity-75">Ressemblance</span>
       <b className="block font-logo text-4xl leading-none tabular-nums">{shown} %</b>
     </div>
   );
@@ -492,7 +492,7 @@ function Verdict({ cv }: { cv: CerveauState }) {
   return (
     <div className="cv-verdict relative overflow-hidden rounded-xl border border-edge bg-surface p-4 text-center">
       <canvas ref={burst} className="pointer-events-none absolute inset-0 size-full" aria-hidden />
-      <p className="text-xs uppercase tracking-[0.18em] text-muted">{names}</p>
+      <p className="text-xs font-medium text-muted">{names}</p>
       <h3 className="cv-verdict-title mt-1 text-2xl font-bold tracking-[-0.03em]">{v.title}</h3>
       <p className="m-rise text-sm text-muted" style={{ animationDelay: '2s' }}>
         {v.line}
@@ -529,7 +529,7 @@ function Album() {
   return (
     <div className="flex flex-col items-center gap-5 p-4 sm:p-6">
       <div className="text-center">
-        <p className="m-rise text-xs uppercase tracking-[0.18em] text-muted">Fin de partie</p>
+        <p className="m-rise text-xs font-medium text-muted">Fin de partie</p>
         <h2 className="m-pop mt-1 text-3xl font-bold tracking-[-0.04em]">
           <span className="accroche mr-2 text-4xl text-accent">complicité</span>
           <span className="tabular-nums">{shown} %</span>

@@ -10,6 +10,8 @@ import { attachWipe, bump, confetti, Presence, reducedMotion, shake, useFlip } f
 import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
 import { Toolbar } from '../Toolbar';
+import { Dices } from 'lucide-react';
+import { ICON } from '../../lib/icon';
 
 const KIND_ICON: Record<TelKind, string> = { write: '✍️', draw: '✏️', describe: '🔍' };
 
@@ -238,7 +240,7 @@ function WriteStep({ kind, prompt, done }: { kind: TelKind; prompt: TelEntry | n
               field.current?.focus();
             }}
           >
-            🎲 Inspire-moi
+            <Dices {...ICON} /> Inspire-moi
           </button>
         )}
       </form>
@@ -249,7 +251,7 @@ function WriteStep({ kind, prompt, done }: { kind: TelKind; prompt: TelEntry | n
 function Heading({ eyebrow, title, line }: { eyebrow: string; title: ReactNode; line?: string }) {
   return (
     <div className="text-center">
-      <p className="m-rise text-xs uppercase tracking-[0.18em] text-muted">{eyebrow}</p>
+      <p className="m-rise text-xs font-medium text-muted">{eyebrow}</p>
       <h2 className="m-pop mt-1 text-2xl font-semibold tracking-[-0.03em] sm:text-3xl" style={{ animationDelay: '60ms' }}>
         {title}
       </h2>
@@ -299,7 +301,7 @@ function DrawStep({ prompt, done }: { prompt: TelEntry | null; done: boolean }) 
   return (
     <div className="flex flex-col items-center gap-3 p-3 max-sm:gap-2 sm:p-4">
       <div className="text-center">
-        <p className="m-rise text-xs uppercase tracking-[0.18em] text-muted">{prompt ? `${prompt.name} a écrit` : 'À dessiner'}</p>
+        <p className="m-rise text-xs font-medium text-muted">{prompt ? `${prompt.name} a écrit` : 'À dessiner'}</p>
         <p className="mt-0.5 text-xl font-semibold tracking-[-0.02em] sm:text-2xl" aria-live="polite">
           {text.split(' ').map((w, i) => (
             <span key={i} className="w-word" style={{ animationDelay: `${i * 60}ms` }}>
@@ -358,7 +360,7 @@ function DrawStep({ prompt, done }: { prompt: TelEntry | null; done: boolean }) 
                 net.send({ t: 'tel', done: true });
               }}
             >
-              J'ai fini !
+              J'ai fini
             </button>
           </div>
         )}
@@ -389,7 +391,7 @@ function Waiting({ what }: { what: string }) {
       </p>
       <ul className="mt-3 flex flex-wrap justify-center gap-2">
         {waiting.map((p) => (
-          <li key={p.id} className="m-pop m-breathe text-2xl" title={p.name}>
+          <li key={p.id} className="m-pop text-2xl" title={p.name}>
             {avatarOf(p.avatar)}
           </li>
         ))}
@@ -489,7 +491,7 @@ function Album() {
             {avatarOf(chain.avatar)}
           </span>
           <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.18em] text-muted">
+            <p className="text-xs font-medium text-muted">
               Album {page.chain + 1}/{chains.length}
             </p>
             <h2 className="truncate font-semibold">La chaîne de {chain.name}</h2>

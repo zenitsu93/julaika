@@ -225,7 +225,7 @@ function Memorize() {
   return (
     <div className="flex min-h-[30rem] flex-col items-center justify-center gap-5 p-4 sm:p-6">
       <header className="text-center">
-        <p className="m-rise text-xs font-medium uppercase tracking-[0.18em] text-muted">
+        <p className="m-rise text-xs font-medium text-muted">
           Image {flash.round}/{flash.rounds} · {showing ? 'Regarde bien…' : 'Ouvre grand les yeux'}
         </p>
         <h2 className="m-pop mt-1 text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">{showing ? 'Mémorise !' : 'Prêt ?'}</h2>
@@ -324,7 +324,7 @@ function Sheet({ flash, done }: { flash: FlashState; done: boolean }) {
     <div className="flex flex-col items-center gap-3 p-3 max-sm:gap-2 sm:p-4">
       <div className="flex w-full max-w-[max(20rem,calc((100dvh-24rem)*4/3))] items-end justify-between gap-3 max-sm:max-w-none">
         <div>
-          <p className="m-rise text-xs uppercase tracking-[0.18em] text-muted">Image {flash.round}/{flash.rounds}</p>
+          <p className="m-rise text-xs font-medium text-muted">Image {flash.round}/{flash.rounds}</p>
           <h2 className="m-pop text-xl font-semibold tracking-[-0.03em] max-sm:text-lg sm:text-2xl">Redessine-la de mémoire</h2>
         </div>
         <span
@@ -394,7 +394,7 @@ function Sheet({ flash, done }: { flash: FlashState; done: boolean }) {
                 net.send({ t: 'flash', done: true });
               }}
             >
-              J'ai fini !
+              J'ai fini
             </button>
           </div>
         )}
@@ -539,7 +539,7 @@ function Gallery() {
     <div className="relative flex min-h-[30rem] flex-col items-center gap-4 p-4 sm:p-6">
       <canvas ref={sparks} className="pointer-events-none absolute inset-0 z-10 size-full" aria-hidden />
       <header className="text-center">
-        <p className="m-rise text-xs font-medium uppercase tracking-[0.18em] text-muted">
+        <p className="m-rise text-xs font-medium text-muted">
           Image {flash.round}/{flash.rounds} ·{' '}
           {reveal ? 'Les résultats' : playing && toRate.length ? `Note la ressemblance (${rated}/${toRate.length})` : 'Les autres notent…'}
         </p>
@@ -568,7 +568,7 @@ function Gallery() {
             </div>
           </div>
           <figcaption className="mt-2 text-center">
-            <span className="block text-xs font-medium uppercase tracking-[0.18em] text-accent">L’original</span>
+            <span className="block text-xs font-medium text-accent">L’original</span>
             <span className="font-script text-2xl leading-none">{FLASH_IMAGES[image]!.name}</span>
           </figcaption>
         </figure>
@@ -582,7 +582,7 @@ function Waiting() {
   return (
     <div className="grid min-h-[30rem] place-items-center p-6 text-center">
       <div>
-        <span className="m-breathe inline-block text-5xl">🖼️</span>
+        <span className="inline-block text-5xl">🖼️</span>
         <p className="mt-2 text-muted">On ramasse les croquis…</p>
       </div>
     </div>
@@ -634,7 +634,7 @@ function Finale({ reel }: { reel: Best[] }) {
       )}
       {reel.length > 0 && (
         <>
-          <p className="mt-5 text-xs font-medium uppercase tracking-[0.18em] text-muted">L’original et sa meilleure copie</p>
+          <p className="mt-5 text-xs font-medium text-muted">L’original et sa meilleure copie</p>
           <div className="mt-3 space-y-2">
             {reel.map((r, i) => (
               <div key={r.round} className="m-rise grid grid-cols-2 items-center gap-2" style={{ animationDelay: `${600 + i * 160}ms` }}>

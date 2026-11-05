@@ -69,7 +69,7 @@ export function Polaroid({
         <span className="line-clamp-2 font-[Caveat,'Segoe_Print','Bradley_Hand',cursive] text-[clamp(1.05rem,2.6vw,1.4rem)] font-bold leading-[1.05]">
           {caption}
         </span>
-        {name && <span className="truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-[#86705f]">{name}</span>}
+        {name && <span className="truncate text-[11px] font-semibold text-[#86705f]">{name}</span>}
       </figcaption>
       {children}
     </figure>

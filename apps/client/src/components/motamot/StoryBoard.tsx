@@ -9,6 +9,8 @@ import { bump, confetti, Presence, reducedMotion, shake } from '../../motion';
 import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
 import './story.css';
+import { RotateCcw } from 'lucide-react';
+import { ICON } from '../../lib/icon';
 
 /** Plateau de Mot à mot : la page qui s'écrit, puis la lecture à voix haute. */
 export function StoryBoard() {
@@ -104,7 +106,7 @@ function Writing({ s }: { s: StoryState }) {
     <div className="flex flex-col gap-4 px-3 pb-5 pt-4 max-sm:gap-3 max-sm:pb-3 max-sm:pt-3 sm:px-6">
       <header className="flex flex-wrap items-center justify-between gap-3 max-sm:gap-2">
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.18em] text-muted">
+          <p className="text-xs font-medium text-muted">
             Histoire {s.story}/{s.stories}
           </p>
           <div className="mt-1 flex items-center gap-2">
@@ -235,7 +237,7 @@ function RuleZone({ s, mine }: { s: StoryState; mine: boolean }) {
           className="st-tag relative rounded-2xl bg-gold px-5 py-2.5 text-center text-cacao shadow-[0_16px_30px_-16px_rgb(43_26_18/0.7)]"
           role="status"
         >
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-70">{mine ? 'Contrainte pour toi' : 'Contrainte'}</p>
+          <p className="text-[11px] font-semibold opacity-70">{mine ? 'Contrainte pour toi' : 'Contrainte'}</p>
           <p className="text-lg font-bold tracking-[-0.01em] sm:text-xl">{s.rule.text}</p>
           {s.rule.jury && <p className="text-[11px] opacity-70">Les autres peuvent te recaler</p>}
         </div>
@@ -416,7 +418,7 @@ function Reading({ s }: { s: StoryState }) {
       <canvas ref={sparks} className="pointer-events-none absolute inset-0 z-[5] size-full" aria-hidden />
       <header className="m-rise flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.18em] text-muted">
+          <p className="text-xs font-medium text-muted">
             Lecture · histoire {s.story}/{s.stories}
           </p>
           <h2 className="font-script text-4xl leading-tight text-accent sm:text-5xl">L'histoire est finie !</h2>
@@ -424,7 +426,7 @@ function Reading({ s }: { s: StoryState }) {
         {canSpeak && (
           <div className="flex shrink-0 items-center gap-2">
             <button type="button" className="btn-ghost h-9 px-3 text-sm" onClick={(e) => (bump(e.currentTarget), read())} disabled={!narrator.on}>
-              ↻ <span className="max-sm:hidden">Réécouter</span>
+              <RotateCcw {...ICON} /> <span className="max-sm:hidden">Réécouter</span>
             </button>
             <VoiceToggle on={narrator.on} speaking={narrator.speaking} onToggle={() => narrator.toggle()} />
           </div>
@@ -531,7 +533,7 @@ function RuleCard({ w, index, author, selfId, judges, delay }: { w: StoryWord; i
           }}
           className={`shrink-0 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors ${vetoed ? 'border-bad bg-bad text-white' : 'border-edge hover:border-bad hover:text-bad'}`}
         >
-          {vetoed ? '👎 Recalé' : 'Recaler ?'}
+          {vetoed ? 'Recalé' : 'Recaler'}
         </button>
       )}
     </li>

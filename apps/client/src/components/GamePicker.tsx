@@ -196,7 +196,7 @@ export function GameSwitch({ isHost }: { isHost: boolean }) {
         {ART[id]}
       </span>
       <span key={`n-${id}`} className={`w-0 min-w-0 flex-1 ${first.current ? '' : 'sw-name'}`}>
-        <span className="block text-[11px] font-semibold tracking-wide text-muted uppercase">Jeu du salon</span>
+        <span className="block text-[11px] font-semibold text-muted">Jeu du salon</span>
         <span className="block truncate text-lg leading-tight font-bold tracking-[-0.02em]">{info.name}</span>
         <span className="block truncate text-xs text-muted">{info.pitch}</span>
       </span>

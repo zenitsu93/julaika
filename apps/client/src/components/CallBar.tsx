@@ -4,6 +4,8 @@ import { avatarOf } from '../lib/avatars';
 import { call, useCall } from '../lib/call';
 import { useGame } from '../lib/store';
 import { bump, useMedia, useSpeaking } from '../motion';
+import { Mic, MicOff, PhoneOff, Video, VideoOff, Volume2 } from 'lucide-react';
+import { ICON } from '../lib/icon';
 
 /** Téléphone (debout ou couché) : même seuil que la barre du haut compacte. */
 export const COMPACT_QUERY = '(max-width: 639.98px), (max-height: 500px) and (pointer: coarse)';
@@ -43,12 +45,12 @@ function Tile({ player, stream, self, drawing, psychic, mime }: { player: Player
       />
       {!player.cam && <span className="absolute inset-0 grid place-items-center text-3xl">{avatarOf(player.avatar)}</span>}
       <span className="absolute left-1.5 top-1.5 flex gap-1 font-mono text-[10px] font-semibold">
-        {drawing && <span className="m-pop rounded-full bg-accent px-1.5 text-[#18181b]">{psychic ? '🔮 télépathe' : mime ? '🎭 mime' : '✏️ dessine'}</span>}
+        {drawing && <span className="m-pop rounded-full bg-accent px-1.5 text-[#18181b]">{psychic ? 'télépathe' : mime ? 'mime' : 'dessine'}</span>}
         {player.guessed && <span className="m-pop rounded-full bg-good px-1.5 text-white">✓ trouvé</span>}
       </span>
       <figcaption className="absolute inset-x-1.5 bottom-1.5 flex">
         <span className="flex min-w-0 items-center gap-1 rounded-full bg-black/50 px-2 py-px text-[11px] text-white backdrop-blur-md">
-          {player.mic ? <Level on={speaking} /> : <span title="Micro coupé">🔇</span>}
+          {player.mic ? <Level on={speaking} /> : <MicOff {...ICON} size={12} aria-label="Micro coupé" />}
           <span className="truncate">{self ? 'Toi' : player.name}</span>
         </span>
       </figcaption>
@@ -91,10 +93,10 @@ export function CallBar() {
           <span className="max-sm:hidden"> · jusqu'à {MAX_CALL} personnes</span>
         </span>
         <button className="btn-primary max-sm:min-h-11 max-sm:shrink-0" disabled={full} onClick={() => call.join(true, true)}>
-          🎥 Rejoindre<span className="max-sm:hidden"> la visio</span>
+          <Video {...ICON} /> Rejoindre<span className="max-sm:hidden"> la visio</span>
         </button>
         <button className="btn-ghost max-sm:min-h-11 max-sm:min-w-11 max-sm:shrink-0 max-sm:px-0" disabled={full} onClick={() => call.join(false, true)} aria-label="Micro seulement" title="Micro seulement">
-          🎙️<span className="max-sm:hidden"> Micro seulement</span>
+          <Mic {...ICON} /><span className="max-sm:hidden"> Micro seulement</span>
         </button>
         {view.error && <p className="m-rise w-full text-center text-bad">{view.error}</p>}
       </div>
@@ -107,7 +109,7 @@ export function CallBar() {
         {/* Son bloqué par le navigateur tant qu'on n'a pas touché la page (iPhone surtout). */}
         {view.muted && (
           <button className="btn-primary m-pop shrink-0 self-center" onClick={call.unmute}>
-            🔊 Activer le son
+            <Volume2 {...ICON} /> Activer le son
           </button>
         )}
         {inCall.map((p) => (
@@ -134,7 +136,7 @@ export function CallBar() {
             void call.toggle('video');
           }}
         >
-          📷
+          {view.cam ? <Video {...ICON} /> : <VideoOff {...ICON} />}
         </button>
         <button
           className={`${dockBtn} ${view.mic ? 'hover:bg-on-primary/15' : 'bg-bad text-white'} disabled:cursor-not-allowed`}
@@ -146,10 +148,10 @@ export function CallBar() {
             void call.toggle('audio');
           }}
         >
-          {view.mic ? '🎙️' : '🔇'}
+          {view.mic ? <Mic {...ICON} /> : <MicOff {...ICON} />}
         </button>
         <button className={`${dockBtn} bg-bad/85 text-white hover:bg-bad`} title="Quitter la visio" onClick={() => call.leave()}>
-          ✕
+          <PhoneOff {...ICON} />
         </button>
       </div>
       {view.error && <p className="text-xs text-bad">{view.error}</p>}
@@ -174,7 +176,7 @@ export function VisioButton() {
       aria-label={inCall ? `Rejoindre la visio (${inCall} dedans)` : 'Rejoindre la visio'}
       title="Rejoindre la visio"
     >
-      🎥
+      <Video {...ICON} />
       {inCall > 0 && (
         <span key={inCall} className="m-pop absolute -right-1 -top-1 grid size-4.5 place-items-center rounded-full bg-good font-mono text-[10px] font-bold text-white" aria-hidden>
           {inCall}

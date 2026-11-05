@@ -7,6 +7,8 @@ import { bump, confetti, Presence, shake, useCountUp, useFlip } from '../../moti
 import { CallBar } from '../CallBar';
 import { Lobby } from '../Lobby';
 import { BOOM_AT, Dial } from './Dial';
+import { RefreshCw } from 'lucide-react';
+import { ICON } from '../../lib/icon';
 
 const POINT_COLOR: Record<number, string> = { 0: 'bg-bad/25', 2: 'bg-[#3b82f6]', 3: 'bg-[#f97316]', 4: 'bg-accent' };
 const POINT_LINE: Record<number, string> = {
@@ -206,7 +208,7 @@ function Clue({ wave, phase, psychic, psychicName }: { wave: WaveState | null; p
   if (wave.clue)
     return (
       <div className="min-h-14 text-center">
-        <p className="text-xs uppercase tracking-[0.18em] text-muted">{psychic ? 'Ton indice' : `L'indice de ${psychicName}`}</p>
+        <p className="text-xs font-medium text-muted">{psychic ? 'Ton indice' : `L'indice de ${psychicName}`}</p>
         <p key={wave.clue} className="text-2xl font-semibold tracking-[-0.02em] sm:text-3xl" aria-live="polite">
           {wave.clue.split(' ').map((w, i) => (
             <span key={i} className="w-word" style={{ animationDelay: `${i * 70}ms` }}>
@@ -273,7 +275,7 @@ function Actions({ wave, phase, psychic, psychicName, onLock }: { wave: WaveStat
               net.send({ t: 'wave', reroll: true });
             }}
           >
-            ↻ Changer de carte
+            <RefreshCw {...ICON} /> Changer de carte
           </button>
         )}
       </form>
@@ -284,7 +286,7 @@ function Actions({ wave, phase, psychic, psychicName, onLock }: { wave: WaveStat
       <div className="m-rise flex flex-col items-center gap-2">
         <p className="text-center text-sm text-muted">Glissez l'aiguille ensemble (flèches du clavier aussi), puis validez.</p>
         <button className="btn-primary px-6 py-2.5 text-base" onClick={onLock}>
-          On valide !
+          On valide
         </button>
       </div>
     );

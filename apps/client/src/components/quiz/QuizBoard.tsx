@@ -117,7 +117,7 @@ function Machine() {
     <div className="m-fade flex min-h-[28rem] flex-col items-center justify-center gap-4 px-4 py-8 text-center">
       <Orbit small />
       <div className="flex flex-col items-center">
-        <p className="m-rise text-xs uppercase tracking-[0.2em] text-muted">{ready ? 'C’est prêt' : 'L’IA écrit tes questions'}</p>
+        <p className="m-rise text-xs font-medium text-muted">{ready ? 'C’est prêt' : 'L’IA écrit tes questions'}</p>
         <h2 className="mt-1 flex flex-wrap justify-center gap-x-3 leading-none">
           {themes.map((t, i) => (
             <span key={t} className="m-pop flex items-center gap-x-3 font-script text-5xl text-accent sm:text-6xl" style={{ animationDelay: `${120 + i * 120}ms` }}>
