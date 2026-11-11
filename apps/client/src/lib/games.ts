@@ -160,7 +160,7 @@ export const GAMES: GameInfo[] = [
   {
     id: 'motamot',
     name: 'Mot à mot',
-    pitch: 'Une histoire à plusieurs, un mot chacun, 4 secondes.',
+    pitch: 'Une histoire à plusieurs, un mot chacun, tapé ou dit, chrono en vue.',
     players: 'À deux ou plus',
     badge: 'Nouveau',
     keywords: ['mot', 'mots', 'histoire', 'speed story', 'conte', 'ecrire', 'contrainte', 'voix', 'duo', 'deux', 'rapidite'],

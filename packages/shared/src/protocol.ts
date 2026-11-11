@@ -188,6 +188,8 @@ export interface RoomSettings {
   /** Quiz : le ou les thèmes écrits par l'hôte (séparés par des virgules), et le nombre de questions. */
   quizTheme: string;
   questions: number;
+  /** Mot à mot : secondes pour écrire (ou dire) son mot ; le double sous contrainte. */
+  wordTime: number;
 }
 
 export const DEFAULT_SETTINGS: RoomSettings = {
@@ -206,6 +208,7 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   aovLevel: 'lite',
   quizTheme: '',
   questions: 10,
+  wordTime: 6,
 };
 
 export const SETTINGS_LIMITS = {
@@ -215,6 +218,7 @@ export const SETTINGS_LIMITS = {
   wordChoices: [1, 5],
   hints: [0, 5],
   questions: [5, 20],
+  wordTime: [3, 15],
 } as const;
 
 export interface PlayerPublic {

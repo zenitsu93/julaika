@@ -5,8 +5,7 @@ import {
   STORY_LENGTH,
   STORY_PER_PLAYER,
   STORY_POINTS,
-  STORY_RULE_TIME,
-  STORY_TIME,
+  STORY_RULE_FACTOR,
   STORY_WORD_MAX,
   checkStoryRule,
   cleanStoryWord,
@@ -24,6 +23,8 @@ export interface StoryHost {
   playerIds(): string[];
   name(id: string): string;
   rounds(): number;
+  /** Secondes par mot (réglage du salon). */
+  wordTime(): number;
   random(): number;
   setPhase(phase: Phase, endsAt: number | null, round: number): void;
   broadcastState(): void;
@@ -113,7 +114,7 @@ export class MotAMot {
   }
 
   start(): void {
-    this.host.system('Mot à mot : un mot chacun, 4 secondes, et gare aux contraintes !');
+    this.host.system(`Mot à mot : un mot chacun, ${this.host.wordTime()} secondes, et gare aux contraintes !`);
     this.nextStory();
   }
 
@@ -204,7 +205,7 @@ export class MotAMot {
     this.turn = this.order[this.written % this.order.length]!;
     this.rule = this.written % STORY_EVERY === STORY_EVERY - 1 ? this.pickRule() : null;
     this.typing = '';
-    const seconds = this.rule ? STORY_RULE_TIME : STORY_TIME;
+    const seconds = this.host.wordTime() * (this.rule ? STORY_RULE_FACTOR : 1);
     this.host.setPhase('write', Date.now() + seconds * 1000, this.story);
     this.host.broadcastState();
     this.arm(seconds * 1000, () => this.timeout());
